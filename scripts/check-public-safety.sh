@@ -42,7 +42,7 @@ forbidden_patterns=(
 )
 
 for pattern in "${forbidden_patterns[@]}"; do
-  if rg -n --hidden --glob '!README.md' --glob '!scripts/check-public-safety.sh' --glob '!.git/**' "$pattern" . >/tmp/project-requirements-system-scan.txt; then
+  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' "$pattern" . >/tmp/project-requirements-system-scan.txt; then
     cat /tmp/project-requirements-system-scan.txt >&2
     fail "forbidden private marker found: $pattern"
   fi
