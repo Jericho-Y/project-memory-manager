@@ -18,6 +18,7 @@ Maintain a safe public version of the `project-requirements-system` skill and ke
 - Local skill sync is handled by `scripts/sync-local-skill.sh`.
 - Local sync temporary files and backups default to `.project-runtime/` inside the repository.
 - `scripts/recovery-status.sh` identifies active or retryable task ledger entries for recovery automation.
+- Local skill sync includes `SKILL.md`, templates, compact recovery automation docs, and the recovery status helper.
 - GitHub Actions workflow examples are stored under `docs/github-actions-drafts/` until workflow publishing is explicitly reviewed and enabled.
 - A daily maintenance automation can check the public repo, evaluate low-risk PRs, and sync the local skill after validation.
 - Compact disconnect recovery is documented under `docs/08-automation/compact-disconnect-recovery.md`.

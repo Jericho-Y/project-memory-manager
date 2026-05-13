@@ -32,6 +32,7 @@ bash scripts/check-public-safety.sh
 
 [[ -f SKILL.md ]] || fail "SKILL.md missing after clone"
 [[ -d templates ]] || fail "templates directory missing after clone"
+[[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
 
 if find . -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
   -not -path './scripts/check-public-safety.sh' \
@@ -50,10 +51,16 @@ rsync -a --delete \
   --include='SKILL.md' \
   --include='templates/' \
   --include='templates/***' \
+  --include='docs/' \
+  --include='docs/08-automation/' \
+  --include='docs/08-automation/***' \
+  --include='scripts/' \
+  --include='scripts/recovery-status.sh' \
   --exclude='*' \
   "$WORKDIR/" "$LOCAL_SKILL_DIR/"
 
 [[ -f "$LOCAL_SKILL_DIR/SKILL.md" ]] || fail "local sync did not produce SKILL.md"
 [[ -f "$LOCAL_SKILL_DIR/templates/document-skeletons.md" ]] || fail "local sync did not produce document skeleton template"
+[[ -f "$LOCAL_SKILL_DIR/scripts/recovery-status.sh" ]] || fail "local sync did not produce recovery helper"
 
 printf 'Synced project-requirements-system to %s\n' "$LOCAL_SKILL_DIR"

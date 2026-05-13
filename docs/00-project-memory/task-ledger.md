@@ -21,4 +21,4 @@ Skip when: Performing a read-only lookup that will not change state.
 - Next concrete action: monitor daily automation and use recovery ledger for future interrupted tasks.
 - Retry count: 0
 - Last error or interruption: none
-- Verification status: public safety check passed; file-purpose header scan passed; recovery status helper detected active task before completion and no active task after completion.
+- Verification status: public safety check passed; file-purpose header scan passed; recovery status helper detected active task before completion and no active task after completion; local skill sync scope updated to include recovery docs and helper.
