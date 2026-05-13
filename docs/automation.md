@@ -3,6 +3,9 @@
 ## Daily Repository Check
 
 Use a local scheduler, Codex automation, or GitHub Actions to run a daily repository check.
+Workflow examples are available under `docs/github-actions-drafts/`. Move them into
+`.github/workflows/` only after the repository account has permission to publish
+workflows and after reviewing the auto-merge policy.
 
 The safe auto-merge policy should merge low-risk pull requests only when:
 

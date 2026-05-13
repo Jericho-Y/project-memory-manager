@@ -1,0 +1,99 @@
+name: Daily safe auto-merge
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  safe-auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate and merge safe PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          prs="$(gh pr list --repo "$REPO" --state open --json number --jq '.[].number')"
+          if [[ -z "$prs" ]]; then
+            echo "No open pull requests."
+            exit 0
+          fi
+
+          for pr in $prs; do
+            echo "Evaluating PR #$pr"
+
+            meta="$(gh pr view "$pr" --repo "$REPO" --json isDraft,authorAssociation,mergeStateStatus,labels)"
+            is_draft="$(jq -r '.isDraft' <<<"$meta")"
+            association="$(jq -r '.authorAssociation' <<<"$meta")"
+            merge_state="$(jq -r '.mergeStateStatus' <<<"$meta")"
+            has_safe_label="$(jq -r '[.labels[].name] | index("safe-auto-merge") != null' <<<"$meta")"
+
+            if [[ "$is_draft" == "true" ]]; then
+              echo "Skipping draft PR #$pr"
+              continue
+            fi
+
+            if [[ "$merge_state" == "DIRTY" || "$merge_state" == "UNKNOWN" ]]; then
+              echo "Skipping PR #$pr because merge state is $merge_state"
+              continue
+            fi
+
+            files="$(gh pr view "$pr" --repo "$REPO" --json files --jq '.files[].path')"
+
+            unsafe=0
+            skill_changed=0
+            while IFS= read -r file; do
+              [[ -z "$file" ]] && continue
+              case "$file" in
+                README.md|LICENSE|SECURITY.md|SKILL.md|templates/*.md|docs/*.md|examples/*.md|examples/**/*.md)
+                  ;;
+                *)
+                  echo "Unsafe changed file for auto-merge: $file"
+                  unsafe=1
+                  ;;
+              esac
+
+              case "$file" in
+                .github/*|.github/**|scripts/*|scripts/**|package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|*.sh|*.py|*.js|*.ts|*.bin|*.dylib|*.so|*.zip|*.tar|*.gz)
+                  echo "Blocked changed file for auto-merge: $file"
+                  unsafe=1
+                  ;;
+              esac
+
+              [[ "$file" == "SKILL.md" ]] && skill_changed=1
+            done <<<"$files"
+
+            if [[ "$unsafe" -ne 0 ]]; then
+              echo "Skipping PR #$pr due to unsafe file scope."
+              continue
+            fi
+
+            if [[ "$skill_changed" -eq 1 ]]; then
+              case "$association" in
+                OWNER|MEMBER|COLLABORATOR)
+                  ;;
+                *)
+                  if [[ "$has_safe_label" != "true" ]]; then
+                    echo "Skipping external SKILL.md change without safe-auto-merge label."
+                    continue
+                  fi
+                  ;;
+              esac
+            fi
+
+            if ! gh pr checks "$pr" --repo "$REPO" --fail-fast; then
+              echo "Skipping PR #$pr because checks are not passing."
+              continue
+            fi
+
+            gh pr merge "$pr" --repo "$REPO" --squash --delete-branch
+            echo "Merged PR #$pr"
+          done
