@@ -21,9 +21,11 @@ Do not open a public issue containing the secret.
 - private customer or payment data
 - private chat logs or memory exports
 - local machine paths that identify a person or private workspace
+- symlinks that could redirect synced skill content
+- unexpected executable files outside reviewed scripts
 
 ## Automation Safety
 
 This repository's automation is intentionally conservative. It should not auto-merge workflow, script, executable, binary, dependency, or permission changes from untrusted pull requests.
 
-Local skill synchronization should happen only from the checked `main` branch after public safety checks pass.
+Local skill synchronization should happen only from the checked `main` branch after public safety checks pass. The sync destination must be a dedicated `pmm` skill directory, not a broad project, home, or configuration directory.

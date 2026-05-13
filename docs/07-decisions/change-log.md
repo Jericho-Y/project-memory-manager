@@ -6,6 +6,11 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-05-13
 
+- Completed scheduled security review for the public `pmm` repository; no frontend/backend application code, dependencies, committed secrets, auth flow, payment flow, or database layer were present.
+- Added repository-specific security rules for recurring reviews, local sync boundaries, and auto-merge policy.
+- Hardened public safety checks to use per-run temp files and reject symlinks, committed `.env` files, and unexpected executable files outside reviewed scripts.
+- Hardened local skill sync with destination path validation, symlink rejection, and cloned-repository symlink/executable checks before `rsync --delete`.
+- Tightened the auto-merge workflow draft so external PRs require a maintainer-applied `safe-auto-merge` label and external `SKILL.md` changes remain manual review only.
 - Published the sanitized public repository structure.
 - Added safety scanning and local skill sync scripts.
 - Added automation documentation and GitHub Actions workflow examples as non-active drafts.

@@ -6,6 +6,8 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/pmm-safety.XXXXXX")"
+trap 'rm -rf "$tmp_dir"' EXIT
 
 fail() {
   printf 'ERROR: %s\n' "$1" >&2
@@ -45,8 +47,8 @@ forbidden_patterns=(
 )
 
 for pattern in "${forbidden_patterns[@]}"; do
-  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' --glob '!.project-runtime/**' "$pattern" . >/tmp/pmm-scan.txt; then
-    cat /tmp/pmm-scan.txt >&2
+  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' --glob '!.project-runtime/**' --glob '!tmp/**' "$pattern" . >"$tmp_dir/private-markers.txt"; then
+    cat "$tmp_dir/private-markers.txt" >&2
     fail "forbidden private marker found: $pattern"
   fi
 done
@@ -64,14 +66,43 @@ secret_patterns=(
 )
 
 for pattern in "${secret_patterns[@]}"; do
-  if rg -n --hidden --glob '!.git/**' --glob '!.project-runtime/**' -e "$pattern" . >/tmp/pmm-secret-scan.txt; then
-    cat /tmp/pmm-secret-scan.txt >&2
+  if rg -n --hidden --glob '!.git/**' --glob '!.project-runtime/**' --glob '!tmp/**' -e "$pattern" . >"$tmp_dir/secret-scan.txt"; then
+    cat "$tmp_dir/secret-scan.txt" >&2
     fail "secret-like content found"
   fi
 done
 
+symlink_files="$(
+  find . -type l \
+    -not -path './.git/*' \
+    -not -path './.project-runtime/*' \
+    -not -path './tmp/*'
+)"
+
+if [[ -n "$symlink_files" ]]; then
+  printf '%s\n' "$symlink_files" >&2
+  fail "symlink present in public repository"
+fi
+
+unexpected_executable_files="$(
+  find . -type f -perm -111 \
+    -not -path './.git/*' \
+    -not -path './.project-runtime/*' \
+    -not -path './tmp/*' \
+    -not -path './scripts/check-public-safety.sh' \
+    -not -path './scripts/sync-local-skill.sh' \
+    -not -path './scripts/recovery-status.sh'
+)"
+
+if [[ -n "$unexpected_executable_files" ]]; then
+  printf '%s\n' "$unexpected_executable_files" >&2
+  fail "unexpected executable file present"
+fi
+
 blocked_files="$(
   find . -type f \( \
+    -name '.env' -o \
+    -name '.env.*' -o \
     -name '*.pem' -o \
     -name '*.key' -o \
     -name '*.p12' -o \
@@ -84,7 +115,7 @@ blocked_files="$(
     -name '*.dylib' -o \
     -name '*.so' -o \
     -name '*.bin' \
-  \) -not -path './.git/*' -not -path './.project-runtime/*'
+  \) -not -path './.git/*' -not -path './.project-runtime/*' -not -path './tmp/*'
 )"
 
 if [[ -n "$blocked_files" ]]; then

@@ -17,12 +17,13 @@ Use this procedure for a public skill repository:
 3. Stop if local files are dirty or the branch cannot fast-forward.
 4. Run the public safety check.
 5. Inspect open pull requests.
-6. Skip drafts, conflicts, failing checks, high-risk file changes, workflow changes, script changes, dependency changes, executable files, binary files, deployment config, secrets, or environment config.
-7. Auto-merge only low-risk documentation or template changes that match the repository policy.
-8. Re-run the public safety check after merge or pull.
-9. Sync local installations only after checks pass.
-10. Report what changed, what was skipped, and remaining risk.
+6. Skip drafts, conflicts, failing checks, high-risk file changes, workflow changes, script changes, dependency changes, executable files, binary files, symlinks, deployment config, secrets, or environment config.
+7. Auto-merge only low-risk documentation or template changes that match the repository policy and, for external contributors, have a maintainer-applied `safe-auto-merge` label.
+8. Never auto-merge external `SKILL.md` changes; they affect agent behavior and require manual maintainer review.
+9. Re-run the public safety check after merge or pull.
+10. Sync local installations only after checks pass.
+11. Report what changed, what was skipped, and remaining risk.
 
 ## Local Sync Boundary
 
-Local sync may update only the intended skill directory. It must not overwrite unrelated projects, global configuration, credentials, memories, or production files.
+Local sync may update only a dedicated `pmm` skill directory. It must not overwrite unrelated projects, global configuration, credentials, memories, or production files, and sync paths must not be symlinks.

@@ -18,6 +18,43 @@ fail() {
   exit 1
 }
 
+require_absolute_dir_value() {
+  local name="$1"
+  local value="$2"
+
+  [[ -n "$value" ]] || fail "$name must not be empty"
+  [[ "$value" == /* ]] || fail "$name must be an absolute path"
+
+  case "$value" in
+    "/"|"$HOME"|"$HOME/"|"$repo_root"|"$repo_root/")
+      fail "$name points to an unsafe broad directory: $value"
+      ;;
+  esac
+}
+
+require_absolute_dir_value "PROJECT_RUNTIME_DIR" "$PROJECT_RUNTIME_DIR"
+require_absolute_dir_value "LOCAL_SKILL_DIR" "$LOCAL_SKILL_DIR"
+
+case "$LOCAL_SKILL_DIR" in
+  */pmm)
+    ;;
+  *)
+    fail "LOCAL_SKILL_DIR must point to a dedicated pmm skill directory"
+    ;;
+esac
+
+case "$WORKDIR" in
+  "$PROJECT_RUNTIME_DIR"/sync/repo)
+    ;;
+  *)
+    fail "internal sync workdir resolved outside the expected runtime directory"
+    ;;
+esac
+
+if [[ -L "$LOCAL_SKILL_DIR" || -L "$PROJECT_RUNTIME_DIR" ]]; then
+  fail "sync paths must not be symlinks"
+fi
+
 rm -rf "$WORKDIR"
 mkdir -p "$TMP_ROOT" "$BACKUP_ROOT"
 
@@ -30,6 +67,10 @@ cd "$WORKDIR"
 
 bash scripts/check-public-safety.sh
 
+if find . -type l -not -path './.git/*' | rg .; then
+  fail "symlink found in cloned repository"
+fi
+
 [[ -f SKILL.md ]] || fail "SKILL.md missing after clone"
 [[ -d templates ]] || fail "templates directory missing after clone"
 [[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
@@ -40,6 +81,14 @@ if find . -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts
   -not -path './scripts/recovery-status.sh' \
   -not -path './.git/*' | rg .; then
   fail "unexpected executable/script file found outside allowed scripts"
+fi
+
+if find . -type f -perm -111 \
+  -not -path './scripts/check-public-safety.sh' \
+  -not -path './scripts/sync-local-skill.sh' \
+  -not -path './scripts/recovery-status.sh' \
+  -not -path './.git/*' | rg .; then
+  fail "unexpected executable file found outside allowed scripts"
 fi
 
 if [[ -d "$LOCAL_SKILL_DIR" ]]; then

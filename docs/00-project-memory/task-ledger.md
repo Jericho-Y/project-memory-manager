@@ -4,6 +4,18 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-13 Scheduled Security Review
+
+- Status: completed
+- Objective: review repository code and automation for auth, permission, secret, injection, privacy, dependency, and configuration risks.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `SECURITY.md`, `docs/automation.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/security-rules.md`, `docs/00-project-memory/recovery-rules.md`, `docs/07-decisions/change-log.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `scripts/recovery-status.sh`, `docs/github-actions-drafts/ci.yml.example`, `docs/github-actions-drafts/daily-auto-merge.yml.example`
+- Selected execution skills: `security-best-practices`; no frontend/backend framework references applied because this repository contains no frontend or backend application code.
+- Current checkpoint: no application frontend/backend, dependencies, committed secrets, auth flow, payment flow, or database layer found; repository automation and sync hardening completed.
+- Next concrete action: monitor future scheduled reviews and keep auto-merge/local sync boundaries conservative.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed `bash scripts/check-public-safety.sh`; passed `bash -n` for all scripts; local sync smoke test passed with ignored `.project-runtime/` destination; recovery status returns no active task after completion.
+
 ## 2026-05-13 Public Repository Setup
 
 - Status: completed

@@ -26,9 +26,14 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - A daily maintenance automation can check the public repo, evaluate low-risk PRs, and sync the local skill after validation.
 - Compact disconnect recovery is documented under `docs/08-automation/compact-disconnect-recovery.md`.
 - Project-owned files should include a short purpose header so agents can decide quickly whether to read them.
+- Repository security review boundaries are documented under `docs/00-project-memory/security-rules.md`.
+- Public safety checks reject symlinks, committed `.env` files, blocked secret/key/archive/binary file types, and unexpected executable files outside reviewed scripts.
+- Local skill sync validates broad path mistakes, rejects symlink sync paths, and requires the destination to be a dedicated `pmm` skill directory.
+- Auto-merge draft rules require maintainer-applied labeling for external low-risk PRs and skip external `SKILL.md` changes for manual review.
 
 ## Remaining Risks
 
 - Workflow examples are not active until moved into `.github/workflows/` with the right repository permissions.
 - Auto-merge rules must stay conservative because this repository controls agent behavior.
 - Runtime recovery can resume agent work only when the project task ledger is kept current.
+- This repository has no application frontend/backend, runtime auth, payment flow, database, or dependency manifest; scheduled security review covers repository scripts, docs, and automation boundaries only.

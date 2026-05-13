@@ -19,7 +19,8 @@ The safe auto-merge policy should merge low-risk pull requests only when:
 - checks pass
 - changed files are in allowed paths
 - no workflow, script, binary, dependency, or executable file changed
-- external pull requests that change `SKILL.md` have a `safe-auto-merge` label
+- external pull requests have a maintainer-applied `safe-auto-merge` label
+- external pull requests that change `SKILL.md` are skipped for manual review even when labeled
 
 This keeps automation useful without allowing unreviewed changes to CI, scripts, dependencies, or executable payloads.
 
@@ -36,8 +37,10 @@ The script:
 1. clones the public repository into a temporary directory
 2. checks out `main`
 3. runs public safety checks
-4. backs up the existing local skill
-5. syncs `SKILL.md` and `templates/`
+4. rejects symlinks and unexpected executable/script files
+5. validates the destination is a dedicated `pmm` skill directory
+6. backs up the existing local skill
+7. syncs the approved skill files, templates, recovery docs, and recovery helper
 
 By default, temporary sync files and local backups are placed under `.project-runtime/` in this repository, which is ignored by Git.
 

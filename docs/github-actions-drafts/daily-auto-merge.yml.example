@@ -50,6 +50,17 @@ jobs:
               continue
             fi
 
+            case "$association" in
+              OWNER|MEMBER|COLLABORATOR)
+                ;;
+              *)
+                if [[ "$has_safe_label" != "true" ]]; then
+                  echo "Skipping external PR #$pr without safe-auto-merge label."
+                  continue
+                fi
+                ;;
+            esac
+
             files="$(gh pr view "$pr" --repo "$REPO" --json files --jq '.files[].path')"
 
             unsafe=0
@@ -66,7 +77,7 @@ jobs:
               esac
 
               case "$file" in
-                .github/*|.github/**|scripts/*|scripts/**|package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|*.sh|*.py|*.js|*.ts|*.bin|*.dylib|*.so|*.zip|*.tar|*.gz)
+                .github/*|.github/**|scripts/*|scripts/**|package.json|package-lock.json|pnpm-lock.yaml|yarn.lock|.env|.env.*|*.pem|*.key|*.p12|*.crt|*.token|*.secret|*.sh|*.py|*.js|*.ts|*.bin|*.dylib|*.so|*.zip|*.tar|*.gz)
                   echo "Blocked changed file for auto-merge: $file"
                   unsafe=1
                   ;;
@@ -85,10 +96,8 @@ jobs:
                 OWNER|MEMBER|COLLABORATOR)
                   ;;
                 *)
-                  if [[ "$has_safe_label" != "true" ]]; then
-                    echo "Skipping external SKILL.md change without safe-auto-merge label."
-                    continue
-                  fi
+                  echo "Skipping external SKILL.md change; maintainer must review behavior changes."
+                  continue
                   ;;
               esac
             fi
