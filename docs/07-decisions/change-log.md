@@ -4,6 +4,13 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-05-14
+
+- Added cross-agent compatibility guidance for Claude Code, Hermes, OpenCode/OpenClaw-style agents, and other AGENTS.md-aware coding agents.
+- Added the Agent Skills `compatibility` frontmatter to `SKILL.md` and documented that generated `AGENTS.md` plus project-local `docs/` are the portable project memory output.
+- Updated the project document skeleton with optional Claude Code, Hermes, and OpenCode/OpenClaw compatibility shims.
+- Expanded local skill sync to include `docs/agent-compatibility.md`.
+
 ## 2026-05-13
 
 - Completed scheduled security review for the public `pmm` repository; no frontend/backend application code, dependencies, committed secrets, auth flow, payment flow, or database layer were present.

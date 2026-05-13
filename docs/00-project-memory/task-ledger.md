@@ -4,6 +4,18 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-14 Agent Compatibility Review
+
+- Status: completed
+- Objective: check and improve `pmm` compatibility with mainstream coding agents including OpenClaw/OpenCode-style agents, Hermes, and Claude Code.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `templates/document-skeletons.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/07-decisions/change-log.md`, `scripts/sync-local-skill.sh`
+- Selected execution skills: `skill-creator`; local agent discovery notes and official Agent Skills, Claude Code, OpenCode, and Hermes documentation checked for compatibility mapping.
+- Current checkpoint: compatibility guide, `SKILL.md` frontmatter, README install notes, project skeleton shims, and local sync scope updated.
+- Next concrete action: monitor future agent format drift and update `docs/agent-compatibility.md` when a target agent changes its skill or instruction-file conventions.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, shell syntax check, staged diff check, frontmatter/compatibility guide check, and local sync smoke test using `file://` clone into ignored `.project-runtime/`.
+
 ## 2026-05-13 Scheduled Security Review
 
 - Status: completed

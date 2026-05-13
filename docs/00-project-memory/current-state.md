@@ -21,7 +21,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Local skill sync is handled by `scripts/sync-local-skill.sh`.
 - Local sync temporary files and backups default to `.project-runtime/` inside the repository.
 - `scripts/recovery-status.sh` identifies active or retryable task ledger entries for recovery automation.
-- Local skill sync includes `SKILL.md`, templates, compact recovery automation docs, and the recovery status helper.
+- Local skill sync includes `SKILL.md`, templates, the agent compatibility guide, compact recovery automation docs, and the recovery status helper.
 - GitHub Actions workflow examples are stored under `docs/github-actions-drafts/` until workflow publishing is explicitly reviewed and enabled.
 - A daily maintenance automation can check the public repo, evaluate low-risk PRs, and sync the local skill after validation.
 - Compact disconnect recovery is documented under `docs/08-automation/compact-disconnect-recovery.md`.
@@ -30,6 +30,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Public safety checks reject symlinks, committed `.env` files, blocked secret/key/archive/binary file types, and unexpected executable files outside reviewed scripts.
 - Local skill sync validates broad path mistakes, rejects symlink sync paths, and requires the destination to be a dedicated `pmm` skill directory.
 - Auto-merge draft rules require maintainer-applied labeling for external low-risk PRs and skip external `SKILL.md` changes for manual review.
+- Cross-agent compatibility is documented in `docs/agent-compatibility.md`; `SKILL.md` is the Agent Skills entrypoint and generated `AGENTS.md` plus `docs/` is the portable project memory output.
 
 ## Remaining Risks
 

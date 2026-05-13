@@ -1,6 +1,7 @@
 ---
 name: pmm
 description: Use when starting, structuring, continuing, or taking over a commercial software project, app, website, mini program, SaaS, desktop tool, or large feature that needs durable requirements, project memory, autonomous execution, verification, and safety controls.
+compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus docs, usable by Codex, Claude Code, Hermes, OpenCode/OpenClaw-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
 # Project Memory Manager
@@ -54,6 +55,12 @@ This skill works best through three layers:
 - Project memory: each project root `AGENTS.md` records the required reading path, active task, recovery checkpoint, and documentation update rules.
 
 If any layer is missing in an existing project, retrofit the missing layer before doing substantial implementation.
+
+## Agent Compatibility
+
+The durable project output must stay usable outside Codex. Treat `SKILL.md` as the optional Agent Skills entrypoint and project `AGENTS.md` plus `docs/` as the canonical cross-agent output.
+
+For Claude Code, Hermes, OpenCode/OpenClaw-style agents, and other AGENTS.md-aware clients, follow `docs/agent-compatibility.md`. Use short shims that point back to `AGENTS.md`; do not duplicate project rules into agent-specific files.
 
 ## Compatibility With Other Skills
 

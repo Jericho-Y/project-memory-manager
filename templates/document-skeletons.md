@@ -38,6 +38,14 @@ Skip when: Never skip during project work.
 - Temporary runtime files, logs, and backups go under `tmp/` or `.project-runtime/` and should be ignored by version control.
 - If an external runtime stores a small configuration outside the project, it should point back to the source-of-truth file inside this project.
 
+## Agent Compatibility
+
+- Canonical agent entrypoint: `AGENTS.md`.
+- Claude Code: if needed, keep `CLAUDE.md` or `.claude/CLAUDE.md` as a short shim that points to this file and key docs.
+- OpenCode/OpenClaw-style agents: use this `AGENTS.md` directly as project rules.
+- Hermes or Agent Skills clients: install or invoke the project-memory skill if available, but handoffs should cite this file and `docs/00-project-memory/task-ledger.md`.
+- Do not duplicate full project rules into agent-specific shims; update this file and project docs instead.
+
 ## Task-Specific Reading Map
 
 - Product/features:
