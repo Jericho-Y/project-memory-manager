@@ -1,0 +1,58 @@
+# Project Requirements System
+
+## Project Role
+
+This repository publishes the `project-requirements-system` Codex skill. Its job is to help agents create durable project requirements, project memory, verification rules, recovery checkpoints, and safety boundaries for commercial-grade software projects.
+
+## Current Phase
+
+Public repository is initialized and open source. The active objective is to keep the public skill generic, safe to publish, easy to install, and synchronized with local skill installations through trusted checks.
+
+## Mandatory Reading Order
+
+1. `AGENTS.md`
+2. `SKILL.md`
+3. `README.md`
+4. `docs/automation.md`
+5. `docs/00-project-memory/current-state.md`
+6. Relevant template, script, or documentation files for the task
+
+## Task Reading Map
+
+| Task type | Read |
+| --- | --- |
+| Skill behavior change | `SKILL.md`, `templates/document-skeletons.md`, `docs/00-project-memory/current-state.md` |
+| Public release or repository setup | `README.md`, `SECURITY.md`, `docs/release-checklist.md`, `docs/automation.md` |
+| Automation or sync change | `docs/automation.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh` |
+| Example project update | `examples/generic-app/AGENTS.md`, related example docs |
+| Safety or privacy review | `SECURITY.md`, `scripts/check-public-safety.sh`, `docs/07-decisions/change-log.md` |
+
+## Execution Rules
+
+- Keep the public repo generic. Do not add personal names, private domains, local absolute paths, server inventory, credentials, or real production details.
+- Do not weaken `scripts/check-public-safety.sh` without a clear reason and verification.
+- Do not auto-merge changes to workflows, scripts, dependencies, executable files, secrets, or deployment configuration.
+- Keep `SKILL.md` concise and put reusable details into `templates/` or `docs/`.
+- If behavior changes, update `docs/00-project-memory/current-state.md` and `docs/07-decisions/change-log.md`.
+
+## Verification Rules
+
+Before claiming completion, run the public safety check:
+
+```bash
+bash scripts/check-public-safety.sh
+```
+
+For repository configuration work, also confirm git status is clean and the public GitHub repository is still public.
+
+## High-Risk Boundaries
+
+Require maintainer confirmation before:
+
+- publishing `.github/workflows/**`
+- changing auto-merge rules
+- deleting or rewriting git history
+- changing repository visibility
+- adding credentials, production paths, or private environment details
+- changing local sync behavior to overwrite anything outside the skill directory
+
