@@ -1,5 +1,9 @@
 # Customization Guide
 
+Purpose: Explains how users adapt placeholders, roots, server inventory, and confirmation rules.
+Read when: Installing or adapting this skill to a new workspace or organization.
+Skip when: Maintaining this repository's own automation or recovery scripts.
+
 ## Project Roots
 
 Replace `<PROJECTS_ROOT>` with your own project workspace. Keep temporary files in a dedicated temp folder so generated artifacts do not mix with source code and documentation.

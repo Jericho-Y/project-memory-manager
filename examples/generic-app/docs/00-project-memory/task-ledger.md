@@ -1,5 +1,9 @@
 # Task Ledger
 
+Purpose: Example recoverable task ledger.
+Read when: Testing checkpoint and recovery behavior in the generic example.
+Skip when: Maintaining the skill repository itself.
+
 ## Active Task
 
 - Task ID: none

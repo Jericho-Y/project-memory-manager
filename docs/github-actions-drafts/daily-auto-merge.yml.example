@@ -1,3 +1,7 @@
+# Purpose: Example GitHub Actions workflow for conservative low-risk PR auto-merge.
+# Read when: Enabling or reviewing repository auto-merge workflows.
+# Skip when: Automation is handled by local scheduler or workflows are not being changed.
+
 name: Daily safe auto-merge
 
 on:

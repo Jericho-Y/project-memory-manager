@@ -1,5 +1,9 @@
 # Current State
 
+Purpose: Example snapshot of current project state.
+Read when: Testing resume behavior in the generic example.
+Skip when: Maintaining the skill repository itself.
+
 ## Phase
 
 Requirements setup.

@@ -1,11 +1,17 @@
 # Automation
 
+Purpose: Explains repository automation, safe auto-merge boundaries, and local skill sync.
+Read when: Updating automation, PR checks, auto-merge policy, or local sync behavior.
+Skip when: Working only on project-memory templates or skill wording unrelated to automation.
+
 ## Daily Repository Check
 
 Use a local scheduler, Codex automation, or GitHub Actions to run a daily repository check.
 Workflow examples are available under `docs/github-actions-drafts/`. Move them into
 `.github/workflows/` only after the repository account has permission to publish
 workflows and after reviewing the auto-merge policy.
+
+Keep the source-of-truth maintenance procedure in `docs/08-automation/scheduled-maintenance.md`. External automation entries should point back to that file so project logic stays in the project folder.
 
 The safe auto-merge policy should merge low-risk pull requests only when:
 
@@ -33,9 +39,17 @@ The script:
 4. backs up the existing local skill
 5. syncs `SKILL.md` and `templates/`
 
+By default, temporary sync files and local backups are placed under `.project-runtime/` in this repository, which is ignored by Git.
+
 Set these environment variables if needed:
 
 ```bash
 REPO_URL=https://github.com/<owner>/project-requirements-system.git
 LOCAL_SKILL_DIR=<SKILLS_ROOT>/project-requirements-system
 ```
+
+## Compact Disconnect Recovery
+
+The compact disconnect recovery procedure lives in `docs/08-automation/compact-disconnect-recovery.md`.
+
+When a runtime reports a remote compact stream disconnect, recovery automation should read the project-local task ledger, continue only from `Next Concrete Action`, and stop if the next action is high-risk or requires project-owner confirmation.

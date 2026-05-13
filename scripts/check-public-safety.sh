@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Purpose: Scan the public repository for private markers, secret-like content, and blocked file types.
+# Read when: Publishing, auditing, or debugging public safety checks.
+# Skip when: The task is unrelated to release safety or repository publication.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -42,7 +45,7 @@ forbidden_patterns=(
 )
 
 for pattern in "${forbidden_patterns[@]}"; do
-  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' "$pattern" . >/tmp/project-requirements-system-scan.txt; then
+  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' --glob '!.project-runtime/**' "$pattern" . >/tmp/project-requirements-system-scan.txt; then
     cat /tmp/project-requirements-system-scan.txt >&2
     fail "forbidden private marker found: $pattern"
   fi
@@ -61,7 +64,7 @@ secret_patterns=(
 )
 
 for pattern in "${secret_patterns[@]}"; do
-  if rg -n --hidden --glob '!.git/**' -e "$pattern" . >/tmp/project-requirements-system-secret-scan.txt; then
+  if rg -n --hidden --glob '!.git/**' --glob '!.project-runtime/**' -e "$pattern" . >/tmp/project-requirements-system-secret-scan.txt; then
     cat /tmp/project-requirements-system-secret-scan.txt >&2
     fail "secret-like content found"
   fi
@@ -81,7 +84,7 @@ blocked_files="$(
     -name '*.dylib' -o \
     -name '*.so' -o \
     -name '*.bin' \
-  \) -not -path './.git/*'
+  \) -not -path './.git/*' -not -path './.project-runtime/*'
 )"
 
 if [[ -n "$blocked_files" ]]; then

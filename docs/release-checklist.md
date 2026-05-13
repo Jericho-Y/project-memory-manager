@@ -1,5 +1,9 @@
 # Release Checklist
 
+Purpose: Checklist for safely publishing or updating the public repository.
+Read when: Preparing a release, public push, or repository configuration change.
+Skip when: Doing local-only project memory or template edits with no publication.
+
 Use this before publishing changes to this repository.
 
 ## Public Safety

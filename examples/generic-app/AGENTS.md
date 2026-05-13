@@ -1,5 +1,9 @@
 # Project Instructions
 
+Purpose: Example project entrypoint showing how future project AGENTS.md files should guide agents.
+Read when: Learning or testing the project requirements system with the generic example.
+Skip when: Working on a real project or repository code outside this example.
+
 ## Project Identity
 
 - Name: generic-app

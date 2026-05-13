@@ -1,5 +1,9 @@
 # Project Requirements System
 
+Purpose: Public overview, installation guide, safety model, and repository map for the skill.
+Read when: Evaluating, installing, publishing, or onboarding to this skill repository.
+Skip when: You already know the repository shape and need a specific implementation file.
+
 A Codex skill for starting and continuing long-lived software projects with durable requirements, project memory, verification, recovery checkpoints, and safety controls.
 
 It is designed for commercial-grade apps, websites, mini programs, SaaS products, desktop tools, AI products, and substantial feature work. It is not intended for one-off shell commands or throwaway demos.
@@ -11,6 +15,8 @@ It is designed for commercial-grade apps, websites, mini programs, SaaS products
 - Defines which documents an agent should read for each task type.
 - Tracks active work in `docs/00-project-memory/task-ledger.md`.
 - Supports interrupted-work recovery with checkpoints and retry limits.
+- Provides a compact-disconnect recovery procedure for stream interruption failures.
+- Requires short file-purpose headers so agents can skip irrelevant files quickly.
 - Requires verification before completion claims.
 - Keeps high-risk actions behind project-owner confirmation.
 
@@ -25,11 +31,17 @@ It is designed for commercial-grade apps, websites, mini programs, SaaS products
   examples/
     generic-app/
   docs/
+    00-project-memory/
+      recovery-rules.md
     customization-guide.md
     release-checklist.md
     automation.md
+    08-automation/
+      compact-disconnect-recovery.md
+      scheduled-maintenance.md
   scripts/
     check-public-safety.sh
+    recovery-status.sh
     sync-local-skill.sh
 ```
 

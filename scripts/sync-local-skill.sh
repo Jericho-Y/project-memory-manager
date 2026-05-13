@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
+# Purpose: Safely sync the checked public skill files into a local skills directory.
+# Read when: Updating local skill sync behavior or diagnosing local installation issues.
+# Skip when: Working only on public documentation or templates.
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/<owner>/project-requirements-system.git}"
 LOCAL_SKILL_DIR="${LOCAL_SKILL_DIR:-$HOME/.codex/skills/project-requirements-system}"
-TMP_ROOT="${TMPDIR:-/tmp}/project-requirements-system-sync"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_RUNTIME_DIR="${PROJECT_RUNTIME_DIR:-$repo_root/.project-runtime}"
+TMP_ROOT="$PROJECT_RUNTIME_DIR/sync"
 WORKDIR="$TMP_ROOT/repo"
-BACKUP_ROOT="$HOME/.codex/skills/.backups"
+BACKUP_ROOT="$PROJECT_RUNTIME_DIR/backups"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 fail() {
@@ -31,6 +36,7 @@ bash scripts/check-public-safety.sh
 if find . -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
   -not -path './scripts/check-public-safety.sh' \
   -not -path './scripts/sync-local-skill.sh' \
+  -not -path './scripts/recovery-status.sh' \
   -not -path './.git/*' | rg .; then
   fail "unexpected executable/script file found outside allowed scripts"
 fi

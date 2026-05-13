@@ -1,3 +1,7 @@
+# Purpose: Example GitHub Actions workflow for public safety checks.
+# Read when: Enabling or reviewing CI workflow publication.
+# Skip when: Current account cannot publish workflows or CI is not being changed.
+
 name: Public safety
 
 on:

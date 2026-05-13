@@ -1,7 +1,12 @@
+# Purpose: Keep local runtime files, private inventories, secrets, and build output out of the public repo.
+# Read when: Adding generated files, private files, or local runtime directories.
+# Skip when: Editing normal tracked documentation or skill behavior.
+
 .DS_Store
 .env
 .env.*
 .codex/
+.project-runtime/
 memories/
 server-inventory.md
 server-credentials*

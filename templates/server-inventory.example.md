@@ -1,9 +1,17 @@
 # Server Inventory Example
 
+Purpose: Placeholder-only shape reference for private server inventory documents.
+Read when: Creating a private server inventory for a project.
+Skip when: No server, deployment, or production access context is needed.
+
 Do not commit a real server inventory. Copy this file to a private, ignored location and replace placeholders locally.
 
 ```markdown
 # Server Inventory
+
+Purpose: Private server access and deployment boundary map.
+Read when: Deployment, operations, logs, or server access are needed.
+Skip when: Work has no server or production dependency.
 
 ## <server-alias>
 

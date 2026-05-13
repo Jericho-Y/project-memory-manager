@@ -1,11 +1,19 @@
 # Document Skeletons
 
+Purpose: Reusable skeletons for creating project memory, requirements, recovery, and automation docs.
+Read when: Bootstrapping a new project or updating the required document structure.
+Skip when: Maintaining only this repository's scripts or release settings.
+
 Use these skeletons when creating a new project requirements system. Replace placeholders with project-specific content. Keep unknowns explicit; do not invent secrets, credentials, production paths, or confirmed business decisions.
 
 ## AGENTS.md
 
 ```markdown
 # Project Instructions
+
+Purpose: Highest-priority project entrypoint for future agents.
+Read when: Entering the project, starting a task, resuming work, or checking safety boundaries.
+Skip when: Never skip during project work.
 
 ## Project Identity
 
@@ -22,6 +30,13 @@ Use these skeletons when creating a new project requirements system. Replace pla
 3. `docs/00-project-memory/current-state.md`
 4. `docs/00-project-memory/task-ledger.md`
 5. Task-specific documents listed below
+
+## Project-Local Storage
+
+- Durable project files stay inside this project folder.
+- Requirements, decisions, recovery prompts, automation source prompts, and operating notes go under `docs/`.
+- Temporary runtime files, logs, and backups go under `tmp/` or `.project-runtime/` and should be ignored by version control.
+- If an external runtime stores a small configuration outside the project, it should point back to the source-of-truth file inside this project.
 
 ## Task-Specific Reading Map
 
@@ -86,6 +101,7 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 - Retry count:
 - Verification required:
 - Recovery heartbeat:
+- Compact disconnect recovery:
 
 ## Definition of Done
 
@@ -115,6 +131,10 @@ After each substantial or state-changing task, update `docs/00-project-memory/cu
 ```markdown
 # Project Index
 
+Purpose: Map of project documents and source-of-truth rules.
+Read when: You need to find the right document quickly.
+Skip when: The needed file is already known.
+
 ## Purpose
 
 ## Document Map
@@ -128,6 +148,10 @@ After each substantial or state-changing task, update `docs/00-project-memory/cu
 
 ```markdown
 # Current State
+
+Purpose: Current project phase, objective, known facts, blockers, and next actions.
+Read when: Starting or resuming project work.
+Skip when: Only reading static historical decisions.
 
 ## Phase
 
@@ -150,6 +174,10 @@ After each substantial or state-changing task, update `docs/00-project-memory/cu
 
 ```markdown
 # Task Ledger
+
+Purpose: Active task checkpoint, retry state, and recovery status.
+Read when: Starting, resuming, or recovering a task.
+Skip when: The action is read-only and creates no durable state.
 
 ## Active Task
 
@@ -175,6 +203,10 @@ After each substantial or state-changing task, update `docs/00-project-memory/cu
 ```markdown
 # Execution Rules
 
+Purpose: How the agent should execute, update docs, and protect existing work.
+Read when: Before implementation or state-changing work.
+Skip when: Only checking current status.
+
 ## Default Ownership
 
 ## When the Agent Should Act Directly
@@ -191,12 +223,17 @@ After each substantial or state-changing task, update `docs/00-project-memory/cu
 ```markdown
 # Recovery Rules
 
+Purpose: How to resume after failures, interruptions, compact disconnects, or context loss.
+Read when: A task failed, was interrupted, or may need automatic continuation.
+Skip when: No active or failed-retryable task exists.
+
 ## Recovery Goal
 
 Continue unfinished work safely after failure, interruption, aborted turns, tool errors, context loss, or long-running task drift.
 
 ## Retryable Failures
 
+- Remote compact or context persistence interruptions, including `stream disconnected before completion`
 - Transient network errors
 - Dependency install or lockfile issues
 - Build, test, typecheck, or lint failures that can be diagnosed locally
@@ -222,19 +259,42 @@ Continue unfinished work safely after failure, interruption, aborted turns, tool
 
 1. Read `AGENTS.md`.
 2. Read `current-state.md`, `task-ledger.md`, this file, and `change-log.md`.
-3. Inspect the workspace and logs if the last state is ambiguous.
-4. Continue from `Next Concrete Action`.
-5. Update task status before and after execution.
+3. If available, run `scripts/recovery-status.sh` from the project root.
+4. Inspect the workspace and logs if the last state is ambiguous.
+5. Continue from `Next Concrete Action`.
+6. Update task status before and after execution.
+
+## Remote Compact Disconnect Protocol
+
+If the session reports a compact or context persistence failure such as `stream disconnected before completion`, treat it as a recoverable interruption. Record the error in `task-ledger.md`, keep the active task status as `active` or `failed-retryable`, and resume from the last safe checkpoint.
 
 ## Heartbeat or Timed Check Protocol
 
 Use only when the runtime supports safe heartbeat or scheduled automation. The check must continue only if the active task is `active` or `failed-retryable`. Stop when the task is `done`, `blocked`, or needs owner confirmation.
 ```
 
+## docs/08-automation/compact-disconnect-recovery.md
+
+```markdown
+# Compact Disconnect Recovery
+
+## Trigger
+
+Use this when a session reports a remote compact, context persistence, or stream disconnect error before the task is complete.
+
+## Recovery Prompt
+
+Read `AGENTS.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, and `docs/07-decisions/change-log.md`. If `scripts/recovery-status.sh` exists, run it. Continue only when the task status is `active` or `failed-retryable`. Resume from `Next Concrete Action`, inspect for partial side effects first, and update the task ledger before stopping.
+```
+
 ## docs/00-project-memory/verification-rules.md
 
 ```markdown
 # Verification Rules
+
+Purpose: Required verification loop and evidence standards.
+Read when: Before claiming work is complete or selecting test scope.
+Skip when: Only doing initial discovery.
 
 ## Default Verification Loop
 
@@ -256,6 +316,10 @@ Use only when the runtime supports safe heartbeat or scheduled automation. The c
 ```markdown
 # Security Rules
 
+Purpose: Secret handling, production safety, payment safety, and required risk records.
+Read when: Work touches auth, payment, data, deployment, credentials, or user permissions.
+Skip when: Editing harmless docs with no security impact.
+
 ## Secret Handling
 
 ## Production Data Safety
@@ -273,6 +337,10 @@ Use only when the runtime supports safe heartbeat or scheduled automation. The c
 
 ```markdown
 # Glossary
+
+Purpose: Shared terms for product, business, technical, and operations language.
+Read when: Terms are ambiguous or cross-team wording matters.
+Skip when: No terminology question exists.
 
 ## Product Terms
 

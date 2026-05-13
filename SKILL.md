@@ -5,6 +5,10 @@ description: Use when starting, structuring, continuing, or taking over a commer
 
 # Project Requirements System
 
+Purpose: Define the durable requirements, project memory, recovery, verification, and safety protocol for commercial-grade projects.
+Read when: Starting, structuring, continuing, recovering, or maintaining a long-lived software project or this skill.
+Skip when: The task is a one-off command, tiny edit, or unrelated to project memory.
+
 ## Overview
 
 Build serious projects around durable requirements and project memory, not transient chat context. The agent owns execution end to end, while the project owner confirms high-risk decisions.
@@ -121,6 +125,32 @@ Use English kebab-case names. Put temporary output under a dedicated temp folder
 
 Never mix code, documents, assets, and temporary output without clear directories.
 
+## Project-Local File Storage
+
+All project-related durable files must live inside the project folder. Do not leave plans, recovery prompts, task ledgers, generated docs, acceptance notes, or automation source prompts only in chat, global memory, downloads, or ad hoc folders.
+
+Use this storage model:
+- `AGENTS.md` for the project entrypoint.
+- `docs/` for requirements, decisions, project memory, automation prompts, and operating notes.
+- `assets/` for project-owned design or media assets, when needed.
+- `tmp/` or `.project-runtime/` for ignored local runtime files such as temporary clones, logs, checkpoints, and backups.
+
+If an external runtime stores configuration outside the project, keep the source-of-truth prompt or procedure under `docs/08-automation/` and let the external configuration only point back to that file.
+
+## File Purpose Headers
+
+Every project-owned document, script, workflow, and template should start with a short header that lets future agents decide whether to read or skip the file before spending tokens on full content.
+
+For Markdown files, use:
+
+```markdown
+Purpose: What this file is for.
+Read when: When an agent should open it.
+Skip when: When it is not relevant.
+```
+
+For scripts or config files, use the same three fields as comments near the top. Keep the header factual and under 5 lines. Do not include secrets, local private paths, or volatile implementation details in headers.
+
 ## Required Document Tree
 
 For each new commercial-grade project, create or maintain:
@@ -174,6 +204,9 @@ docs/
     open-questions.md
     risks.md
     change-log.md
+  08-automation/
+    compact-disconnect-recovery.md
+    scheduled-maintenance.md
 ```
 
 For genuinely tiny tasks, the minimum allowed set is `AGENTS.md`, `docs/00-project-memory/current-state.md`, and `docs/07-decisions/change-log.md`. Record the reason for using the minimum set.
@@ -313,6 +346,25 @@ For long-running work, create a checkpoint before each major step:
 - Before starting a dev server or long build.
 - Before handing work to subagents.
 - Before ending the turn while work remains.
+
+## Remote Compact Failure Recovery
+
+Treat this exact error as a retryable interruption, not as a completed or failed task:
+
+```text
+Error running remote compact task: stream disconnected before completion: error sending request for url (https://chatgpt.com/backend-api/codex/responses/compact)
+```
+
+When it appears, the next agent turn or heartbeat must:
+- Read project `AGENTS.md`.
+- Read `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, and `docs/07-decisions/change-log.md`.
+- If available, run the project recovery status helper to detect active or retryable tasks.
+- Resume from `Next Concrete Action`, not from chat history.
+- Inspect workspace state before repeating commands, because edits or external actions may have partially completed.
+- Update `task-ledger.md` with `Last Error or Interruption` set to the compact failure and status `active` or `failed-retryable`.
+- Stop and request confirmation if the next step is high-risk or non-idempotent.
+
+For substantial tasks likely to outlive the current turn, create or update a heartbeat/scheduled recovery check before starting the risky or long-running section. The recovery check must read project-local docs and stop when no task is `active` or `failed-retryable`.
 
 Automatic timed checks are allowed only when the runtime provides a safe heartbeat or scheduled automation. Use them for long tasks that may outlive the current turn. The heartbeat prompt must read `AGENTS.md` and `task-ledger.md`, continue only if a task is `active` or `failed-retryable`, and stop if the task is `done`, `blocked`, or high-risk confirmation is required.
 
