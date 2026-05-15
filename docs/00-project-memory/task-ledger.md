@@ -4,6 +4,17 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-15 Recovery Check
+
+- Status: completed
+- Objective: resume the current repository safely from project-local memory and determine whether any active or retryable task needs continuation.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `docs/automation.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, `docs/07-decisions/change-log.md`, `docs/08-automation/compact-disconnect-recovery.md`, `scripts/recovery-status.sh`
+- Current checkpoint: recovery status returned no active or retryable task; `main` is aligned with `origin/main`; the public repository is still public.
+- Next concrete action: start a new maintenance, compatibility, security, or release task only when requested or when automation finds a concrete issue.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check; no code, skill behavior, automation policy, or repository configuration changes were required.
+
 ## 2026-05-14 Chinese README Default
 
 - Status: completed
