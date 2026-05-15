@@ -15,6 +15,7 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
 - 创建项目级 `AGENTS.md`，作为所有 Agent 进入项目后的第一记忆入口。
 - 建立结构化 `docs/` 文档树，覆盖业务、产品、设计、技术、交付、运营和决策记录。
 - 定义不同任务类型应该读取哪些文档。
+- 通过 Context Budget 规则减少上下文占用：先读入口、索引和必要章节，不默认全量扫描项目历史。
 - 使用 `docs/00-project-memory/task-ledger.md` 跟踪当前任务和恢复检查点。
 - 支持中断恢复、重试边界和 compact/stream 断连后的续跑。
 - 要求每个项目文档保留简短的 Purpose / Read when / Skip when 说明，降低未来 Agent 误读成本。
@@ -38,6 +39,7 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
       recovery-rules.md
       security-rules.md
     agent-compatibility.md
+    context-budget.md
     customization-guide.md
     release-checklist.md
     automation.md
@@ -60,6 +62,7 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
   templates/
   docs/
     agent-compatibility.md
+    context-budget.md
 ```
 
 之后在启动、规划、接手、恢复或维护长期项目时引用 `pmm`。
@@ -84,6 +87,8 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
 5. 只读取当前任务需要的源文档，不默认扫描整棵文档树。
 6. 执行、验证、安全重试，并更新项目记忆。
 7. 在 `docs/07-decisions/` 记录决策、风险和变更。
+
+详细的上下文和 token 降耗策略见 `docs/context-budget.md`。
 
 ## 安全模型
 

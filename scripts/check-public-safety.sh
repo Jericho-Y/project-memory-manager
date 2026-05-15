@@ -26,12 +26,34 @@ required_files=(
   "README.en.md"
   "SECURITY.md"
   "docs/agent-compatibility.md"
+  "docs/context-budget.md"
   "templates/document-skeletons.md"
 )
 
 for file in "${required_files[@]}"; do
   [[ -f "$file" ]] || fail "missing required file: $file"
 done
+
+readme_checks=(
+  "README.md:README.en.md"
+  "README.en.md:README.md"
+  "README.md:docs/context-budget.md"
+  "README.en.md:docs/context-budget.md"
+  "SKILL.md:docs/context-budget.md"
+)
+
+for check in "${readme_checks[@]}"; do
+  file="${check%%:*}"
+  expected="${check#*:}"
+  if ! rg -q -F "$expected" "$file"; then
+    fail "$file must reference $expected"
+  fi
+done
+
+skill_lines="$(wc -l < SKILL.md | tr -d '[:space:]')"
+if (( skill_lines > 500 )); then
+  fail "SKILL.md exceeds 500 lines; move detail to linked docs"
+fi
 
 forbidden_patterns=(
   'Jericho'

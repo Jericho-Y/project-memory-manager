@@ -47,6 +47,25 @@ When creating the document system, use `templates/document-skeletons.md` for the
 - Keep documentation updates concise: current state, changed facts, verification, and remaining risk.
 - Optimize for forward progress, but never weaken safety, verification, or secret-handling rules.
 
+## Context Budget Protocol
+
+Default to staged reading: entrypoint first, then indexes and purpose headers, then targeted sections, then full files only when editing or resolving ambiguity. Use `docs/context-budget.md` for the full token-reduction rules.
+
+- Do not paste or duplicate large docs into task ledgers, handoffs, PR descriptions, or agent-specific shims; record file paths, section names, checkpoints, and concise deltas.
+- Search before reading broad files when the target fact has keywords.
+- Keep `AGENTS.md` and `SKILL.md` as routers, not archives. Move detailed reusable guidance into directly linked docs or templates.
+- No-op recovery checks should stop cleanly without creating new ledger entries or commits.
+
+## Usage-Driven Improvement Loop
+
+When improving this skill from real use:
+- Inspect recent `task-ledger.md`, `change-log.md`, recovery outcomes, and repeated user corrections.
+- Convert repeated friction into one of: a core `SKILL.md` rule, a template change, a recovery rule, a safety check, or an automation note.
+- Prefer small enforceable checks over long prose when drift can be detected by script.
+- Keep public behavior generic; do not encode private project names, local paths, credentials, or one-user-only details.
+- Propagate behavior changes to all affected surfaces: `SKILL.md`, templates, compatibility docs, README language mirrors, sync scope, and project memory.
+- Record only durable lessons. Do not add task-ledger entries for routine read-only checks that find no active task, no drift, and no follow-up.
+
 ## Enforcement Layers
 
 This skill works best through three layers:
@@ -346,6 +365,7 @@ After an interruption, crash, aborted turn, or context loss:
 - Resume from `Next concrete action`, not from the beginning.
 - Check whether any command, migration, deploy, or external action may have partially completed before retrying.
 - If state is ambiguous, inspect the workspace and logs first; do not assume success or failure.
+- If the recovery status check finds no `active` or `failed-retryable` task and no drift, stop without adding a new ledger entry. No-op recovery checks should not create durable noise.
 
 For long-running work, create a checkpoint before each major step:
 - Before editing many files.
@@ -422,6 +442,7 @@ Also update the relevant source document:
 - API/database changed: update technical docs.
 - Security/permission/payment changed: update security docs and risks.
 - Roadmap or scope changed: update roadmap, task breakdown, open questions, and `AGENTS.md` if the top objective changes.
+- Skill or project-memory behavior changed: update templates, compatibility notes, README language mirrors, sync scope, and safety checks when they are affected.
 
 Unresolved but non-blocking assumptions go to `open-questions.md`. Blocking decisions go to both `open-questions.md` and the blockers section of `AGENTS.md`.
 

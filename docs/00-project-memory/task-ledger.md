@@ -4,6 +4,18 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-15 Usage-Driven Skill Improvements
+
+- Status: completed
+- Objective: improve `pmm` based on recent real usage, focusing on reduced context/token use, reduced recovery noise, bilingual README drift prevention, and safer behavior-change propagation.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `docs/automation.md`, `docs/agent-compatibility.md`, `docs/context-budget.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, `docs/07-decisions/change-log.md`, `docs/08-automation/compact-disconnect-recovery.md`, `templates/document-skeletons.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`
+- Selected execution skills: `pmm`, `skill-creator`, `writing-skills`
+- Current checkpoint: context-budget protocol, no-op recovery rules, bilingual README references, local sync scope, and public safety checks have been updated.
+- Next concrete action: monitor future usage for places where generated project docs still grow too large or agents still read more files than needed.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, shell syntax check, `git diff --check`, line-budget check, and recovery-status check after completion.
+
 ## 2026-05-15 Recovery Check
 
 - Status: completed

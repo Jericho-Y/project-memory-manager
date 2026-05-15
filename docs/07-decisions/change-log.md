@@ -4,6 +4,11 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-05-15
+
+- Added `docs/context-budget.md` and updated `SKILL.md`, templates, README files, compatibility notes, local sync, and public safety checks so `pmm` reduces context and token use through staged reading and concise durable updates.
+- Added no-op recovery guidance so routine recovery checks that find no active task, drift, or follow-up do not create task-ledger noise.
+
 ## 2026-05-14
 
 - Changed the default repository overview to Simplified Chinese in `README.md`, added `README.en.md`, and added language switch links between the two files.

@@ -40,7 +40,7 @@ The script:
 4. rejects symlinks and unexpected executable/script files
 5. validates the destination is a dedicated `pmm` skill directory
 6. backs up the existing local skill
-7. syncs the approved skill files, templates, compatibility guide, recovery docs, and recovery helper
+7. syncs the approved skill files, templates, compatibility guide, context-budget guide, recovery docs, and recovery helper
 
 By default, temporary sync files and local backups are placed under `.project-runtime/` in this repository, which is ignored by Git.
 

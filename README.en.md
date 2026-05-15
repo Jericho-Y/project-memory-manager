@@ -15,6 +15,7 @@ It is designed for commercial-grade apps, websites, mini programs, SaaS products
 - Creates a project-level `AGENTS.md` as the first memory entrypoint.
 - Builds a structured `docs/` tree for business, product, design, technical, delivery, operations, and decision records.
 - Defines which documents an agent should read for each task type.
+- Reduces context and token use through context-budget rules: read entrypoints, indexes, and needed sections before full project history.
 - Tracks active work in `docs/00-project-memory/task-ledger.md`.
 - Supports interrupted-work recovery with checkpoints and retry limits.
 - Provides a compact-disconnect recovery procedure for stream interruption failures.
@@ -39,6 +40,7 @@ It is designed for commercial-grade apps, websites, mini programs, SaaS products
       recovery-rules.md
       security-rules.md
     agent-compatibility.md
+    context-budget.md
     customization-guide.md
     release-checklist.md
     automation.md
@@ -61,6 +63,7 @@ Copy this repository into your local skills directory, or copy the core skill fi
   templates/
   docs/
     agent-compatibility.md
+    context-budget.md
 ```
 
 Then reference the skill when starting, structuring, continuing, or recovering a project.
@@ -85,6 +88,8 @@ See `docs/agent-compatibility.md` for the full compatibility map and shim exampl
 5. Read only the task-specific source documents.
 6. Execute, verify, retry if safe, and update project memory.
 7. Record decisions, risks, and changes in `docs/07-decisions/`.
+
+See `docs/context-budget.md` for the detailed context and token reduction strategy.
 
 ## Safety Model
 

@@ -31,6 +31,14 @@ Skip when: Never skip during project work.
 4. `docs/00-project-memory/task-ledger.md`
 5. Task-specific documents listed below
 
+## Context Budget Rules
+
+- Read entry and state files first; do not scan the whole `docs/` tree by default.
+- Use Purpose / Read when / Skip when headers and `project-index.md` to choose files.
+- Search long documents before opening them fully.
+- Record file paths, sections, checkpoints, and concise deltas instead of copying large content into handoffs or ledgers.
+- No-op recovery checks stop without a new ledger entry unless drift, partial side effects, or follow-up work is found.
+
 ## Project-Local Storage
 
 - Durable project files stay inside this project folder.
@@ -84,6 +92,7 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 - Project root confirmed:
 - Active task recorded in `task-ledger.md`:
 - Required docs read:
+- Context budget followed:
 - Execution skills selected or skipped:
 - Risk level:
 - Existing user changes protected:
@@ -131,7 +140,7 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 
 ## Documentation Update Rules
 
-After each substantial or state-changing task, update `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/07-decisions/change-log.md`, and any changed source-of-truth docs. Read-only checks, tiny wording edits, and one-off commands do not need memory updates unless they create a durable decision, blocker, or follow-up task.
+After each substantial or state-changing task, update `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/07-decisions/change-log.md`, and any changed source-of-truth docs. Read-only checks, tiny wording edits, one-off commands, and no-op recovery checks do not need memory updates unless they create a durable decision, blocker, drift finding, or follow-up task.
 ```
 
 ## docs/00-project-memory/project-index.md
@@ -148,6 +157,12 @@ Skip when: The needed file is already known.
 ## Document Map
 
 ## Source of Truth Rules
+
+## Context Budget Notes
+
+- Read this index before opening broad document sets.
+- Prefer the smallest source document that answers the current task.
+- Update this index when new durable docs are added.
 
 ## How Future Agents Should Continue
 ```
@@ -276,9 +291,13 @@ Continue unfinished work safely after failure, interruption, aborted turns, tool
 
 If the session reports a compact or context persistence failure such as `stream disconnected before completion`, treat it as a recoverable interruption. Record the error in `task-ledger.md`, keep the active task status as `active` or `failed-retryable`, and resume from the last safe checkpoint.
 
+## No-Op Recovery Checks
+
+If the recovery status helper reports no `active` or `failed-retryable` task, and there are no partial edits, running side effects, or new risks, stop without adding a new ledger entry.
+
 ## Heartbeat or Timed Check Protocol
 
-Use only when the runtime supports safe heartbeat or scheduled automation. The check must continue only if the active task is `active` or `failed-retryable`. Stop when the task is `done`, `blocked`, or needs owner confirmation.
+Use only when the runtime supports safe heartbeat or scheduled automation. The check must continue only if the active task is `active` or `failed-retryable`. Stop when the task is `done`, `blocked`, or needs owner confirmation. Update `task-ledger.md` only when work continues, drift is detected, a follow-up is created, or task status changes.
 ```
 
 ## docs/08-automation/compact-disconnect-recovery.md
@@ -292,7 +311,7 @@ Use this when a session reports a remote compact, context persistence, or stream
 
 ## Recovery Prompt
 
-Read `AGENTS.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, and `docs/07-decisions/change-log.md`. If `scripts/recovery-status.sh` exists, run it. Continue only when the task status is `active` or `failed-retryable`. Resume from `Next Concrete Action`, inspect for partial side effects first, and update the task ledger before stopping.
+Read `AGENTS.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, and `docs/07-decisions/change-log.md`. If `scripts/recovery-status.sh` exists, run it. Continue only when the task status is `active` or `failed-retryable`. If no recovery is needed and no drift is found, stop without adding a ledger entry. Resume from `Next Concrete Action`, inspect for partial side effects first, and update the task ledger before stopping when work continues.
 ```
 
 ## docs/00-project-memory/verification-rules.md

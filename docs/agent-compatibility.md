@@ -28,6 +28,7 @@ The project output is intentionally more portable than any single agent runtime.
 - Keep `AGENTS.md` as the canonical project entrypoint.
 - Do not duplicate full project rules into `CLAUDE.md`, OpenCode config, Hermes task files, or handoff prompts.
 - Use shims that point back to `AGENTS.md` and project-local docs.
+- Keep shims and handoffs context-light: cite paths, current checkpoint, and next action instead of copying project docs.
 - Keep generated docs generic: use "agent" unless a rule is truly product-specific.
 - Avoid runtime-specific channel names, tool names, local paths, private memory paths, credentials, or model names in public templates.
 - If a specialized skill or command is unavailable in an agent, preserve the project-memory workflow and skip only that specialized execution helper.

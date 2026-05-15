@@ -25,11 +25,11 @@ Open the project root and read AGENTS.md first. Then read docs/00-project-memory
 
 If scripts/recovery-status.sh exists, run it from the project root.
 
-Continue only if the task ledger contains a task with status active or failed-retryable. Resume from Next Concrete Action. Before retrying any command, inspect the workspace for partial edits, partial command output, running processes, generated files, migrations, deployments, or external side effects.
+Continue only if the task ledger contains a task with status active or failed-retryable. If no such task exists and there are no partial edits, running side effects, or new risks, stop without adding a new ledger entry. Resume from Next Concrete Action only when recovery is needed. Before retrying any command, inspect the workspace for partial edits, partial command output, running processes, generated files, migrations, deployments, or external side effects.
 
 Do not perform payment, production data, credential, permission, publication, destructive, or customer-visible actions without explicit project-owner confirmation.
 
-Update task-ledger.md with the compact disconnect as Last Error or Interruption, the current checkpoint, the next action, retry count, and verification status before stopping.
+When work continues or a durable follow-up is found, update task-ledger.md with the compact disconnect as Last Error or Interruption, the current checkpoint, the next action, retry count, and verification status before stopping.
 ```
 
 ## Expected Task Ledger Fields

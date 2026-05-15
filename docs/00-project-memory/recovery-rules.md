@@ -47,7 +47,11 @@ Do not restart from the beginning. Resume from the last safe checkpoint in `task
 4. Inspect the workspace and logs if the last state is ambiguous.
 5. Continue from `Next Concrete Action`.
 6. Re-check partial side effects before repeating commands.
-7. Update `task-ledger.md` before stopping.
+7. Update `task-ledger.md` before stopping if work continues, state changes, drift is found, or a durable follow-up is created.
+
+## No-Op Recovery Checks
+
+If `scripts/recovery-status.sh` returns no active or retryable task, and workspace inspection shows no partial edits, no running side effects, and no new risk, stop without adding a new task-ledger entry. Routine no-op recovery checks should not create commits or durable noise.
 
 ## Retry Policy
 
@@ -71,4 +75,4 @@ Use a heartbeat or scheduled recovery check for long-running tasks when the runt
 - Read project-local memory files.
 - Continue only if a task is `active` or `failed-retryable`.
 - Stop when the task is `done`, `blocked`, or needs project-owner confirmation.
-- Update `task-ledger.md` with what it did or why it stopped.
+- Update `task-ledger.md` only when it resumes work, detects drift, creates a follow-up, or changes task status.
