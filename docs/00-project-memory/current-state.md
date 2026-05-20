@@ -39,7 +39,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Cross-agent compatibility is documented in `docs/agent-compatibility.md`; `SKILL.md` is the Agent Skills entrypoint and generated `AGENTS.md` plus `docs/` is the portable project memory output.
 - `pmm` now keeps generated project instructions project-specific, gates PRD/requirements/source reviews on concrete source artifacts, and requires subagent role and ownership boundaries before spawning when subagent work is authorized.
 - The 2026-05-20 skill optimization release passed repository-wide security review, was pushed to public `main`, and was synced into the local `pmm` skill installation from public `main`.
-- `v0.1.0` is the first formal public release version for the current `pmm` skill behavior.
+- `v0.1.0` is the first formal public release version for the current `pmm` skill behavior and is published as a GitHub Release.
 
 ## Remaining Risks
 

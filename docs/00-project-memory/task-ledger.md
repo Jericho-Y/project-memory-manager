@@ -30,15 +30,15 @@ Skip when: Performing a read-only lookup that will not change state.
 
 ## 2026-05-20 Formal Versioning and Release Notes
 
-- Status: active
+- Status: completed
 - Objective: add formal public version tracking and release notes so skill users can see which version they installed and what changed.
 - Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `VERSION`, `CHANGELOG.md`, `docs/release-checklist.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/07-decisions/change-log.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`
 - Selected execution skills: `pmm`, `superpowers:finishing-a-development-branch`, `superpowers:verification-before-completion`.
-- Current checkpoint: version files, public changelog, README links, release checklist rules, safety-check version validation, and local sync coverage have been added in the working tree.
-- Next concrete action: run verification, commit, tag `v0.1.0`, publish a GitHub Release, push, sync local skill, and close this ledger entry.
+- Current checkpoint: version files, public changelog, README links, release checklist rules, safety-check version validation, and local sync coverage have been committed and pushed; tag `v0.1.0` and GitHub Release were published; local `pmm` skill sync now includes `VERSION` and `CHANGELOG.md`.
+- Next concrete action: increment `VERSION`, `SKILL.md` frontmatter version, and `CHANGELOG.md` for future public behavior changes before tagging a new release.
 - Retry count: 0
 - Last error or interruption: initial patch failed because README heading text did not match the expected patch context; corrected by applying patches against the actual file content.
-- Verification status: pending.
+- Verification status: passed public safety check, shell syntax check, version consistency checks, `git diff --check`, push to public `main`, tag push, GitHub Release verification, local skill sync, and installed-version check.
 
 ## 2026-05-15 Usage-Driven Skill Improvements
 

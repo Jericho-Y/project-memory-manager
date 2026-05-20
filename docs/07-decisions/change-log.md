@@ -10,6 +10,7 @@ Skip when: You only need current instructions and no historical context.
 - Tightened local skill sync so unmanaged files inside the dedicated local `pmm` skill directory are removed during sync, preventing stale local skill files from surviving.
 - Completed the 2026-05-20 optimization release with repository-wide security review, public `main` push, public repository visibility verification, and local skill sync from public `main`.
 - Added formal public versioning with `VERSION`, `SKILL.md` frontmatter version, public `CHANGELOG.md`, release checklist rules, sync coverage, and public safety validation for version consistency.
+- Published formal release `v0.1.0` and synced the local `pmm` skill installation with the release version files.
 
 ## 2026-05-15
 
