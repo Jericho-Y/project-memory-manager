@@ -12,6 +12,7 @@ Skip when: You only need current instructions and no historical context.
 - Added formal public versioning with `VERSION`, `SKILL.md` frontmatter version, public `CHANGELOG.md`, release checklist rules, sync coverage, and public safety validation for version consistency.
 - Published formal release `v0.1.0` and synced the local `pmm` skill installation with the release version files.
 - Clarified MIT license visibility in README files and added release/public-safety checks that require the root `LICENSE` file and README license links.
+- Added `LICENSE` to local skill sync coverage so installed skill copies preserve license terms.
 
 ## 2026-05-15
 

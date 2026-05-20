@@ -67,6 +67,7 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
   SKILL.md
   VERSION
   CHANGELOG.md
+  LICENSE
   templates/
   docs/
     agent-compatibility.md

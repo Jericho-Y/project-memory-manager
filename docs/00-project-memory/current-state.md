@@ -25,6 +25,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Local sync temporary files and backups default to `.project-runtime/` inside the repository.
 - `scripts/recovery-status.sh` identifies active or retryable task ledger entries for recovery automation.
 - Local skill sync includes `SKILL.md`, templates, the agent compatibility guide, compact recovery automation docs, and the recovery status helper.
+- Local skill sync includes `LICENSE`, `VERSION`, and `CHANGELOG.md` so installed skill copies preserve license and release metadata.
 - GitHub Actions workflow examples are stored under `docs/github-actions-drafts/` until workflow publishing is explicitly reviewed and enabled.
 - A daily maintenance automation can check the public repo, evaluate low-risk PRs, and sync the local skill after validation.
 - Compact disconnect recovery is documented under `docs/08-automation/compact-disconnect-recovery.md`.

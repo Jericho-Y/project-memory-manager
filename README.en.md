@@ -68,6 +68,7 @@ Copy this repository into your local skills directory, or copy the core skill fi
   SKILL.md
   VERSION
   CHANGELOG.md
+  LICENSE
   templates/
   docs/
     agent-compatibility.md

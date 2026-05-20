@@ -45,11 +45,11 @@ Skip when: Performing a read-only lookup that will not change state.
 - Status: completed
 - Objective: confirm and clarify the open source license setup for public users.
 - Selected docs: `LICENSE`, `README.md`, `README.en.md`, `docs/release-checklist.md`, `scripts/check-public-safety.sh`, `docs/00-project-memory/current-state.md`, `docs/07-decisions/change-log.md`
-- Current checkpoint: repository already uses MIT License and GitHub detects it; README files now link to `LICENSE`; release checklist and public safety checks require license visibility.
+- Current checkpoint: repository already uses MIT License and GitHub detects it; README files now link to `LICENSE`; release checklist and public safety checks require license visibility; local skill sync now includes `LICENSE`.
 - Next concrete action: keep MIT unless maintainer explicitly chooses a different license family.
 - Retry count: 0
 - Last error or interruption: none.
-- Verification status: passed public safety check, README license-link check, and GitHub license detection check; pending commit and push.
+- Verification status: passed public safety check, README license-link check, GitHub license detection check, and local sync license coverage check; pending commit and push.
 
 ## 2026-05-15 Usage-Driven Skill Improvements
 
