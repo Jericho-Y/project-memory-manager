@@ -18,15 +18,15 @@ Skip when: Performing a read-only lookup that will not change state.
 
 ## 2026-05-20 Complete Skill Optimization Release
 
-- Status: active
+- Status: completed
 - Objective: complete all previously deferred release steps: full repository security scan, commit and push, local skill sync, and final verification.
 - Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `SECURITY.md`, `docs/automation.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, `docs/00-project-memory/security-rules.md`, `docs/07-decisions/change-log.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `scripts/recovery-status.sh`, workflow drafts under `docs/github-actions-drafts/`
 - Selected execution skills: `pmm`, `codex-security:security-scan`, `superpowers:finishing-a-development-branch`, `superpowers:verification-before-completion`.
-- Current checkpoint: full repository security scan completed with no reportable findings; current documentation changes are present in the working tree; sync script defaults to pulling checked `main`, so commit and push must precede local sync.
-- Next concrete action: commit and push the skill optimization changes, then run local skill sync from the public `main` branch.
+- Current checkpoint: full repository security scan completed with no reportable findings; skill optimization and local-sync cleanup commits were pushed to public `main`; local `pmm` skill was resynced from public `main` and now contains only managed whitelist files.
+- Next concrete action: monitor future usage for repeated review-intake misses, project `AGENTS.md` overgrowth, stale local sync files, or subagent handoff ambiguity.
 - Retry count: 0
 - Last error or interruption: none.
-- Verification status: passed repository-wide security scan, shell syntax check, public safety check, symlink inventory, blocked credential-file inventory, executable inventory, and risky-pattern review; release push and local sync still pending.
+- Verification status: passed repository-wide security scan, shell syntax check, public safety check, `git diff --check`, public repository visibility check, push to `main`, local skill sync from public `main`, local skill file diff checks, stale-file cleanup check, and final recovery-status check.
 
 ## 2026-05-15 Usage-Driven Skill Improvements
 

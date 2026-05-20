@@ -37,6 +37,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Auto-merge draft rules require maintainer-applied labeling for external low-risk PRs and skip external `SKILL.md` changes for manual review.
 - Cross-agent compatibility is documented in `docs/agent-compatibility.md`; `SKILL.md` is the Agent Skills entrypoint and generated `AGENTS.md` plus `docs/` is the portable project memory output.
 - `pmm` now keeps generated project instructions project-specific, gates PRD/requirements/source reviews on concrete source artifacts, and requires subagent role and ownership boundaries before spawning when subagent work is authorized.
+- The 2026-05-20 skill optimization release passed repository-wide security review, was pushed to public `main`, and was synced into the local `pmm` skill installation from public `main`.
 
 ## Remaining Risks
 
