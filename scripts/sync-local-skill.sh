@@ -99,6 +99,7 @@ fi
 
 mkdir -p "$LOCAL_SKILL_DIR"
 rsync -a --delete \
+  --delete-excluded \
   --include='SKILL.md' \
   --include='templates/' \
   --include='templates/***' \

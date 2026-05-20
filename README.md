@@ -65,6 +65,11 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
   docs/
     agent-compatibility.md
     context-budget.md
+    08-automation/
+      compact-disconnect-recovery.md
+      scheduled-maintenance.md
+  scripts/
+    recovery-status.sh
 ```
 
 之后在启动、规划、接手、恢复或维护长期项目时引用 `pmm`。

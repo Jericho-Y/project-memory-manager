@@ -66,6 +66,11 @@ Copy this repository into your local skills directory, or copy the core skill fi
   docs/
     agent-compatibility.md
     context-budget.md
+    08-automation/
+      compact-disconnect-recovery.md
+      scheduled-maintenance.md
+  scripts/
+    recovery-status.sh
 ```
 
 Then reference the skill when starting, structuring, continuing, or recovering a project.

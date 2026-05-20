@@ -7,6 +7,7 @@ Skip when: You only need current instructions and no historical context.
 ## 2026-05-20
 
 - Added usage-driven `pmm` guidance for keeping generated `AGENTS.md` files project-specific, requiring concrete source artifacts before PRD/requirements/source reviews, and defining subagent role and ownership boundaries before authorized subagent work.
+- Tightened local skill sync so unmanaged files inside the dedicated local `pmm` skill directory are removed during sync, preventing stale local skill files from surviving.
 
 ## 2026-05-15
 
