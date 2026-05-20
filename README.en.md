@@ -13,8 +13,10 @@ It is designed for commercial-grade apps, websites, mini programs, SaaS products
 ## What It Does
 
 - Creates a project-level `AGENTS.md` as the first memory entrypoint.
+- Keeps `AGENTS.md` project-specific instead of duplicating global working style or personal preferences.
 - Builds a structured `docs/` tree for business, product, design, technical, delivery, operations, and decision records.
 - Defines which documents an agent should read for each task type.
+- Requires concrete source material before reviewing PRDs, requirements, screenshots, designs, documents, or code.
 - Reduces context and token use through context-budget rules: read entrypoints, indexes, and needed sections before full project history.
 - Tracks active work in `docs/00-project-memory/task-ledger.md`.
 - Supports interrupted-work recovery with checkpoints and retry limits.
@@ -85,9 +87,10 @@ See `docs/agent-compatibility.md` for the full compatibility map and shim exampl
 2. Create or update project root `AGENTS.md`.
 3. Create the requirements document tree under `docs/`.
 4. Record the active task in `docs/00-project-memory/task-ledger.md`.
-5. Read only the task-specific source documents.
-6. Execute, verify, retry if safe, and update project memory.
-7. Record decisions, risks, and changes in `docs/07-decisions/`.
+5. For review tasks, confirm the concrete PRD, screenshot, design, document, or code source first.
+6. Read only the task-specific source documents.
+7. Execute, verify, retry if safe, and update project memory.
+8. Record decisions, risks, and changes in `docs/07-decisions/`.
 
 See `docs/context-budget.md` for the detailed context and token reduction strategy.
 
@@ -112,7 +115,7 @@ High-risk actions require explicit project-owner confirmation:
 
 ## Optional Execution Integrations
 
-This skill can coordinate with specialized execution workflows such as planning, TDD, systematic debugging, completion verification, deployment, security review, and subagent-based execution.
+This skill can coordinate with specialized execution workflows such as planning, TDD, systematic debugging, completion verification, deployment, security review, and subagent-based execution with role boundaries.
 
 The project memory protocol stays in charge: specialized workflows may add checks, but they should not weaken project memory, verification, recovery, or security requirements.
 

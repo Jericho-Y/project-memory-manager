@@ -35,6 +35,7 @@ Maintain a safe public version of the `pmm` skill and keep local installations s
 - Local skill sync includes `docs/context-budget.md` so installed skills keep the token-reduction protocol.
 - Auto-merge draft rules require maintainer-applied labeling for external low-risk PRs and skip external `SKILL.md` changes for manual review.
 - Cross-agent compatibility is documented in `docs/agent-compatibility.md`; `SKILL.md` is the Agent Skills entrypoint and generated `AGENTS.md` plus `docs/` is the portable project memory output.
+- `pmm` now keeps generated project instructions project-specific, gates PRD/requirements/source reviews on concrete source artifacts, and requires subagent role and ownership boundaries before spawning when subagent work is authorized.
 
 ## Remaining Risks
 

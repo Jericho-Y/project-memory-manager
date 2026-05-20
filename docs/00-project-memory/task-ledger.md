@@ -4,6 +4,30 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-20 Usage-Driven Skill Optimization Review
+
+- Status: completed
+- Objective: review and improve `pmm` based on recent project use patterns, with emphasis on project-specific instructions, source-material intake before reviews, subagent role boundaries, and public safety.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `docs/automation.md`, `docs/agent-compatibility.md`, `docs/context-budget.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, `docs/00-project-memory/security-rules.md`, `templates/document-skeletons.md`, `scripts/check-public-safety.sh`
+- Selected execution skills: `pmm`, `superpowers:using-superpowers`, `superpowers:writing-skills`, `superpowers:test-driven-development`, `superpowers:verification-before-completion`; Codex Security instructions were used as a safety review lens, with full repository security scan intentionally out of scope for this skill-optimization task.
+- Current checkpoint: `SKILL.md`, `templates/document-skeletons.md`, README mirrors, `current-state.md`, and `change-log.md` now include the project-specific instruction rule, source artifact gate, and subagent role-boundary guidance.
+- Next concrete action: monitor future usage for repeated review-intake misses, project `AGENTS.md` overgrowth, or subagent handoff ambiguity.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, targeted guidance-anchor check, and `SKILL.md` 500-line budget check.
+
+## 2026-05-20 Complete Skill Optimization Release
+
+- Status: active
+- Objective: complete all previously deferred release steps: full repository security scan, commit and push, local skill sync, and final verification.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `SECURITY.md`, `docs/automation.md`, `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, `docs/00-project-memory/recovery-rules.md`, `docs/00-project-memory/security-rules.md`, `docs/07-decisions/change-log.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `scripts/recovery-status.sh`, workflow drafts under `docs/github-actions-drafts/`
+- Selected execution skills: `pmm`, `codex-security:security-scan`, `superpowers:finishing-a-development-branch`, `superpowers:verification-before-completion`.
+- Current checkpoint: full repository security scan completed with no reportable findings; current documentation changes are present in the working tree; sync script defaults to pulling checked `main`, so commit and push must precede local sync.
+- Next concrete action: commit and push the skill optimization changes, then run local skill sync from the public `main` branch.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed repository-wide security scan, shell syntax check, public safety check, symlink inventory, blocked credential-file inventory, executable inventory, and risky-pattern review; release push and local sync still pending.
+
 ## 2026-05-15 Usage-Driven Skill Improvements
 
 - Status: completed

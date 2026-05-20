@@ -35,6 +35,8 @@ AGENTS.md
 
 `AGENTS.md` is the highest-priority project entrypoint. It should point to detailed documents under `docs/` instead of becoming a dumping ground.
 
+Keep project `AGENTS.md` project-specific. Do not duplicate global working style, personal preferences, or runtime-level agent rules unless they create a concrete project constraint; link to the owning layer instead.
+
 When creating the document system, use `templates/document-skeletons.md` for the default section skeletons.
 
 ## Efficiency Defaults
@@ -95,7 +97,7 @@ When another skill applies, run the project memory protocol first, then use the 
 | --- | --- |
 | Planning skills | Use for implementation-plan quality. Save durable plan facts into `roadmap.md`, `task-breakdown.md`, and relevant source docs. |
 | Plan execution skills | Use when a written plan exists. Still record active task, checkpoint, retries, and final status in `task-ledger.md`. |
-| Subagent workflows | Use only when the environment allows subagents and the project owner authorized parallel/subagent work. Record workstream ownership in `task-breakdown.md` and verify outputs before accepting them. |
+| Subagent workflows | Use only when the environment allows subagents and the project owner authorized parallel/subagent work. Define role, ownership, inputs, output, and verification before spawning; use a subagent-routing helper if available, otherwise use native roles. Record workstream ownership in `task-breakdown.md` and verify outputs before accepting them. |
 | TDD skills | Use for features, bug fixes, refactors, and behavior changes. TDD satisfies part of verification, but does not replace project document updates. |
 | Systematic debugging skills | Use for bugs, build failures, test failures, and unexpected behavior before attempting fixes. Record root cause and fix outcome in `change-log.md`. |
 | Completion verification skills | Use before claiming completion. Evidence strengthens this skill's Definition of Done. |
@@ -266,6 +268,12 @@ For every new project or substantial new task:
 - If the task changes after execution begins, update `AGENTS.md` and `current-state.md` so future agents do not follow stale instructions.
 - Do not leave project memory behind the actual project state.
 
+## Source Material Gate
+
+For PRD, requirements, screenshot, design, document, or code review tasks, locate the actual source artifact before critique. If the artifact is missing, ask the smallest intake question needed and stop the review until it is available.
+
+Do not infer a review from chat memory or project history alone. When applicable, structure the review around unclear requirements, missing metrics, risks, unresolved questions, and decisions that need the project owner.
+
 ## Task-Type Reading Map
 
 Before executing, read `AGENTS.md`, then read the relevant docs:
@@ -301,8 +309,10 @@ Before substantial execution, confirm:
 - The project root and project `AGENTS.md` are identified.
 - The active task is recorded in `task-ledger.md`.
 - Required docs for the task type have been read or marked missing.
+- Source artifacts needed for review tasks are available, or the minimal intake question has been asked.
 - Applicable execution skills have been selected or intentionally skipped.
 - The task is classified as low-risk, normal-risk, or high-risk.
+- Project instructions stay project-specific instead of duplicating global working style or personal preferences.
 - No destructive, paid, production, credential, publication, user-data, order, or permission action will occur without project-owner confirmation.
 - Existing user changes are protected and unrelated files are out of scope.
 
@@ -450,6 +460,8 @@ Unresolved but non-blocking assumptions go to `open-questions.md`. Blocking deci
 
 - Creating only a PRD and losing technical, security, and delivery context.
 - Putting all detail into `AGENTS.md` instead of linking to dedicated docs.
+- Duplicating global working style or personal preferences into project `AGENTS.md`.
+- Reviewing a PRD, screenshot, or document without the actual source artifact.
 - Asking too many technical questions that the agent can reasonably decide.
 - Treating a task as done without running checks or recording unverified risk.
 - Forgetting to update memory documents after substantial implementation.

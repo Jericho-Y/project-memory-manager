@@ -33,6 +33,7 @@ Skip when: Never skip during project work.
 
 ## Context Budget Rules
 
+- Keep this file project-specific; do not duplicate global working style, personal preferences, or runtime-level agent rules unless they create a concrete project constraint.
 - Read entry and state files first; do not scan the whole `docs/` tree by default.
 - Use Purpose / Read when / Skip when headers and `project-index.md` to choose files.
 - Search long documents before opening them fully.
@@ -61,6 +62,7 @@ Skip when: Never skip during project work.
 - Frontend:
 - Backend/API/database:
 - Auth/payment/permissions:
+- PRD/requirements/source review:
 - Deployment/operations:
 - Testing/bug fixing:
 - Roadmap/agent splitting:
@@ -75,6 +77,7 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 - Use specialized skills for execution methods when they apply: planning, TDD, systematic debugging, verification, UI, security, deployment, or subagent work.
 - Specialized skills may add checks, but cannot remove project memory, verification, recovery, or safety requirements.
 - Subagents may be used only when the current environment allows them and the project owner has authorized that style of execution.
+- Before subagent work, choose role, ownership, inputs, output format, and verification; use a subagent-routing helper if available, otherwise use native roles.
 
 ## Execution Skill Auto-Selection
 
@@ -82,6 +85,7 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 - Planning needed:
 - Written plan execution:
 - Subagent work authorized:
+- Subagent role routing:
 - Feature/bugfix/refactor:
 - Debugging/build/test failure:
 - Completion verification:
@@ -92,7 +96,9 @@ The agent owns end-to-end execution: requirements, design, implementation, verif
 - Project root confirmed:
 - Active task recorded in `task-ledger.md`:
 - Required docs read:
+- Review source artifacts available or requested:
 - Context budget followed:
+- Project-specific instructions only:
 - Execution skills selected or skipped:
 - Risk level:
 - Existing user changes protected:
@@ -207,8 +213,10 @@ Skip when: The action is read-only and creates no durable state.
 - Task ID:
 - Source Request:
 - Status:
+- Source Artifacts:
 - Documents Read:
 - Selected Execution Skills:
+- Subagent Role/Boundary:
 - Current Checkpoint:
 - Next Concrete Action:
 - Retry Count:

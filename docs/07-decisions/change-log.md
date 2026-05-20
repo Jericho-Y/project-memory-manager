@@ -4,6 +4,10 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-05-20
+
+- Added usage-driven `pmm` guidance for keeping generated `AGENTS.md` files project-specific, requiring concrete source artifacts before PRD/requirements/source reviews, and defining subagent role and ownership boundaries before authorized subagent work.
+
 ## 2026-05-15
 
 - Added `docs/context-budget.md` and updated `SKILL.md`, templates, README files, compatibility notes, local sync, and public safety checks so `pmm` reduces context and token use through staged reading and concise durable updates.
