@@ -9,14 +9,22 @@ Purpose: Public overview, installation guide, runtime model, compatibility strat
 Read when: Evaluating, installing, publishing, or first learning this skill.
 Skip when: You already know the repository and only need a specific implementation file.
 
-`pmm` is an Agent Skill for long-lived software projects. It keeps project memory, task execution, self-evaluation, verification evidence, recovery checkpoints, and cross-agent compatibility rules inside the project folder instead of relying on temporary chat context or one agent's private memory.
+`pmm` is a low-context, cross-agent project runtime packaged as an Agent Skill for long-lived software projects. Its job is not to generate more project documentation; it gives agents a compact runtime contract for executing, verifying, critiquing, repairing, and recovering work with the minimum useful context.
 
-Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, and long-lived maintenance work.
-Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory.
+The core v0.2.0 output is:
+
+- `AGENTS.md`: the single project entrypoint for durable facts and collaboration rules.
+- Core Pack: compact hot-path files such as `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
+- Self-Eval Loop: Task, Harness, Verifier, Critic, Repair, and Record for substantial work.
+- Agent adapters: Codex, Claude Code, Hermes Agent, and OpenClaw/OpenCode point to the same project facts instead of copying separate memories.
+- Memory promotion rules: promote durable facts only; keep active task state out of global memory.
+
+Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, long-lived maintenance work, and tasks that need cross-agent handoff, recovery, or strict verification.
+Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory or a verification loop.
 
 ## What's New In v0.2.0
 
-`v0.2.0` turns `pmm` from a project documentation skill into a low-context agent runtime:
+`v0.2.0` positions `pmm` as a low-context agent execution runtime:
 
 - Runtime Profiles: `Pulse`, `Sprint`, `Project`, `Recovery`, and `Audit` decide how much context to load.
 - Core Pack: new projects start with the minimum project memory instead of a full commercial document tree.
@@ -26,6 +34,8 @@ Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not 
 - Cold history: completed work moves to `task-history.md`; reusable repeated failures move to `failure-patterns.md`.
 - Agent adapters: Claude Code, Hermes Agent, OpenClaw/OpenCode, and Codex use short shims that point to the same project memory.
 - Legacy bridge: v0.1 projects using `task-ledger.md` still work, but new projects should prefer `active-task.md`.
+
+The v0.1.0 capabilities for requirements, project memory, verification, recovery, and document skeletons are still supported, but in v0.2.0 they become optional packs and legacy bridges. The default path is no longer to create a full document tree; start with the Core Pack and Self-Eval Loop, then add product, design, engineering, risk, ops, or automation docs only when the project has real facts that need them.
 
 Read more:
 
