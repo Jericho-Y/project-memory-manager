@@ -28,6 +28,21 @@ The intake automation must not merge PRs, approve PRs, request changes publicly,
 close issues, or post public comments unless the project owner explicitly authorizes that
 behavior later.
 
+## Skill Evolution Review
+
+A local Codex automation may periodically review whether `pmm` itself should evolve.
+The safe default is read-only planning:
+
+- check whether `SKILL.md`, README files, docs, templates, examples, and scripts still match the current public positioning
+- look for opportunities to reduce hot-path context, remove duplicated guidance, improve templates, improve recovery, or clarify verification behavior
+- incorporate local GitHub intake reports when they exist
+- classify recommendations by priority and likely version impact
+- write timestamped reports under `.project-runtime/skill-evolution/`
+
+The evolution automation must not edit files, commit changes, push, publish releases,
+activate workflows, change repository settings, merge PRs, or publicly comment. It should
+produce a candidate roadmap only; implementation remains a separate maintainer-approved task.
+
 The safe auto-merge policy should merge low-risk pull requests only when:
 
 - the pull request is not a draft
