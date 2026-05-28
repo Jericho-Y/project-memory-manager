@@ -30,7 +30,7 @@ behavior later.
 
 ## Skill Evolution Review
 
-A local Codex automation may review daily whether `pmm` itself should evolve.
+A local Codex automation may review every three days whether `pmm` itself should evolve.
 The safe default is read-only planning:
 
 - check whether `SKILL.md`, README files, docs, templates, examples, and scripts still match the current public positioning

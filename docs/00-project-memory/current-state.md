@@ -38,7 +38,7 @@ Maintain `pmm` v0.2.0 as a low-context, cross-agent project runtime with Self-Ev
 - GitHub Actions workflow examples are stored under `docs/github-actions-drafts/` until workflow publishing is explicitly reviewed and enabled.
 - A daily maintenance automation can check the public repo, evaluate low-risk PRs, and sync the local skill after validation.
 - A local GitHub intake automation can check open PRs and issues every few hours, generate read-only triage reports under `.project-runtime/github-intake/`, and must not merge, label, close, approve, or publicly comment without explicit owner authorization.
-- A local skill evolution automation can review `pmm` daily for upgrade opportunities and write read-only roadmap reports under `.project-runtime/skill-evolution/`; it must not edit, commit, push, release, activate workflows, or change GitHub state.
+- A local skill evolution automation can review `pmm` every three days for upgrade opportunities and write read-only roadmap reports under `.project-runtime/skill-evolution/`; it must not edit, commit, push, release, activate workflows, or change GitHub state.
 - Compact disconnect recovery is documented under `docs/08-automation/compact-disconnect-recovery.md`.
 - Project-owned files should include a short purpose header so agents can decide quickly whether to read them.
 - Repository security review boundaries are documented under `docs/00-project-memory/security-rules.md`.
