@@ -40,7 +40,7 @@ The script:
 4. rejects symlinks and unexpected executable/script files
 5. validates the destination is a dedicated `pmm` skill directory
 6. backs up the existing local skill
-7. syncs the approved skill files, templates, compatibility guide, context-budget guide, recovery docs, and recovery helper
+7. syncs the approved skill files, templates, runtime/self-eval/memory/verifier docs, compatibility guide, context-budget guide, recovery docs, and recovery helper
 8. removes unmanaged files inside the dedicated local `pmm` skill directory so stale local files do not survive a sync
 
 By default, temporary sync files and local backups are placed under `.project-runtime/` in this repository, which is ignored by Git.
@@ -56,4 +56,4 @@ LOCAL_SKILL_DIR=<SKILLS_ROOT>/pmm
 
 The compact disconnect recovery procedure lives in `docs/08-automation/compact-disconnect-recovery.md`.
 
-When a runtime reports a remote compact stream disconnect, recovery automation should read the project-local task ledger, continue only from `Next Concrete Action`, and stop if the next action is high-risk or requires project-owner confirmation.
+When a runtime reports a remote compact stream disconnect, recovery automation should read the project-local active task or legacy task ledger, continue only from `Next Concrete Action`, and stop if the next action is high-risk or requires project-owner confirmation.

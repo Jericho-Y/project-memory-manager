@@ -29,6 +29,15 @@ Use this before publishing changes to this repository.
 - Create and push a matching git tag, for example `v0.1.0`.
 - Publish a GitHub Release from the matching tag when the version is intended as a formal public release.
 
+## v0.2 Contract Surface
+
+- Confirm runtime profile docs exist: `docs/runtime-profiles.md`.
+- Confirm Self-Eval docs exist: `docs/self-eval-loop.md`, `docs/verifier-recipes.md`, `docs/memory-promotion.md`.
+- Confirm Core Pack templates exist: `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`.
+- Confirm adapter templates exist for Claude Code, Hermes, OpenClaw/OpenCode, and Codex nested scopes.
+- Confirm `scripts/recovery-status.sh` supports both v0.2 `active-task.md` and v0.1 legacy `task-ledger.md`.
+- Confirm local sync includes all installed docs, templates, and recovery helper scripts.
+
 ## License
 
 - Keep the repository license in the root `LICENSE` file.

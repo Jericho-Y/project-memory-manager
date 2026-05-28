@@ -19,7 +19,7 @@ Replace placeholders with project-specific facts.
 
 ## What Works
 
-- Reading order and task ledger are established.
+- Reading order, active task, and verifier map are established.
 
 ## Known Issues
 
@@ -31,7 +31,7 @@ Replace placeholders with project-specific facts.
 
 ## Next Recommended Actions
 
-- Create project brief, PRD, technical architecture, and task breakdown.
+- Create only the optional packs needed by the first real task.
 
 ## Last Updated
 

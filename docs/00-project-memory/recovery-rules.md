@@ -14,7 +14,8 @@ The source of truth for recovery is inside this project folder:
 
 - `AGENTS.md`
 - `docs/00-project-memory/current-state.md`
-- `docs/00-project-memory/task-ledger.md`
+- `docs/00-project-memory/active-task.md`
+- `docs/00-project-memory/task-ledger.md` for legacy v0.1 projects
 - `docs/00-project-memory/recovery-rules.md`
 - `docs/07-decisions/change-log.md`
 - `docs/08-automation/compact-disconnect-recovery.md`
@@ -37,28 +38,29 @@ Treat this error as a recoverable interruption:
 Error running remote compact task: stream disconnected before completion: error sending request for url (https://chatgpt.com/backend-api/codex/responses/compact)
 ```
 
-Do not restart from the beginning. Resume from the last safe checkpoint in `task-ledger.md`.
+Do not restart from the beginning. Resume from the last safe checkpoint in `active-task.md`, or `task-ledger.md` for legacy projects that have not migrated yet.
 
 ## Resume Protocol
 
 1. Read `AGENTS.md`.
-2. Read `current-state.md`, `task-ledger.md`, this file, and `change-log.md`.
+2. Read `current-state.md`, `active-task.md`, this file, and `change-log.md`.
+   If `active-task.md` is missing, read legacy `task-ledger.md`.
 3. Run `scripts/recovery-status.sh` if it exists.
 4. Inspect the workspace and logs if the last state is ambiguous.
 5. Continue from `Next Concrete Action`.
 6. Re-check partial side effects before repeating commands.
-7. Update `task-ledger.md` before stopping if work continues, state changes, drift is found, or a durable follow-up is created.
+7. Update `active-task.md` before stopping if work continues, state changes, drift is found, or a durable follow-up is created.
 
 ## No-Op Recovery Checks
 
-If `scripts/recovery-status.sh` returns no active or retryable task, and workspace inspection shows no partial edits, no running side effects, and no new risk, stop without adding a new task-ledger entry. Routine no-op recovery checks should not create commits or durable noise.
+If `scripts/recovery-status.sh` returns no active or retryable task, and workspace inspection shows no partial edits, no running side effects, and no new risk, stop without adding durable noise. Routine no-op recovery checks should not create commits or task records.
 
 ## Retry Policy
 
 - Retry the same failure class at most 2 times.
 - Diagnose before retrying.
 - Change the condition or apply a focused fix before retrying.
-- Record each failed attempt, error, fix attempt, and next action in `task-ledger.md`.
+- Record each failed attempt, error, fix attempt, and next action in `active-task.md`.
 - Mark the task `failed-blocked` when safe retries are exhausted.
 
 ## Non-Retryable Without Confirmation
@@ -75,4 +77,4 @@ Use a heartbeat or scheduled recovery check for long-running tasks when the runt
 - Read project-local memory files.
 - Continue only if a task is `active` or `failed-retryable`.
 - Stop when the task is `done`, `blocked`, or needs project-owner confirmation.
-- Update `task-ledger.md` only when it resumes work, detects drift, creates a follow-up, or changes task status.
+- Update `active-task.md` only when it resumes work, detects drift, creates a follow-up, or changes task status.

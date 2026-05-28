@@ -21,8 +21,9 @@ Use this procedure for a public skill repository:
 7. Auto-merge only low-risk documentation or template changes that match the repository policy and, for external contributors, have a maintainer-applied `safe-auto-merge` label.
 8. Never auto-merge external `SKILL.md` changes; they affect agent behavior and require manual maintainer review.
 9. Re-run the public safety check after merge or pull.
-10. Sync local installations only after checks pass.
-11. Report what changed, what was skipped, and remaining risk.
+10. Confirm v0.2 docs, Core Pack templates, adapter templates, and recovery helpers are included in local sync.
+11. Sync local installations only after checks pass.
+12. Report what changed, what was skipped, and remaining risk.
 
 ## Local Sync Boundary
 

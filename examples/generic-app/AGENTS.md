@@ -16,25 +16,22 @@ Skip when: Working on a real project or repository code outside this example.
 
 1. `AGENTS.md`
 2. `docs/00-project-memory/current-state.md`
-3. `docs/00-project-memory/task-ledger.md`
-4. Task-specific source documents
+3. `docs/00-project-memory/active-task.md`
+4. `docs/00-project-memory/verifier-map.md`
+5. Task-specific source documents
+
+## Runtime Profile
+
+Default profile: Sprint. Use Pulse for tiny edits, Project for larger setup, Recovery for interrupted work, and Audit for release or high-risk tasks.
 
 ## Execution Ownership
 
 The agent owns implementation, verification, and documentation updates for low-risk work. The project owner confirms high-risk cost, production, credential, publication, data, payment, or direction decisions.
 
-## Current Task
+## Current Task Pointer
 
-- Task: none
-- Objective: none
-- Status: idle
-- Required docs: none
-- Selected execution skills: none
-- Current checkpoint: example initialized
-- Next concrete action: replace placeholders with real project facts
-- Retry count: 0
-- Verification required: none
+Current task state belongs in `docs/00-project-memory/active-task.md`. This file keeps only stable routing and safety rules.
 
 ## Documentation Update Rules
 
-After substantial or state-changing tasks, update `current-state.md`, `task-ledger.md`, `change-log.md`, and any changed source-of-truth docs.
+After substantial or state-changing tasks, update `current-state.md`, `active-task.md`, `change-log.md`, and any changed source-of-truth docs. Archive completed task summaries to `task-history.md` only when they matter later.

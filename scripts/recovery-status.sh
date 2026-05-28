@@ -9,9 +9,10 @@ if [[ -z "$repo_root" ]]; then
   repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 fi
 
-ledger="$repo_root/docs/00-project-memory/task-ledger.md"
 agents="$repo_root/AGENTS.md"
 current_state="$repo_root/docs/00-project-memory/current-state.md"
+active_task="$repo_root/docs/00-project-memory/active-task.md"
+legacy_ledger="$repo_root/docs/00-project-memory/task-ledger.md"
 recovery_rules="$repo_root/docs/00-project-memory/recovery-rules.md"
 change_log="$repo_root/docs/07-decisions/change-log.md"
 tmp_file="$(mktemp "${TMPDIR:-/tmp}/pmm-recovery-status.XXXXXX")"
@@ -23,14 +24,22 @@ fail() {
 }
 
 [[ -f "$agents" ]] || fail "missing AGENTS.md"
-[[ -f "$ledger" ]] || fail "missing docs/00-project-memory/task-ledger.md"
 
-if rg -n --pcre2 '(?i)status:\s*(active|failed-retryable)\b' "$ledger" >"$tmp_file"; then
+task_file=""
+if [[ -f "$active_task" ]]; then
+  task_file="$active_task"
+elif [[ -f "$legacy_ledger" ]]; then
+  task_file="$legacy_ledger"
+else
+  fail "missing docs/00-project-memory/active-task.md or legacy task-ledger.md"
+fi
+
+if rg -n --pcre2 '(?i)status:\s*(active|failed-retryable)\b' "$task_file" >"$tmp_file"; then
   printf 'RECOVERY_NEEDED\n'
   printf 'Read these files before resuming:\n'
   printf -- '- %s\n' "$agents"
   [[ -f "$current_state" ]] && printf -- '- %s\n' "$current_state"
-  printf -- '- %s\n' "$ledger"
+  printf -- '- %s\n' "$task_file"
   [[ -f "$recovery_rules" ]] && printf -- '- %s\n' "$recovery_rules"
   [[ -f "$change_log" ]] && printf -- '- %s\n' "$change_log"
   printf '\nMatching task status lines:\n'

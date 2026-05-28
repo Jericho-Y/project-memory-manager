@@ -1,67 +1,120 @@
-# Project Memory Manager
+# Project Memory Manager (`pmm`)
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.1.0`. See [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.2.0`. See [CHANGELOG.md](CHANGELOG.md).
+License: [MIT License](LICENSE).
 
-Purpose: Public overview, installation guide, safety model, and repository map for the skill.
-Read when: Evaluating, installing, publishing, or onboarding to this skill repository.
-Skip when: You already know the repository shape and need a specific implementation file.
+Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
+Read when: Evaluating, installing, publishing, or first learning this skill.
+Skip when: You already know the repository and only need a specific implementation file.
 
-A Codex skill for starting and continuing long-lived software projects with durable requirements, project memory, verification, recovery checkpoints, and safety controls.
+`pmm` is an Agent Skill for long-lived software projects. It keeps project memory, task execution, self-evaluation, verification evidence, recovery checkpoints, and cross-agent compatibility rules inside the project folder instead of relying on temporary chat context or one agent's private memory.
 
-It is designed for commercial-grade apps, websites, mini programs, SaaS products, desktop tools, AI products, and substantial feature work. It is not intended for one-off shell commands or throwaway demos.
+Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, and long-lived maintenance work.
+Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory.
 
-## What It Does
+## What's New In v0.2.0
 
-- Creates a project-level `AGENTS.md` as the first memory entrypoint.
-- Keeps `AGENTS.md` project-specific instead of duplicating global working style or personal preferences.
-- Builds a structured `docs/` tree for business, product, design, technical, delivery, operations, and decision records.
-- Defines which documents an agent should read for each task type.
-- Requires concrete source material before reviewing PRDs, requirements, screenshots, designs, documents, or code.
-- Reduces context and token use through context-budget rules: read entrypoints, indexes, and needed sections before full project history.
-- Tracks active work in `docs/00-project-memory/task-ledger.md`.
-- Supports interrupted-work recovery with checkpoints and retry limits.
-- Provides a compact-disconnect recovery procedure for stream interruption failures.
-- Requires short file-purpose headers so agents can skip irrelevant files quickly.
-- Requires verification before completion claims.
-- Keeps high-risk actions behind project-owner confirmation.
+`v0.2.0` turns `pmm` from a project documentation skill into a low-context agent runtime:
 
-## Repository Contents
+- Runtime Profiles: `Pulse`, `Sprint`, `Project`, `Recovery`, and `Audit` decide how much context to load.
+- Core Pack: new projects start with the minimum project memory instead of a full commercial document tree.
+- Optional Packs: product, design, engineering, risk, ops, and automation docs are created only when needed.
+- Self-Eval Loop: substantial tasks use a `Task -> Harness -> Verifier -> Critic -> Repair -> Record` contract.
+- Current task hot path: `active-task.md` and `verifier-map.md` replace the old hot-path ledger pattern.
+- Cold history: completed work moves to `task-history.md`; reusable repeated failures move to `failure-patterns.md`.
+- Agent adapters: Claude Code, Hermes Agent, OpenClaw/OpenCode, and Codex use short shims that point to the same project memory.
+- Legacy bridge: v0.1 projects using `task-ledger.md` still work, but new projects should prefer `active-task.md`.
+
+Read more:
+
+- [docs/runtime-profiles.md](docs/runtime-profiles.md)
+- [docs/self-eval-loop.md](docs/self-eval-loop.md)
+- [docs/context-budget.md](docs/context-budget.md)
+- [docs/agent-compatibility.md](docs/agent-compatibility.md)
+- [docs/memory-promotion.md](docs/memory-promotion.md)
+- [docs/verifier-recipes.md](docs/verifier-recipes.md)
+
+## Core Model
+
+`pmm` has three layers:
 
 ```text
-.
-  SKILL.md
-  VERSION
-  CHANGELOG.md
-  README.md
-  README.en.md
-  templates/
-    document-skeletons.md
-    server-inventory.example.md
-  examples/
-    generic-app/
-  docs/
-    00-project-memory/
-      recovery-rules.md
-      security-rules.md
-    agent-compatibility.md
-    context-budget.md
-    customization-guide.md
-    release-checklist.md
-    automation.md
-    08-automation/
-      compact-disconnect-recovery.md
-      scheduled-maintenance.md
-  scripts/
-    check-public-safety.sh
-    recovery-status.sh
-    sync-local-skill.sh
+Canonical Project Memory
+  AGENTS.md + docs/00-project-memory/*
+
+Agent Adapter Layer
+  CLAUDE.md / HERMES.md / OpenClaw project card / nested AGENTS.md
+
+Self-Eval Runtime
+  Task / Harness / Verifier / Critic / Repair / Record
 ```
+
+The project folder is the source of truth. Agent-native memory should store only stable preferences or a short pointer to the project entrypoint, not current task state.
+
+## Runtime Profiles
+
+| Profile | Use for | Load by default |
+| --- | --- | --- |
+| Pulse | Small edits, lookups, known-file fixes | `AGENTS.md` plus target files |
+| Sprint | Normal features, bug fixes, UI/API changes | Core Pack plus task source docs |
+| Project | New projects, unclear requirements, long-lived product setup | Core Pack plus selected Optional Packs |
+| Recovery | Interrupted work, retryable failures, compact disconnect recovery | hot path plus recovery/change docs |
+| Audit | Security, release, production, payment, permissions, public compatibility | exact source artifacts plus risk/verifier docs |
+
+## Core Pack
+
+New projects start with:
+
+```text
+AGENTS.md
+docs/00-project-memory/current-state.md
+docs/00-project-memory/active-task.md
+docs/00-project-memory/verifier-map.md
+docs/07-decisions/change-log.md
+```
+
+Cold-path files are created only when useful:
+
+```text
+docs/00-project-memory/task-history.md
+docs/00-project-memory/failure-patterns.md
+```
+
+Templates live in [templates/core](templates/core).
+
+## Optional Packs
+
+Use packs only when the current task needs them:
+
+- [templates/packs/product-pack.md](templates/packs/product-pack.md): product behavior, PRD, flows, acceptance.
+- [templates/packs/design-pack.md](templates/packs/design-pack.md): IA, page map, UI/UX, content.
+- [templates/packs/engineering-pack.md](templates/packs/engineering-pack.md): architecture, API, database, integrations.
+- [templates/packs/risk-pack.md](templates/packs/risk-pack.md): security, permissions, payment, production, risks.
+- [templates/packs/ops-pack.md](templates/packs/ops-pack.md): deployment, monitoring, support, releases.
+- [templates/packs/automation-pack.md](templates/packs/automation-pack.md): scheduled checks, heartbeat, long-running recovery.
+
+Do not create empty placeholder files just to match a tree.
+
+## Self-Eval Loop
+
+Substantial tasks should define this contract in `active-task.md`:
+
+```text
+Task: objective, scope, risk, allowed/forbidden actions
+Harness: tools, skills, subagents, commands, environment
+Verifier: required checks, evidence, manual acceptance
+Critic: true pass/fail, missing evidence, false-pass risk
+Repair: failure class, attempts, next fix
+Record: final status, docs changed, memory promotion decision
+```
+
+A task without a verifier cannot be marked `done`. Mark it `executed-unverified` or `blocked` instead.
 
 ## Installation
 
-Copy this repository into your local skills directory, or copy the core skill files into your agent's skill folder:
+Place this repository in the target agent's skills directory and keep the directory name `pmm`:
 
 ```text
 <SKILLS_ROOT>/pmm/
@@ -69,87 +122,67 @@ Copy this repository into your local skills directory, or copy the core skill fi
   VERSION
   CHANGELOG.md
   LICENSE
-  templates/
   docs/
-    agent-compatibility.md
-    context-budget.md
-    08-automation/
-      compact-disconnect-recovery.md
-      scheduled-maintenance.md
-  scripts/
-    recovery-status.sh
+  templates/
+  scripts/recovery-status.sh
 ```
 
-Then reference the skill when starting, structuring, continuing, or recovering a project.
-
-## Agent Compatibility
-
-`pmm` uses the Agent Skills `SKILL.md` format, but its generated project memory is intentionally agent-neutral: the canonical project output is root `AGENTS.md` plus project-local `docs/`.
-
-- Codex and other Agent Skills clients can install `pmm/SKILL.md` directly.
-- Claude Code can install it under a Claude skills directory and use a short `CLAUDE.md` shim that points back to `AGENTS.md`.
-- Hermes can install it as a `SKILL.md` skill and cite project memory files in handoffs.
-- OpenCode/OpenClaw-style agents can use the generated `AGENTS.md` directly even when they do not load the skill package.
-
-See `docs/agent-compatibility.md` for the full compatibility map and shim examples.
-
-## Basic Workflow
-
-1. Start a new project or identify an existing project.
-2. Create or update project root `AGENTS.md`.
-3. Create the requirements document tree under `docs/`.
-4. Record the active task in `docs/00-project-memory/task-ledger.md`.
-5. For review tasks, confirm the concrete PRD, screenshot, design, document, or code source first.
-6. Read only the task-specific source documents.
-7. Execute, verify, retry if safe, and update project memory.
-8. Record decisions, risks, and changes in `docs/07-decisions/`.
-
-See `docs/context-budget.md` for the detailed context and token reduction strategy.
-
-## Safety Model
-
-Never commit real secrets, production credentials, private server inventories, customer data, payment keys, deployment tokens, private chat logs, or local machine paths.
-
-Use placeholders such as:
-
-- `<PROJECTS_ROOT>`
-- `<SKILLS_ROOT>`
-- `<server-alias>`
-- `<production-domain>`
-- `<credential-reference>`
-
-High-risk actions require explicit project-owner confirmation:
-
-- real payment, refund, billing, or transaction actions
-- production data deletion or migration
-- credential, permission, user, order, or billing configuration changes
-- external publication, messaging, app store submission, or customer-visible actions
-
-## Optional Execution Integrations
-
-This skill can coordinate with specialized execution workflows such as planning, TDD, systematic debugging, completion verification, deployment, security review, and subagent-based execution with role boundaries.
-
-The project memory protocol stays in charge: specialized workflows may add checks, but they should not weaken project memory, verification, recovery, or security requirements.
-
-## Checks
-
-Run the public safety check before publishing:
+Maintainers should run:
 
 ```bash
 bash scripts/check-public-safety.sh
 ```
 
-The check blocks common sensitive terms, local paths, private project names, private domains, executable payloads, and accidental secret-like content.
+The local sync script clones the public repository, runs safety checks, and syncs only into a dedicated `pmm` skill directory. Never point it at a broad directory.
 
-## Automation
+## Quick Start
 
-This repository includes local automation helpers:
+1. Install or copy the `pmm` skill.
+2. Create project-root `AGENTS.md` from [templates/core/AGENTS.md](templates/core/AGENTS.md).
+3. Create the Core Pack: `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
+4. Pick a Runtime Profile for the task.
+5. Define Task/Harness/Verifier in `active-task.md`.
+6. Execute, verify, critique, and repair if needed.
+7. Write back only durable facts; archive useful completed summaries to `task-history.md`.
 
-- `scripts/check-public-safety.sh`: public safety and secret-like content scan.
-- `scripts/sync-local-skill.sh`: local-only sync helper for copying the checked main branch into a local skills directory.
+## Agent Compatibility
 
-GitHub Actions should not directly access your local machine. Use a local scheduler or agent automation to check pull requests, merge only safe changes, and run `scripts/sync-local-skill.sh` after main has been checked and merged.
+`pmm` output is agent-neutral. If an agent cannot load `SKILL.md`, it can still follow `AGENTS.md` and the Core Pack.
 
-## License
+- Codex: reads `AGENTS.md` natively; use nested `AGENTS.md` for scoped directory rules.
+- Claude Code: use [templates/adapters/CLAUDE.md](templates/adapters/CLAUDE.md) to import `AGENTS.md`.
+- Hermes Agent: prefer direct `AGENTS.md`; use [templates/adapters/HERMES.md](templates/adapters/HERMES.md) only as a short shim.
+- OpenClaw/OpenCode: use [templates/adapters/openclaw-project-card.md](templates/adapters/openclaw-project-card.md) as a workspace pointer.
 
-This project is licensed under the [MIT License](LICENSE). In short, others may use, modify, distribute, sublicense, and use it commercially, as long as they keep the copyright and license notice; the project is provided without warranty.
+See [docs/agent-compatibility.md](docs/agent-compatibility.md).
+
+## Safety Model
+
+Do not commit real secrets, production credentials, private server inventory, customer data, payment keys, deployment tokens, private chat logs, or local paths that identify a private environment.
+
+The project owner must confirm:
+
+- real payment, refund, billing, or transaction actions
+- production data deletion, migration, or overwrite
+- credential, permission, user, order, or billing configuration changes
+- external publication, messaging, app store submission, or other user-visible action
+
+## Repository Maintenance
+
+Before publishing, run at minimum:
+
+```bash
+bash scripts/check-public-safety.sh
+bash -n scripts/*.sh
+git diff --check
+```
+
+Public releases must update:
+
+- `VERSION`
+- `SKILL.md` frontmatter `version:`
+- [CHANGELOG.md](CHANGELOG.md)
+- Chinese and English README mirrors
+- local sync coverage
+
+See [docs/release-checklist.md](docs/release-checklist.md).

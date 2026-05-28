@@ -26,4 +26,4 @@ For scheduled security reviews, separate findings into:
 - Backend: expected to be not applicable unless a real backend/API service is added.
 - Repository automation: scripts, GitHub Actions drafts, sync behavior, public safety scans, and release docs.
 
-Record any durable security behavior change in `docs/00-project-memory/current-state.md`, `docs/00-project-memory/task-ledger.md`, and `docs/07-decisions/change-log.md`.
+Record any durable security behavior change in `docs/00-project-memory/current-state.md`, `docs/00-project-memory/active-task.md` when the task is active, and `docs/07-decisions/change-log.md`.

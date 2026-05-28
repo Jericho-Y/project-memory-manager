@@ -4,6 +4,13 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-05-28
+
+- Began `pmm` v0.2.0 upgrade from a full document-tree controller to a low-context project runtime with Runtime Profiles, Core Pack templates, optional packs, and Self-Eval Loop.
+- Added project-memory templates for `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`, while keeping legacy `task-ledger.md` compatibility.
+- Added adapter templates for Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and Codex nested scopes.
+- Updated context budget, agent compatibility, recovery, release checklist, README mirrors, public changelog, local sync coverage, and public safety checks for the v0.2 contract surface.
+
 ## 2026-05-20
 
 - Added usage-driven `pmm` guidance for keeping generated `AGENTS.md` files project-specific, requiring concrete source artifacts before PRD/requirements/source reviews, and defining subagent role and ownership boundaries before authorized subagent work.

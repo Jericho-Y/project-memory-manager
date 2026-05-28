@@ -4,6 +4,18 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-28 pmm v0.2.0 Runtime Upgrade
+
+- Status: completed
+- Objective: upgrade `pmm` from a full document-tree controller to a low-context, cross-agent project runtime with Self-Eval Loop, Core Pack templates, adapter templates, verifier recipes, memory promotion rules, and GitHub-facing documentation.
+- Selected docs: `AGENTS.md`, `SKILL.md`, `README.md`, `README.en.md`, `CHANGELOG.md`, `VERSION`, `docs/context-budget.md`, `docs/agent-compatibility.md`, `docs/runtime-profiles.md`, `docs/self-eval-loop.md`, `docs/memory-promotion.md`, `docs/verifier-recipes.md`, `templates/document-skeletons.md`, `templates/core/`, `templates/packs/`, `templates/adapters/`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `scripts/recovery-status.sh`
+- Selected execution skills: `pmm`, `codex-subagent-router`; read-only subagents were used for architecture and documentation review.
+- Current checkpoint: v0.2 files, docs, templates, examples, scripts, public README mirrors, changelog, and repository memory have been updated, pushed, tagged, released, and synced into the local installed skill.
+- Next concrete action: monitor real usage for compatibility drift, recovery false positives, overgrown project docs, or adapter confusion.
+- Retry count: 1
+- Last error or interruption: initial public safety check failed on README trailing whitespace; fixed and revalidated.
+- Verification status: passed public safety check, shell syntax check, `git diff --check`, repository recovery-status check, example recovery-status check, active-task recovery smoke test, local sync smoke test, GitHub push, tag publication, GitHub Release publication, public-source local skill sync, and installed-version check.
+
 ## 2026-05-20 Usage-Driven Skill Optimization Review
 
 - Status: completed

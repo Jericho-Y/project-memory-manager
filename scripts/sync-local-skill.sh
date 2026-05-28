@@ -78,6 +78,10 @@ fi
 [[ -d templates ]] || fail "templates directory missing after clone"
 [[ -f docs/agent-compatibility.md ]] || fail "agent compatibility guide missing after clone"
 [[ -f docs/context-budget.md ]] || fail "context budget guide missing after clone"
+[[ -f docs/runtime-profiles.md ]] || fail "runtime profiles guide missing after clone"
+[[ -f docs/self-eval-loop.md ]] || fail "self-eval loop guide missing after clone"
+[[ -f docs/memory-promotion.md ]] || fail "memory promotion guide missing after clone"
+[[ -f docs/verifier-recipes.md ]] || fail "verifier recipes guide missing after clone"
 [[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
 
 if find . -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
@@ -112,6 +116,10 @@ rsync -a --delete \
   --include='docs/' \
   --include='docs/agent-compatibility.md' \
   --include='docs/context-budget.md' \
+  --include='docs/runtime-profiles.md' \
+  --include='docs/self-eval-loop.md' \
+  --include='docs/memory-promotion.md' \
+  --include='docs/verifier-recipes.md' \
   --include='docs/08-automation/' \
   --include='docs/08-automation/***' \
   --include='scripts/' \
@@ -124,8 +132,16 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/CHANGELOG.md" ]] || fail "local sync did not produce CHANGELOG.md"
 [[ -f "$LOCAL_SKILL_DIR/LICENSE" ]] || fail "local sync did not produce LICENSE"
 [[ -f "$LOCAL_SKILL_DIR/templates/document-skeletons.md" ]] || fail "local sync did not produce document skeleton template"
+[[ -f "$LOCAL_SKILL_DIR/templates/core/active-task.md" ]] || fail "local sync did not produce active-task template"
+[[ -f "$LOCAL_SKILL_DIR/templates/core/verifier-map.md" ]] || fail "local sync did not produce verifier-map template"
+[[ -f "$LOCAL_SKILL_DIR/templates/adapters/CLAUDE.md" ]] || fail "local sync did not produce Claude adapter template"
+[[ -f "$LOCAL_SKILL_DIR/templates/adapters/HERMES.md" ]] || fail "local sync did not produce Hermes adapter template"
 [[ -f "$LOCAL_SKILL_DIR/docs/agent-compatibility.md" ]] || fail "local sync did not produce agent compatibility guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/context-budget.md" ]] || fail "local sync did not produce context budget guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/runtime-profiles.md" ]] || fail "local sync did not produce runtime profiles guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/self-eval-loop.md" ]] || fail "local sync did not produce self-eval loop guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/memory-promotion.md" ]] || fail "local sync did not produce memory promotion guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/verifier-recipes.md" ]] || fail "local sync did not produce verifier recipes guide"
 [[ -f "$LOCAL_SKILL_DIR/scripts/recovery-status.sh" ]] || fail "local sync did not produce recovery helper"
 
 printf 'Synced pmm to %s\n' "$LOCAL_SKILL_DIR"

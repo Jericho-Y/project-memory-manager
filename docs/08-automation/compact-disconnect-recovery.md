@@ -21,24 +21,24 @@ Error running remote compact task: stream disconnected before completion: error 
 Use this prompt for a heartbeat, scheduled check, or the next agent turn:
 
 ```text
-Open the project root and read AGENTS.md first. Then read docs/00-project-memory/current-state.md, docs/00-project-memory/task-ledger.md, docs/00-project-memory/recovery-rules.md, and docs/07-decisions/change-log.md.
+Open the project root and read AGENTS.md first. Then read docs/00-project-memory/current-state.md, docs/00-project-memory/active-task.md, docs/00-project-memory/recovery-rules.md, and docs/07-decisions/change-log.md. If active-task.md is missing in a legacy project, read docs/00-project-memory/task-ledger.md instead.
 
 If scripts/recovery-status.sh exists, run it from the project root.
 
-Continue only if the task ledger contains a task with status active or failed-retryable. If no such task exists and there are no partial edits, running side effects, or new risks, stop without adding a new ledger entry. Resume from Next Concrete Action only when recovery is needed. Before retrying any command, inspect the workspace for partial edits, partial command output, running processes, generated files, migrations, deployments, or external side effects.
+Continue only if the active task or legacy task ledger contains a task with status active or failed-retryable. If no such task exists and there are no partial edits, running side effects, or new risks, stop without adding durable noise. Resume from Next Concrete Action only when recovery is needed. Before retrying any command, inspect the workspace for partial edits, partial command output, running processes, generated files, migrations, deployments, or external side effects.
 
 Do not perform payment, production data, credential, permission, publication, destructive, or customer-visible actions without explicit project-owner confirmation.
 
-When work continues or a durable follow-up is found, update task-ledger.md with the compact disconnect as Last Error or Interruption, the current checkpoint, the next action, retry count, and verification status before stopping.
+When work continues or a durable follow-up is found, update active-task.md with the compact disconnect as Last Error or Interruption, the current checkpoint, the next action, retry count, and verification status before stopping.
 ```
 
-## Expected Task Ledger Fields
+## Expected Active Task Fields
 
 - Task ID
 - Source Request
 - Status
-- Documents Read
-- Selected Execution Skills
+- Runtime Profile
+- Selected Skills or Agents
 - Current Checkpoint
 - Next Concrete Action
 - Retry Count

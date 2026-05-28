@@ -9,5 +9,5 @@ Skip when: Maintaining the skill repository itself.
 - Changed: Initialized example project memory.
 - Why: Demonstrate the minimum recoverable project state.
 - Verified: Example files exist.
-- Docs Updated: `AGENTS.md`, `current-state.md`, `task-ledger.md`.
+- Docs Updated: `AGENTS.md`, `current-state.md`, `active-task.md`, `verifier-map.md`.
 - Remaining Risk: Example placeholders must be replaced before real use.

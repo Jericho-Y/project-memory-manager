@@ -30,7 +30,21 @@ required_files=(
   "SECURITY.md"
   "docs/agent-compatibility.md"
   "docs/context-budget.md"
+  "docs/runtime-profiles.md"
+  "docs/self-eval-loop.md"
+  "docs/memory-promotion.md"
+  "docs/verifier-recipes.md"
   "templates/document-skeletons.md"
+  "templates/core/AGENTS.md"
+  "templates/core/active-task.md"
+  "templates/core/current-state.md"
+  "templates/core/verifier-map.md"
+  "templates/core/task-history.md"
+  "templates/core/failure-patterns.md"
+  "templates/adapters/CLAUDE.md"
+  "templates/adapters/HERMES.md"
+  "templates/adapters/openclaw-project-card.md"
+  "templates/adapters/codex-subdir-AGENTS.md"
 )
 
 for file in "${required_files[@]}"; do
@@ -45,8 +59,16 @@ readme_checks=(
   "README.en.md:CHANGELOG.md"
   "README.en.md:LICENSE"
   "README.md:docs/context-budget.md"
+  "README.md:docs/runtime-profiles.md"
+  "README.md:docs/self-eval-loop.md"
   "README.en.md:docs/context-budget.md"
+  "README.en.md:docs/runtime-profiles.md"
+  "README.en.md:docs/self-eval-loop.md"
   "SKILL.md:docs/context-budget.md"
+  "SKILL.md:docs/runtime-profiles.md"
+  "SKILL.md:docs/self-eval-loop.md"
+  "SKILL.md:docs/memory-promotion.md"
+  "SKILL.md:docs/verifier-recipes.md"
 )
 
 for check in "${readme_checks[@]}"; do
@@ -63,9 +85,29 @@ rg -q "^version: $version$" SKILL.md || fail "SKILL.md version must match VERSIO
 rg -q "^## v$version " CHANGELOG.md || fail "CHANGELOG.md must include an entry for v$version"
 
 skill_lines="$(wc -l < SKILL.md | tr -d '[:space:]')"
-if (( skill_lines > 500 )); then
-  fail "SKILL.md exceeds 500 lines; move detail to linked docs"
+if (( skill_lines > 360 )); then
+  fail "SKILL.md exceeds 360 lines; move detail to linked docs"
 fi
+
+template_lines="$(wc -l < templates/document-skeletons.md | tr -d '[:space:]')"
+if (( template_lines > 160 )); then
+  fail "templates/document-skeletons.md exceeds 160 lines; keep it as a router"
+fi
+
+active_task_template_lines="$(wc -l < templates/core/active-task.md | tr -d '[:space:]')"
+if (( active_task_template_lines > 120 )); then
+  fail "templates/core/active-task.md exceeds 120 lines; keep the hot path compact"
+fi
+
+for adapter in templates/adapters/*.md; do
+  adapter_lines="$(wc -l < "$adapter" | tr -d '[:space:]')"
+  if (( adapter_lines > 80 )); then
+    fail "$adapter exceeds 80 lines; adapters must stay pointer-only"
+  fi
+  if rg -n --pcre2 '(?i)(task history|full project rules|complete project docs|retry count:|current checkpoint:)' "$adapter" >/dev/null; then
+    fail "$adapter appears to contain copied task state or broad project rules"
+  fi
+done
 
 forbidden_patterns=(
   'Jericho'

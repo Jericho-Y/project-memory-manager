@@ -6,6 +6,31 @@ Skip when: You only need internal project maintenance history.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.2.0 - 2026-05-28
+
+### Added
+
+- Runtime Profiles: Pulse, Sprint, Project, Recovery, and Audit for task-sized context loading.
+- Core Pack templates for `AGENTS.md`, `current-state.md`, `active-task.md`, `verifier-map.md`, `task-history.md`, `failure-patterns.md`, and `change-log.md`.
+- Optional pack templates for product, design, engineering, risk, operations, and automation docs.
+- Self-Eval Loop contract: Task, Harness, Verifier, Critic, Repair, Record, and memory-promotion decision.
+- Adapter templates for Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and Codex nested instruction scopes.
+- New installed docs for runtime profiles, self-evaluation, memory promotion, and verifier recipes.
+
+### Changed
+
+- `SKILL.md` is now a low-context runtime router instead of a full document-tree controller.
+- New projects should use `active-task.md` as the hot current-task path.
+- `task-ledger.md` remains a legacy bridge for v0.1 projects, but completed history should move to `task-history.md`.
+- Context budget rules now separate hot-path state from cold history and repeated failure records.
+- Agent compatibility guidance now treats runtime-specific files as adapters, not sources of truth.
+- Recovery helper supports both v0.2 `active-task.md` and legacy `task-ledger.md`.
+
+### Operations
+
+- Public safety checks now validate v0.2 docs, Core Pack templates, adapter templates, and line budgets.
+- Local skill sync now includes runtime, self-eval, memory-promotion, verifier docs, and adapter templates.
+
 ## v0.1.0 - 2026-05-20
 
 First formal public release of `pmm`.
