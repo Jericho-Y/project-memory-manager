@@ -14,12 +14,15 @@ Skip when: Maintaining only repository automation or public safety scripts.
 
 Project memory is the source of truth. Adapters route agents to that source; they do not copy it.
 
+Subagent Routing Gate is portable as a decision record, not as a guaranteed runtime feature. If the agent supports subagents, it may delegate within the recorded boundaries. If it does not, it records `solo` mode or uses the field as a manual handoff plan.
+
 ## Adapter Contract
 
 Every adapter must state:
 - which runtime loads it
 - which canonical project entrypoint to read
 - which hot-path files to read for active tasks
+- that subagent support is optional and parent verification remains required
 - which memory stores must not receive active task state
 - what to do when the runtime cannot load `pmm` as a skill
 
@@ -107,6 +110,7 @@ Before claiming cross-agent compatibility:
 - `SKILL.md` frontmatter has a valid lowercase `name`, version, and clear description.
 - `AGENTS.md` remains usable as a standalone project rule file.
 - Core Pack references `active-task.md` and `verifier-map.md`.
+- Active task templates include Agent Mode without requiring subagent support.
 - Legacy `task-ledger.md` behavior is documented if supported.
 - Claude, Hermes, OpenClaw/OpenCode, and Codex adapter paths are documented.
 - Adapters point to project memory instead of copying it.

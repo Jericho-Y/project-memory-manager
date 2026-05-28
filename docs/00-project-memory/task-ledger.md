@@ -4,6 +4,17 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-28 pmm v0.2.2 Subagent Routing Gate
+
+- Status: completed
+- Objective: add a lightweight default decision gate for solo, assisted, parallel, and review-only agent modes without increasing token cost for small tasks.
+- Selected docs: `SKILL.md`, `VERSION`, `CHANGELOG.md`, `README.md`, `README.en.md`, `docs/subagent-routing.md`, `docs/self-eval-loop.md`, `docs/context-budget.md`, `docs/runtime-profiles.md`, `docs/agent-compatibility.md`, `templates/core/active-task.md`, `templates/core/AGENTS.md`, `templates/document-skeletons.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `docs/00-project-memory/current-state.md`, `docs/07-decisions/change-log.md`
+- Current checkpoint: v0.2.2 adds Subagent Routing Gate, keeps detailed delegation rules cold-path, and records Agent Mode in `active-task.md`.
+- Next concrete action: monitor first real uses for over-delegation, under-delegation, or confusing Agent Mode defaults.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, shell syntax check, diff whitespace check, repository recovery check before completion, example recovery smoke test, local sync smoke test, installed version check, and installed subagent routing guide check.
+
 ## 2026-05-28 GitHub Repository Slug Normalization
 
 - Status: completed

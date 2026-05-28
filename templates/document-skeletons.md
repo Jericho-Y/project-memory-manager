@@ -72,10 +72,10 @@ See `docs/runtime-profiles.md` for profile details.
 For substantial tasks, `active-task.md` must include:
 
 ```text
-Task -> Harness -> Verifier -> Critic -> Repair -> Record
+Task -> Agent Mode -> Harness -> Verifier -> Critic -> Repair -> Record
 ```
 
-See `docs/self-eval-loop.md` and `docs/verifier-recipes.md`.
+See `docs/self-eval-loop.md`, `docs/subagent-routing.md`, and `docs/verifier-recipes.md`.
 
 ## Migration From v0.1.x
 

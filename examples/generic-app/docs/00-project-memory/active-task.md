@@ -25,6 +25,9 @@ Skip when: Maintaining the skill repository itself.
 
 ## Harness
 
+- Agent Mode: solo
+- Delegated Scopes: none
+- Parent-Owned Path: all example setup and verification
 - Tools: file inspection
 - Skills: pmm
 - Agents or Roles: none

@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when starting, structuring, continuing, recovering, or executing a commercial software project, app, website, mini program, SaaS, desktop tool, AI product, or large feature that needs low-context project memory, self-evaluating execution, verification, recovery, and cross-agent compatibility.
-version: 0.2.1
+version: 0.2.2
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -88,13 +88,16 @@ Templates live under `templates/core/`, `templates/packs/`, and `templates/adapt
 Every substantial execution task uses this loop:
 
 ```text
-Classify -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
+Classify -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
+
+Subagent Gate is a lightweight decision, not a default fan-out. Use solo mode for tiny or tightly coupled work. Use assisted, parallel, or review-only mode only when the subtask is bounded, useful, and has clear ownership. Details live in `docs/subagent-routing.md`.
 
 Record the task contract in `active-task.md`:
 
 ```text
 Task: objective, scope, risk, allowed files, forbidden actions
+Agent Mode: solo, assisted, parallel, or review-only; reason; delegated scopes
 Harness: tools, skills, agents, commands, environment
 Verifier: checks, evidence, manual acceptance
 Critic: pass/fail, missing evidence, false-pass risk
@@ -135,6 +138,7 @@ Rules:
 - `AGENTS.md` is the canonical project entrypoint.
 - `CLAUDE.md`, `.hermes.md`, OpenClaw project cards, and handoffs are adapters.
 - Adapters cite paths and startup behavior; they do not copy full docs.
+- Subagent routing is best-effort: agents with subagent tools may delegate; agents without them record solo mode or a manual handoff.
 - Root `AGENTS.md` stays short; specialized instructions belong in nested `AGENTS.md` files or task docs.
 - Do not rely on a single agent's hidden or global memory to preserve project state.
 - If an agent cannot load `pmm` as a skill, it should still be able to follow `AGENTS.md` and the Core Pack.
@@ -148,9 +152,10 @@ For any non-trivial task:
 2. Pick the runtime profile.
 3. Read the hot path for that profile.
 4. Update or create `active-task.md` before broad or long-running work.
-5. Define Task, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
-6. Select specialized skills or subagents only when they add value and ownership is clear.
-7. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
+5. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
+6. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
+7. Select specialized skills or subagents only when they add value and ownership is clear.
+8. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
 
 Ask the project owner only for decisions involving cost, production data, destructive changes, credentials, publication, external messaging, legal/business identity, or product direction.
 

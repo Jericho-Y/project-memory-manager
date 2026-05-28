@@ -9,10 +9,12 @@ Skip when: The task is a tiny read-only lookup with no durable state change.
 Every substantial task follows:
 
 ```text
-Classify -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
+Classify -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
 
 The loop is operational, not a reflective essay. It should produce evidence and a concise task state.
+
+Subagent Gate chooses `solo`, `assisted`, `parallel`, or `review-only` before broad work. The decision stays lightweight; open `docs/subagent-routing.md` only when delegation is plausible or the split needs review.
 
 ## Task Contract
 
@@ -26,6 +28,7 @@ Required fields:
 - Allowed Files or Areas
 - Forbidden Actions
 - Source Artifacts
+- Agent Mode
 - Selected Skills or Agents
 - Verifier
 - Loop Budget

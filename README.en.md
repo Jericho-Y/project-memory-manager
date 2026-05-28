@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.2.1`. See [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.2.2`. See [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -37,6 +37,12 @@ Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not 
 
 The v0.1.0 capabilities for requirements, project memory, verification, recovery, and document skeletons are still supported, but in v0.2.0 they become optional packs and legacy bridges. The default path is no longer to create a full document tree; start with the Core Pack and Self-Eval Loop, then add product, design, engineering, risk, ops, or automation docs only when the project has real facts that need them.
 
+## What's New In v0.2.2
+
+`v0.2.2` adds Subagent Routing Gate. At task start, agents choose `solo`, `assisted`, `parallel`, or `review-only`. Tiny tasks stay solo. Complex tasks, independent review, or clearly separable frontend/backend/test/docs work can use subagents when ownership is clear.
+
+This does not require every agent runtime to support subagents. Codex-style runtimes can delegate when available. Claude Code, Hermes, OpenClaw, and other runtimes can record the same field as a task split or manual handoff plan.
+
 ## What's New In v0.2.1
 
 `v0.2.1` adds the missing legacy migration path. When a project was created with the v0.1 `task-ledger.md`, new `pmm` runs should not stop at compatibility reading. If the user wants v0.2 behavior or a substantial task is starting, follow [docs/legacy-migration.md](docs/legacy-migration.md) to lightly create the `active-task.md`, `verifier-map.md`, and related hot-path files.
@@ -47,6 +53,7 @@ Read more:
 - [docs/self-eval-loop.md](docs/self-eval-loop.md)
 - [docs/context-budget.md](docs/context-budget.md)
 - [docs/agent-compatibility.md](docs/agent-compatibility.md)
+- [docs/subagent-routing.md](docs/subagent-routing.md)
 - [docs/legacy-migration.md](docs/legacy-migration.md)
 - [docs/memory-promotion.md](docs/memory-promotion.md)
 - [docs/verifier-recipes.md](docs/verifier-recipes.md)
@@ -63,7 +70,7 @@ Agent Adapter Layer
   CLAUDE.md / HERMES.md / OpenClaw project card / nested AGENTS.md
 
 Self-Eval Runtime
-  Task / Harness / Verifier / Critic / Repair / Record
+  Task / Agent Mode / Harness / Verifier / Critic / Repair / Record
 ```
 
 The project folder is the source of truth. Agent-native memory should store only stable preferences or a short pointer to the project entrypoint, not current task state.
@@ -118,6 +125,7 @@ Substantial tasks should define this contract in `active-task.md`:
 
 ```text
 Task: objective, scope, risk, allowed/forbidden actions
+Agent Mode: solo / assisted / parallel / review-only
 Harness: tools, skills, subagents, commands, environment
 Verifier: required checks, evidence, manual acceptance
 Critic: true pass/fail, missing evidence, false-pass risk
@@ -156,7 +164,7 @@ The local sync script clones the public repository, runs safety checks, and sync
 2. Create project-root `AGENTS.md` from [templates/core/AGENTS.md](templates/core/AGENTS.md).
 3. Create the Core Pack: `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
 4. Pick a Runtime Profile for the task.
-5. Define Task/Harness/Verifier in `active-task.md`.
+5. Define Task/Agent Mode/Harness/Verifier in `active-task.md`.
 6. Execute, verify, critique, and repair if needed.
 7. Write back only durable facts; archive useful completed summaries to `task-history.md`.
 

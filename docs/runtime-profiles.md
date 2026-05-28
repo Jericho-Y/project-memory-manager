@@ -8,6 +8,8 @@ Skip when: The active task profile is already recorded and no profile change is 
 
 Use the smallest runtime profile that can complete the task safely. Profiles control what the agent reads, writes, verifies, and promotes to durable memory.
 
+Profiles also guide Agent Mode. Smaller profiles prefer `solo`; broader or riskier profiles may use `assisted`, `parallel`, or `review-only` when delegation has clear value and ownership.
+
 ## Profiles
 
 | Profile | Scope | Load by default | Write by default | Loop budget |
@@ -29,6 +31,14 @@ Use `Project` only when the project needs requirements, architecture, planning, 
 Use `Recovery` when there is an active or failed-retryable task, a compact/stream disconnect, partial edits, or ambiguous previous state.
 
 Use `Audit` when the task touches high-risk boundaries, public release, repo publishing, compatibility promises, or security-sensitive behavior.
+
+## Agent Mode Defaults
+
+- Pulse: `solo`.
+- Sprint: `solo`, `assisted`, or `review-only`.
+- Project: `assisted` or `parallel` when scopes are independent.
+- Recovery: `solo` unless a bounded diagnostic or review subagent reduces risk.
+- Audit: `review-only` is encouraged for public, security, release, or compatibility claims when the runtime supports it.
 
 ## Pack Rules
 

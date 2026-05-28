@@ -33,6 +33,7 @@ required_files=(
   "docs/runtime-profiles.md"
   "docs/legacy-migration.md"
   "docs/self-eval-loop.md"
+  "docs/subagent-routing.md"
   "docs/memory-promotion.md"
   "docs/verifier-recipes.md"
   "templates/document-skeletons.md"
@@ -62,15 +63,18 @@ readme_checks=(
   "README.md:docs/context-budget.md"
   "README.md:docs/runtime-profiles.md"
   "README.md:docs/self-eval-loop.md"
+  "README.md:docs/subagent-routing.md"
   "README.md:docs/legacy-migration.md"
   "README.en.md:docs/context-budget.md"
   "README.en.md:docs/runtime-profiles.md"
   "README.en.md:docs/self-eval-loop.md"
+  "README.en.md:docs/subagent-routing.md"
   "README.en.md:docs/legacy-migration.md"
   "SKILL.md:docs/context-budget.md"
   "SKILL.md:docs/runtime-profiles.md"
   "SKILL.md:docs/legacy-migration.md"
   "SKILL.md:docs/self-eval-loop.md"
+  "SKILL.md:docs/subagent-routing.md"
   "SKILL.md:docs/memory-promotion.md"
   "SKILL.md:docs/verifier-recipes.md"
 )
@@ -102,6 +106,10 @@ active_task_template_lines="$(wc -l < templates/core/active-task.md | tr -d '[:s
 if (( active_task_template_lines > 120 )); then
   fail "templates/core/active-task.md exceeds 120 lines; keep the hot path compact"
 fi
+
+rg -q -F "Agent Mode" templates/core/active-task.md || fail "templates/core/active-task.md must include Agent Mode fields"
+rg -q -F "Agent Mode" docs/self-eval-loop.md || fail "docs/self-eval-loop.md must include Agent Mode in the task contract"
+rg -q -F "Subagent Gate" SKILL.md || fail "SKILL.md must include the Subagent Gate hot-path rule"
 
 for adapter in templates/adapters/*.md; do
   adapter_lines="$(wc -l < "$adapter" | tr -d '[:space:]')"

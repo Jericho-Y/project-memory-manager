@@ -42,6 +42,17 @@ Default context budgets:
 6. Open full files only when editing, investigating ambiguity, or verifying risk.
 7. Record selected docs once in `active-task.md`; do not repeat the same list every turn unless the task changes.
 
+## Delegation Budget
+
+Subagent routing should reduce context pressure, not increase it. Keep the hot-path decision short:
+
+- Pulse: `solo` by default.
+- Sprint: `solo` or one `assisted`/`review-only` subagent when it clearly helps.
+- Project or Audit: allow `parallel` only when scopes are independent and integration is explicit.
+- Recovery: use subagents only for bounded diagnosis or independent review.
+
+Open `docs/subagent-routing.md` only when delegation is plausible. Do not load it for tiny known-file edits.
+
 ## Writing Strategy
 
 - Keep `AGENTS.md` short and project-specific.
@@ -88,5 +99,6 @@ When this repository changes:
 - `SKILL.md` stays concise and links to this file.
 - README mirrors mention runtime profiles, Core Pack, adapters, and Self-Eval Loop without duplicating all docs.
 - Local sync includes this file plus runtime/self-eval/memory/verifier docs.
+- Subagent routing docs stay cold-path and README mirrors mention the feature without duplicating its rules.
 - Public safety checks verify required v0.2 docs and templates exist.
 - Line-budget checks keep hot-path files small enough for low-context agents.

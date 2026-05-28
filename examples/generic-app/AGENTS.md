@@ -28,6 +28,8 @@ Default profile: Sprint. Use Pulse for tiny edits, Project for larger setup, Rec
 
 The agent owns implementation, verification, and documentation updates for low-risk work. The project owner confirms high-risk cost, production, credential, publication, data, payment, or direction decisions.
 
+Choose Agent Mode before broad work. Use `solo` for tiny or tightly coupled tasks, `assisted` or `parallel` for clearly separable work, and `review-only` for independent risk checks.
+
 ## Current Task Pointer
 
 Current task state belongs in `docs/00-project-memory/active-task.md`. This file keeps only stable routing and safety rules.

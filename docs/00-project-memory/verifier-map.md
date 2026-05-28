@@ -10,6 +10,7 @@ Skip when: A task already has a complete verifier and no repository behavior cha
 - Scripts: `bash -n scripts/*.sh`, targeted smoke run when safe.
 - Documentation: README mirror consistency, required links, changelog entry, no private markers.
 - Templates: required Core Pack and adapter files exist, hot-path templates remain compact.
+- Subagent routing: `docs/subagent-routing.md` exists, `active-task.md` has Agent Mode fields, and docs keep routing detail out of the hot path.
 - Recovery: `bash scripts/recovery-status.sh .` and an active-task example smoke test.
 - Local sync: run `scripts/sync-local-skill.sh` against a local checked repository or public `main` after commit.
 - Release: `git diff --check`, clean intended diff, tag/release verification when publishing.
@@ -19,4 +20,5 @@ Skip when: A task already has a complete verifier and no repository behavior cha
 - Do not publish a version when `VERSION`, `SKILL.md`, and `CHANGELOG.md` disagree.
 - Do not claim v0.2 compatibility unless local sync includes new docs and adapter templates.
 - Do not treat adapter prose as enough; templates and safety checks must enforce pointer-only adapters.
+- Do not claim subagent support as mandatory across agents; it is a recorded mode with runtime-specific execution.
 - Do not delete legacy `task-ledger.md` support without a migration note.

@@ -49,7 +49,8 @@ Use:
 - Keep project state in project docs, not in agent-global memory.
 - Update `active-task.md` before broad, risky, or long-running work.
 - Define Task, Harness, Verifier, Critic, Repair, and Stop Condition for substantial tasks.
-- Use specialized skills or subagents only when they add value and ownership is clear.
+- Choose Agent Mode before broad work: `solo`, `assisted`, `parallel`, or `review-only`.
+- Use specialized skills or subagents only when they add value, ownership is clear, and the parent agent keeps final verification.
 - Do not copy full project rules into agent-specific adapters.
 
 ## Safety Boundaries

@@ -81,6 +81,7 @@ fi
 [[ -f docs/runtime-profiles.md ]] || fail "runtime profiles guide missing after clone"
 [[ -f docs/legacy-migration.md ]] || fail "legacy migration guide missing after clone"
 [[ -f docs/self-eval-loop.md ]] || fail "self-eval loop guide missing after clone"
+[[ -f docs/subagent-routing.md ]] || fail "subagent routing guide missing after clone"
 [[ -f docs/memory-promotion.md ]] || fail "memory promotion guide missing after clone"
 [[ -f docs/verifier-recipes.md ]] || fail "verifier recipes guide missing after clone"
 [[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
@@ -120,6 +121,7 @@ rsync -a --delete \
   --include='docs/runtime-profiles.md' \
   --include='docs/legacy-migration.md' \
   --include='docs/self-eval-loop.md' \
+  --include='docs/subagent-routing.md' \
   --include='docs/memory-promotion.md' \
   --include='docs/verifier-recipes.md' \
   --include='docs/08-automation/' \
@@ -143,6 +145,7 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/docs/runtime-profiles.md" ]] || fail "local sync did not produce runtime profiles guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/legacy-migration.md" ]] || fail "local sync did not produce legacy migration guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/self-eval-loop.md" ]] || fail "local sync did not produce self-eval loop guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/subagent-routing.md" ]] || fail "local sync did not produce subagent routing guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/memory-promotion.md" ]] || fail "local sync did not produce memory promotion guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/verifier-recipes.md" ]] || fail "local sync did not produce verifier recipes guide"
 [[ -f "$LOCAL_SKILL_DIR/scripts/recovery-status.sh" ]] || fail "local sync did not produce recovery helper"

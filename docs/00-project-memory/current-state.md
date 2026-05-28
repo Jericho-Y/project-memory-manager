@@ -10,7 +10,7 @@ The public repository is initialized and published as a generic Codex skill repo
 
 ## Active Objective
 
-Maintain `pmm` v0.2.1 as a low-context, cross-agent project runtime with Self-Eval Loop, Core Pack templates, adapter templates, legacy migration, and synchronized public documentation.
+Maintain `pmm` v0.2.2 as a low-context, cross-agent project runtime with Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, legacy migration, and synchronized public documentation.
 
 ## Current Facts
 
@@ -23,6 +23,7 @@ Maintain `pmm` v0.2.1 as a low-context, cross-agent project runtime with Self-Ev
 - Chinese release notes should read like native release copy; avoid generic language labels such as `中文说明` and standalone language headings such as `English`.
 - `v0.2.0` introduces Runtime Profiles, Core Pack templates, optional packs, Self-Eval Loop docs, memory promotion rules, verifier recipes, and agent adapter templates.
 - `v0.2.1` adds `docs/legacy-migration.md` so v0.1 projects using `task-ledger.md` can be lightly upgraded into the v0.2 hot path instead of remaining in compatibility-only mode.
+- `v0.2.2` adds Subagent Routing Gate so substantial tasks choose `solo`, `assisted`, `parallel`, or `review-only` before broad work, while keeping detailed delegation rules in a cold-path doc.
 - New projects should use `docs/00-project-memory/active-task.md` as the current-task hot path and keep completed history in `task-history.md`.
 - This repository now has its own `docs/00-project-memory/active-task.md` and `docs/00-project-memory/verifier-map.md`; legacy `task-ledger.md` remains as historical maintenance record.
 - Legacy `task-ledger.md` remains supported as a v0.1 bridge, especially for existing projects that have not migrated.
@@ -34,7 +35,7 @@ Maintain `pmm` v0.2.1 as a low-context, cross-agent project runtime with Self-Ev
 - Local skill sync is handled by `scripts/sync-local-skill.sh`.
 - Local sync temporary files and backups default to `.project-runtime/` inside the repository.
 - `scripts/recovery-status.sh` identifies active or retryable task entries from `active-task.md` or legacy `task-ledger.md`.
-- Local skill sync includes `SKILL.md`, templates, runtime/self-eval/memory/verifier docs, the agent compatibility guide, compact recovery automation docs, and the recovery status helper.
+- Local skill sync includes `SKILL.md`, templates, runtime/self-eval/subagent/memory/verifier docs, the agent compatibility guide, compact recovery automation docs, and the recovery status helper.
 - Local skill sync includes the legacy migration guide so installed skills can upgrade v0.1 project outputs into the v0.2 execution path.
 - Local skill sync includes `LICENSE`, `VERSION`, and `CHANGELOG.md` so installed skill copies preserve license and release metadata.
 - GitHub Actions workflow examples are stored under `docs/github-actions-drafts/` until workflow publishing is explicitly reviewed and enabled.
@@ -53,11 +54,12 @@ Maintain `pmm` v0.2.1 as a low-context, cross-agent project runtime with Self-Ev
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory so stale local files do not survive a sync.
 - Auto-merge draft rules require maintainer-applied labeling for external low-risk PRs and skip external `SKILL.md` changes for manual review.
 - Cross-agent compatibility is documented in `docs/agent-compatibility.md`; `SKILL.md` is the Agent Skills entrypoint and generated `AGENTS.md` plus the Core Pack is the portable project memory output.
-- `pmm` now keeps generated project instructions project-specific, gates PRD/requirements/source reviews on concrete source artifacts, and requires subagent role and ownership boundaries before spawning when subagent work is authorized.
+- `pmm` now keeps generated project instructions project-specific, gates PRD/requirements/source reviews on concrete source artifacts, and requires Agent Mode plus subagent role and ownership boundaries before delegation when subagent work is useful and authorized.
 - The 2026-05-20 skill optimization release passed repository-wide security review, was pushed to public `main`, and was synced into the local `pmm` skill installation from public `main`.
 - `v0.1.0` is the first formal public release version and is published as a GitHub Release.
 - `v0.2.0` passed public safety, shell syntax, diff whitespace, recovery-status, active-task recovery smoke, local sync smoke checks, public push, matching tag publication, GitHub Release publication, and local installed skill sync.
 - `v0.2.1` is a patch release to make v0.1-to-v0.2 project migration an explicit installed skill workflow.
+- `v0.2.2` is a patch release to make subagent use an explicit low-context task-start decision instead of an ad hoc instruction.
 - The `v0.1.0` and `v0.2.0` GitHub Release titles and notes were updated after publication to use the formal project name, native Chinese primary copy, collapsible English mirrors, concise changelog-style sections, and public links to source or full changelog without routine internal verification logs.
 
 ## Remaining Risks

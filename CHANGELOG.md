@@ -6,6 +6,20 @@ Skip when: You only need internal project maintenance history.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.2.2 - 2026-05-28
+
+### Added
+
+- Subagent Routing Gate for deciding whether a task should run as `solo`, `assisted`, `parallel`, or `review-only`.
+- `docs/subagent-routing.md` with bounded delegation rules, default limits, sensitive-data guardrails, and active-task recording guidance.
+- `Agent Mode` fields in the Core Pack `active-task.md` template.
+
+### Changed
+
+- Self-Eval Loop now starts with a lightweight subagent decision before broad loading or execution.
+- Runtime profile and context-budget docs now keep subagent routing cold-path so tiny tasks do not pay extra token cost.
+- Cross-agent compatibility docs clarify that subagent support is optional; agents without subagent tools record solo mode or a manual handoff plan.
+
 ## v0.2.1 - 2026-05-28
 
 ### Added

@@ -40,8 +40,9 @@ Use this before publishing changes to this repository.
 
 - Confirm runtime profile docs exist: `docs/runtime-profiles.md`.
 - Confirm legacy migration docs exist: `docs/legacy-migration.md`.
-- Confirm Self-Eval docs exist: `docs/self-eval-loop.md`, `docs/verifier-recipes.md`, `docs/memory-promotion.md`.
+- Confirm Self-Eval docs exist: `docs/self-eval-loop.md`, `docs/subagent-routing.md`, `docs/verifier-recipes.md`, `docs/memory-promotion.md`.
 - Confirm Core Pack templates exist: `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`.
+- Confirm `templates/core/active-task.md` includes Agent Mode fields without exceeding the hot-path line budget.
 - Confirm adapter templates exist for Claude Code, Hermes, OpenClaw/OpenCode, and Codex nested scopes.
 - Confirm `scripts/recovery-status.sh` supports both v0.2 `active-task.md` and v0.1 legacy `task-ledger.md`.
 - Confirm local sync includes all installed docs, templates, and recovery helper scripts.

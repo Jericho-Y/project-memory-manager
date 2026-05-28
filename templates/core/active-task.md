@@ -25,6 +25,9 @@ Skip when: The action is a tiny read-only lookup with no durable state.
 
 ## Harness
 
+- Agent Mode:
+- Delegated Scopes:
+- Parent-Owned Path:
 - Tools:
 - Skills:
 - Agents or Roles:

@@ -10,7 +10,7 @@ This repository publishes the `pmm` Agent Skill. Its job is to help agents creat
 
 ## Current Phase
 
-Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.2.0 as a low-context, cross-agent project runtime with Self-Eval Loop, Core Pack templates, adapter templates, and trusted local sync.
+Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.2.x as a low-context, cross-agent project runtime with Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, and trusted local sync.
 
 ## Mandatory Reading Order
 
@@ -27,7 +27,7 @@ Public repository is initialized and open source. The active objective is to pub
 
 | Task type | Read |
 | --- | --- |
-| Skill behavior change | `SKILL.md`, `templates/document-skeletons.md`, `templates/core/`, `templates/packs/`, `templates/adapters/`, `docs/runtime-profiles.md`, `docs/self-eval-loop.md`, `docs/memory-promotion.md`, `docs/verifier-recipes.md`, `docs/context-budget.md`, `docs/agent-compatibility.md`, `docs/00-project-memory/current-state.md` |
+| Skill behavior change | `SKILL.md`, `templates/document-skeletons.md`, `templates/core/`, `templates/packs/`, `templates/adapters/`, `docs/runtime-profiles.md`, `docs/self-eval-loop.md`, `docs/subagent-routing.md`, `docs/memory-promotion.md`, `docs/verifier-recipes.md`, `docs/context-budget.md`, `docs/agent-compatibility.md`, `docs/00-project-memory/current-state.md` |
 | Agent compatibility review | `SKILL.md`, `README.md`, `docs/agent-compatibility.md`, `templates/adapters/`, `scripts/sync-local-skill.sh` |
 | Public release or repository setup | `README.md`, `SECURITY.md`, `docs/release-checklist.md`, `docs/automation.md` |
 | Automation or sync change | `docs/automation.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh` |
