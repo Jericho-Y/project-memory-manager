@@ -30,7 +30,8 @@ Use this before publishing changes to this repository.
 - Publish a GitHub Release from the matching tag when the version is intended as a formal public release.
 - GitHub Release titles use the full public project name, for example `Project Memory Manager v0.2.0`; do not use the short skill call name as the public release title.
 - GitHub Release notes must be bilingual when the repository overview is bilingual: Chinese is the primary body, with an English mirror available after it.
-- Public GitHub Release notes should focus on user-visible changes: overview, added, changed, fixed, compatibility, migration, and upgrade notes.
+- Public GitHub Release notes should read like a concise changelog: use focused sections such as overview, added, changed, fixed, maintenance, compatibility, migration, and upgrade notes; omit empty sections.
+- Include a `Full Changelog` compare link for normal releases, or a source tag link for the first public release.
 - Keep internal verification command lists in project memory, changelog support notes, or release-prep records; do not put routine verification logs in the public Release body unless the verification result is itself a user-facing security or compatibility announcement.
 - Chinese release notes should be written as natural release copy, not as direct English translations. Do not add generic language labels such as `中文说明`; start with a useful content heading like `版本概览`.
 - Put the English mirror in a collapsible details block, for example `<details><summary>View release notes in English</summary>`, instead of using a standalone language heading like `English`.
