@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.2.2`，详见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：`v0.2.2`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 协议： [MIT License](LICENSE)。
 
 Purpose: 本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -205,6 +205,7 @@ git diff --check
 - `VERSION`
 - `SKILL.md` frontmatter `version:`
 - [CHANGELOG.md](CHANGELOG.md)
+- [CHANGELOG.en.md](CHANGELOG.en.md)
 - README 中文/英文镜像
 - 本地同步覆盖范围
 

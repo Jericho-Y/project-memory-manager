@@ -23,6 +23,7 @@ fi
 required_files=(
   "VERSION"
   "CHANGELOG.md"
+  "CHANGELOG.en.md"
   "LICENSE"
   "SKILL.md"
   "README.md"
@@ -56,9 +57,11 @@ done
 readme_checks=(
   "README.md:README.en.md"
   "README.md:CHANGELOG.md"
+  "README.md:CHANGELOG.en.md"
   "README.md:LICENSE"
   "README.en.md:README.md"
   "README.en.md:CHANGELOG.md"
+  "README.en.md:CHANGELOG.en.md"
   "README.en.md:LICENSE"
   "README.md:docs/context-budget.md"
   "README.md:docs/runtime-profiles.md"
@@ -91,6 +94,8 @@ version="$(tr -d '[:space:]' < VERSION)"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "VERSION must use semantic version format, for example 0.1.0"
 rg -q "^version: $version$" SKILL.md || fail "SKILL.md version must match VERSION"
 rg -q "^## v$version " CHANGELOG.md || fail "CHANGELOG.md must include an entry for v$version"
+rg -q "^## v$version " CHANGELOG.en.md || fail "CHANGELOG.en.md must include an entry for v$version"
+rg -q --pcre2 '\p{Han}' CHANGELOG.md || fail "CHANGELOG.md must be the Chinese primary changelog"
 
 skill_lines="$(wc -l < SKILL.md | tr -d '[:space:]')"
 if (( skill_lines > 360 )); then

@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.2.2`. See [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.2.2`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -205,6 +205,7 @@ Public releases must update:
 - `VERSION`
 - `SKILL.md` frontmatter `version:`
 - [CHANGELOG.md](CHANGELOG.md)
+- [CHANGELOG.en.md](CHANGELOG.en.md)
 - Chinese and English README mirrors
 - local sync coverage
 
