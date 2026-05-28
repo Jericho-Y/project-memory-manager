@@ -96,7 +96,7 @@ Store task state in the project folder. Global memory may keep only the pointer 
 `pmm` v0.1 projects may use `task-ledger.md`. v0.2 agents should:
 1. prefer `active-task.md` when present
 2. fall back to `task-ledger.md` when `active-task.md` is absent
-3. migrate the current task into `active-task.md` when practical
+3. run `docs/legacy-migration.md` when the user wants v0.2 behavior or a substantial task is starting
 4. archive completed entries into `task-history.md`
 
 Do not delete legacy ledgers without explicit project-owner approval.

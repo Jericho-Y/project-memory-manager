@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.2.0`. See [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.2.1`. See [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -37,12 +37,17 @@ Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not 
 
 The v0.1.0 capabilities for requirements, project memory, verification, recovery, and document skeletons are still supported, but in v0.2.0 they become optional packs and legacy bridges. The default path is no longer to create a full document tree; start with the Core Pack and Self-Eval Loop, then add product, design, engineering, risk, ops, or automation docs only when the project has real facts that need them.
 
+## What's New In v0.2.1
+
+`v0.2.1` adds the missing legacy migration path. When a project was created with the v0.1 `task-ledger.md`, new `pmm` runs should not stop at compatibility reading. If the user wants v0.2 behavior or a substantial task is starting, follow [docs/legacy-migration.md](docs/legacy-migration.md) to lightly create the `active-task.md`, `verifier-map.md`, and related hot-path files.
+
 Read more:
 
 - [docs/runtime-profiles.md](docs/runtime-profiles.md)
 - [docs/self-eval-loop.md](docs/self-eval-loop.md)
 - [docs/context-budget.md](docs/context-budget.md)
 - [docs/agent-compatibility.md](docs/agent-compatibility.md)
+- [docs/legacy-migration.md](docs/legacy-migration.md)
 - [docs/memory-promotion.md](docs/memory-promotion.md)
 - [docs/verifier-recipes.md](docs/verifier-recipes.md)
 

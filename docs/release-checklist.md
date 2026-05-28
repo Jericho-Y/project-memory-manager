@@ -39,6 +39,7 @@ Use this before publishing changes to this repository.
 ## v0.2 Contract Surface
 
 - Confirm runtime profile docs exist: `docs/runtime-profiles.md`.
+- Confirm legacy migration docs exist: `docs/legacy-migration.md`.
 - Confirm Self-Eval docs exist: `docs/self-eval-loop.md`, `docs/verifier-recipes.md`, `docs/memory-promotion.md`.
 - Confirm Core Pack templates exist: `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`.
 - Confirm adapter templates exist for Claude Code, Hermes, OpenClaw/OpenCode, and Codex nested scopes.

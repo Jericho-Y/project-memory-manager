@@ -4,6 +4,17 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-28 pmm v0.2.1 Legacy Migration Patch
+
+- Status: completed
+- Objective: make v0.1 project outputs usable through v0.2 execution features instead of only compatibility reading.
+- Selected docs: `SKILL.md`, `VERSION`, `CHANGELOG.md`, `README.md`, `README.en.md`, `docs/legacy-migration.md`, `docs/context-budget.md`, `docs/agent-compatibility.md`, `templates/document-skeletons.md`, `scripts/check-public-safety.sh`, `scripts/sync-local-skill.sh`, `docs/00-project-memory/current-state.md`, `docs/07-decisions/change-log.md`
+- Current checkpoint: v0.2.1 adds an explicit light migration workflow from legacy `task-ledger.md` projects into the v0.2 hot path with `active-task.md` and `verifier-map.md`.
+- Next concrete action: monitor the first real migrated v0.1 project for missing fields or confusing steps.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, shell syntax check, diff whitespace check, line-budget checks, public release, local sync, installed version check, and installed legacy guide check.
+
 ## 2026-05-28 pmm v0.2.0 Runtime Upgrade
 
 - Status: completed

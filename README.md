@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.2.0`，详见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：`v0.2.1`，详见 [CHANGELOG.md](CHANGELOG.md)。
 协议： [MIT License](LICENSE)。
 
 Purpose: 本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -37,12 +37,17 @@ Skip when: 已经熟悉仓库结构，只需要查看某个具体实现文件。
 
 `v0.1.0` 的需求、项目记忆、验证、恢复和文档骨架能力仍然保留，但在 `v0.2.0` 中变成按需启用的 Optional Packs 和 legacy bridge。默认路径不再是创建完整文档树，而是先用 Core Pack 和 Self-Eval Loop 支撑任务执行，再根据真实项目需要补充产品、设计、工程、风险、运维或自动化文档。
 
+## v0.2.1 维护更新
+
+`v0.2.1` 补齐旧项目升级路径：如果项目是用 `v0.1.0` 产生的 `task-ledger.md`，新版 `pmm` 不应该只停留在兼容读取，而应该在用户需要 v0.2 能力或开始重要任务时，按 [docs/legacy-migration.md](docs/legacy-migration.md) 轻量创建 `active-task.md`、`verifier-map.md` 等热路径文件。
+
 详细说明见：
 
 - [docs/runtime-profiles.md](docs/runtime-profiles.md)
 - [docs/self-eval-loop.md](docs/self-eval-loop.md)
 - [docs/context-budget.md](docs/context-budget.md)
 - [docs/agent-compatibility.md](docs/agent-compatibility.md)
+- [docs/legacy-migration.md](docs/legacy-migration.md)
 - [docs/memory-promotion.md](docs/memory-promotion.md)
 - [docs/verifier-recipes.md](docs/verifier-recipes.md)
 

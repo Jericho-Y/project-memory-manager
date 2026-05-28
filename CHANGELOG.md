@@ -6,6 +6,18 @@ Skip when: You only need internal project maintenance history.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.2.1 - 2026-05-28
+
+### Added
+
+- Legacy migration guide for using v0.2 execution features in projects created with v0.1 `task-ledger.md`.
+- Explicit rule that compatibility mode is not enough when the user wants v0.2 behavior: create the Core Pack hot path, migrate only the current task into `active-task.md`, and keep old history cold.
+
+### Changed
+
+- `SKILL.md`, context-budget guidance, agent compatibility notes, and template router now point to the legacy migration workflow.
+- Local sync and public safety checks now include `docs/legacy-migration.md`.
+
 ## v0.2.0 - 2026-05-28
 
 ### Added

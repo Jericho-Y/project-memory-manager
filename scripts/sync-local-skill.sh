@@ -79,6 +79,7 @@ fi
 [[ -f docs/agent-compatibility.md ]] || fail "agent compatibility guide missing after clone"
 [[ -f docs/context-budget.md ]] || fail "context budget guide missing after clone"
 [[ -f docs/runtime-profiles.md ]] || fail "runtime profiles guide missing after clone"
+[[ -f docs/legacy-migration.md ]] || fail "legacy migration guide missing after clone"
 [[ -f docs/self-eval-loop.md ]] || fail "self-eval loop guide missing after clone"
 [[ -f docs/memory-promotion.md ]] || fail "memory promotion guide missing after clone"
 [[ -f docs/verifier-recipes.md ]] || fail "verifier recipes guide missing after clone"
@@ -117,6 +118,7 @@ rsync -a --delete \
   --include='docs/agent-compatibility.md' \
   --include='docs/context-budget.md' \
   --include='docs/runtime-profiles.md' \
+  --include='docs/legacy-migration.md' \
   --include='docs/self-eval-loop.md' \
   --include='docs/memory-promotion.md' \
   --include='docs/verifier-recipes.md' \
@@ -139,6 +141,7 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/docs/agent-compatibility.md" ]] || fail "local sync did not produce agent compatibility guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/context-budget.md" ]] || fail "local sync did not produce context budget guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/runtime-profiles.md" ]] || fail "local sync did not produce runtime profiles guide"
+[[ -f "$LOCAL_SKILL_DIR/docs/legacy-migration.md" ]] || fail "local sync did not produce legacy migration guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/self-eval-loop.md" ]] || fail "local sync did not produce self-eval loop guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/memory-promotion.md" ]] || fail "local sync did not produce memory promotion guide"
 [[ -f "$LOCAL_SKILL_DIR/docs/verifier-recipes.md" ]] || fail "local sync did not produce verifier recipes guide"

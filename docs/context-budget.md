@@ -19,7 +19,7 @@ Spend context on the current decision. Keep project memory useful without forcin
 | Task source | only docs required by the task | Facts needed for the current work |
 | Cold path | `task-history.md`, `failure-patterns.md`, release notes, old logs | Use only for repeated failures, audits, migration, or history questions |
 
-`task-ledger.md` is a v0.1 compatibility path. If it exists, read it only when `active-task.md` is missing, stale, or explicitly referenced.
+`task-ledger.md` is a v0.1 compatibility path. If it exists, read it only when `active-task.md` is missing, stale, explicitly referenced, or being migrated through `docs/legacy-migration.md`.
 
 ## Runtime Profiles
 
@@ -79,6 +79,8 @@ Use broader reading when:
 - changing shared templates, safety rules, scripts, or automation
 - preparing public release notes or compatibility guarantees
 - migrating v0.1 projects from `task-ledger.md` to `active-task.md`
+
+Use `docs/legacy-migration.md` for that migration. The goal is to enable v0.2 execution, not to rewrite the old project archive.
 
 ## Maintenance Checks
 

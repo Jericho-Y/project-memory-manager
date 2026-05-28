@@ -85,3 +85,5 @@ Existing projects with `task-ledger.md` remain compatible. For lower context use
 2. Move completed summaries into `task-history.md`.
 3. Move repeated lessons into `failure-patterns.md`.
 4. Keep `task-ledger.md` only as a legacy archive or compatibility bridge.
+
+Use `docs/legacy-migration.md` for the full workflow. The migration is light: it creates the v0.2 hot path and keeps old files available for history.

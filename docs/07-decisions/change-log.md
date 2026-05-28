@@ -6,6 +6,7 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-05-28
 
+- Added `pmm` v0.2.1 legacy migration workflow so v0.1 projects using `task-ledger.md` can enter the v0.2 hot path with `active-task.md` and `verifier-map.md` instead of only being compatibility-read.
 - Began `pmm` v0.2.0 upgrade from a full document-tree controller to a low-context project runtime with Runtime Profiles, Core Pack templates, optional packs, and Self-Eval Loop.
 - Added project-memory templates for `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`, while keeping legacy `task-ledger.md` compatibility.
 - Added adapter templates for Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and Codex nested scopes.

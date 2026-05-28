@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when starting, structuring, continuing, recovering, or executing a commercial software project, app, website, mini program, SaaS, desktop tool, AI product, or large feature that needs low-context project memory, self-evaluating execution, verification, recovery, and cross-agent compatibility.
-version: 0.2.0
+version: 0.2.1
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -56,7 +56,7 @@ docs/00-project-memory/verifier-map.md
 
 Use `task-history.md`, `failure-patterns.md`, product/design/technical docs, and release history only when the active task requires them. Search headings and purpose headers before reading full files.
 
-For existing projects that still use `task-ledger.md`, treat it as a legacy combined ledger. When practical, migrate the current task into `active-task.md` and archive completed entries into `task-history.md`.
+For existing projects that still use `task-ledger.md`, do not stop at compatibility mode. If the user wants v0.2 behavior or a substantial task is starting, run the light migration in `docs/legacy-migration.md`: create the Core Pack hot path, move only the current active task into `active-task.md`, keep completed history cold, and leave the legacy ledger intact.
 
 ## Core Pack And Optional Packs
 
