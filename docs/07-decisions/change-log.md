@@ -11,6 +11,7 @@ Skip when: You only need current instructions and no historical context.
 - Added adapter templates for Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and Codex nested scopes.
 - Updated context budget, agent compatibility, recovery, release checklist, README mirrors, public changelog, local sync coverage, and public safety checks for the v0.2 contract surface.
 - Updated the `v0.1.0` and `v0.2.0` GitHub Release titles and notes to use formal project naming, native Chinese primary copy, collapsible English mirrors, concise changelog-style sections, and source/full-changelog links; added release checklist rules for future release titles, bilingual writing quality, and keeping routine verification logs out of public Release bodies.
+- Added a safe local GitHub intake automation boundary for read-only PR and issue triage reports without public comments, labels, closes, approvals, or merges.
 
 ## 2026-05-20
 

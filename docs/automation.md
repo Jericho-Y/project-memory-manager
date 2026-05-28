@@ -13,6 +13,21 @@ workflows and after reviewing the auto-merge policy.
 
 Keep the source-of-truth maintenance procedure in `docs/08-automation/scheduled-maintenance.md`. External automation entries should point back to that file so project logic stays in the project folder.
 
+## GitHub Intake Automation
+
+A local Codex automation may monitor open pull requests and issues for this repository.
+The safe default is read-only triage:
+
+- classify open PRs by risk and changed-file surface
+- classify open issues as bug, feature request, documentation, question, security-sensitive, or unclear
+- recommend owner actions
+- write timestamped local reports under `.project-runtime/github-intake/`
+- avoid secrets, tokens, private paths, and customer data in reports
+
+The intake automation must not merge PRs, approve PRs, request changes publicly, add labels,
+close issues, or post public comments unless the project owner explicitly authorizes that
+behavior later.
+
 The safe auto-merge policy should merge low-risk pull requests only when:
 
 - the pull request is not a draft
