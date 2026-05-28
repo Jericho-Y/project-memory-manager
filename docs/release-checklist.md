@@ -28,6 +28,7 @@ Use this before publishing changes to this repository.
 - Add a public entry to `CHANGELOG.md` describing user-visible additions, changes, fixes, and security notes.
 - Create and push a matching git tag, for example `v0.1.0`.
 - Publish a GitHub Release from the matching tag when the version is intended as a formal public release.
+- GitHub Release notes must be bilingual when the repository overview is bilingual: Chinese first, English mirror second, with equivalent sections for highlights, verification, and known limitations.
 
 ## v0.2 Contract Surface
 
