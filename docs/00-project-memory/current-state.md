@@ -28,7 +28,7 @@ Maintain `pmm` v0.2.1 as a low-context, cross-agent project runtime with Self-Ev
 - Legacy `task-ledger.md` remains supported as a v0.1 bridge, especially for existing projects that have not migrated.
 - The repository uses the root `LICENSE` file for MIT licensing, and README files link to it for public users.
 - The skill's public call name is `pmm`, displayed as `Project Memory Manager`.
-- Public repository examples use the repository slug `pmm` with an owner placeholder.
+- The public GitHub repository slug is `project-memory-manager`; the public display name remains `Project Memory Manager`, and the skill call name remains `pmm`.
 - `README.md` is the default Simplified Chinese repository overview; `README.en.md` is the English mirror and both files link to each other for language switching.
 - Local skill installation uses `<SKILLS_ROOT>/pmm`.
 - Local skill sync is handled by `scripts/sync-local-skill.sh`.

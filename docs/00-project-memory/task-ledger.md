@@ -4,6 +4,17 @@ Purpose: Task checkpoint and recovery ledger for repository maintenance work.
 Read when: Starting, resuming, or recovering any non-trivial task in this repository.
 Skip when: Performing a read-only lookup that will not change state.
 
+## 2026-05-28 GitHub Repository Slug Normalization
+
+- Status: completed
+- Objective: rename the public GitHub repository slug to lowercase `project-memory-manager` while preserving the display name `Project Memory Manager` and skill call name `pmm`.
+- Selected docs: `docs/automation.md`, `scripts/sync-local-skill.sh`, `docs/00-project-memory/current-state.md`, `docs/07-decisions/change-log.md`
+- Current checkpoint: GitHub repository slug and local `origin` remote have been updated; public Release links and local sync references use the lowercase slug.
+- Next concrete action: monitor old GitHub redirects and future automation reports for stale `Project-Memory-Manager` references.
+- Retry count: 0
+- Last error or interruption: none.
+- Verification status: passed public safety check, shell syntax check, diff whitespace check, remote-head check, open-PR query on new slug, GitHub Release link update, automation prompt update, push to `main`, and local skill sync.
+
 ## 2026-05-28 pmm v0.2.1 Legacy Migration Patch
 
 - Status: completed

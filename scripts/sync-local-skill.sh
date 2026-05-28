@@ -4,7 +4,7 @@
 # Skip when: Working only on public documentation or templates.
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/<owner>/pmm.git}"
+REPO_URL="${REPO_URL:-https://github.com/<owner>/project-memory-manager.git}"
 LOCAL_SKILL_DIR="${LOCAL_SKILL_DIR:-$HOME/.codex/skills/pmm}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_RUNTIME_DIR="${PROJECT_RUNTIME_DIR:-$repo_root/.project-runtime}"
