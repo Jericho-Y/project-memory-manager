@@ -10,7 +10,7 @@ Skip when: You only need current instructions and no historical context.
 - Added project-memory templates for `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`, while keeping legacy `task-ledger.md` compatibility.
 - Added adapter templates for Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and Codex nested scopes.
 - Updated context budget, agent compatibility, recovery, release checklist, README mirrors, public changelog, local sync coverage, and public safety checks for the v0.2 contract surface.
-- Updated the `v0.1.0` and `v0.2.0` GitHub Release titles and notes to use formal project naming and Chinese-first bilingual release copy; added release checklist rules for future release titles and bilingual writing quality.
+- Updated the `v0.1.0` and `v0.2.0` GitHub Release titles and notes to use formal project naming, native Chinese primary copy, and collapsible English mirrors; added release checklist rules for future release titles and bilingual writing quality.
 
 ## 2026-05-20
 

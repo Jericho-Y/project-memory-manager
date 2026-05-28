@@ -29,8 +29,9 @@ Use this before publishing changes to this repository.
 - Create and push a matching git tag, for example `v0.1.0`.
 - Publish a GitHub Release from the matching tag when the version is intended as a formal public release.
 - GitHub Release titles use the full public project name, for example `Project Memory Manager v0.2.0`; do not use the short skill call name as the public release title.
-- GitHub Release notes must be bilingual when the repository overview is bilingual: Chinese first, English mirror second, with equivalent sections for overview, changes, verification, and known limitations.
-- Chinese release notes should be written as natural release copy, not as direct English translations. Do not add generic language labels such as `中文说明`; start the Chinese section with a useful content heading like `版本概览`.
+- GitHub Release notes must be bilingual when the repository overview is bilingual: Chinese is the primary body, with an English mirror available after it.
+- Chinese release notes should be written as natural release copy, not as direct English translations. Do not add generic language labels such as `中文说明`; start with a useful content heading like `版本概览`.
+- Put the English mirror in a collapsible details block, for example `<details><summary>View release notes in English</summary>`, instead of using a standalone language heading like `English`.
 
 ## v0.2 Contract Surface
 
