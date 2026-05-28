@@ -16,7 +16,9 @@ Maintain `pmm` v0.2.0 as a low-context, cross-agent project runtime with Self-Ev
 
 - Public safety checks are enforced through `scripts/check-public-safety.sh`.
 - Public releases use `VERSION`, `SKILL.md` frontmatter `version:`, public `CHANGELOG.md`, matching git tags, and GitHub Releases.
-- GitHub Release notes are bilingual for this repository: Chinese first, English mirror second, with matching highlights, verification, and known limitations.
+- GitHub Release titles use the full public project name, for example `Project Memory Manager v0.2.0`.
+- GitHub Release notes are bilingual for this repository: Chinese first, English mirror second, with matching overview, changes, verification, and known limitations.
+- Chinese release notes should read like native release copy; avoid generic language labels such as `中文说明`.
 - `v0.2.0` introduces Runtime Profiles, Core Pack templates, optional packs, Self-Eval Loop docs, memory promotion rules, verifier recipes, and agent adapter templates.
 - New projects should use `docs/00-project-memory/active-task.md` as the current-task hot path and keep completed history in `task-history.md`.
 - This repository now has its own `docs/00-project-memory/active-task.md` and `docs/00-project-memory/verifier-map.md`; legacy `task-ledger.md` remains as historical maintenance record.
@@ -49,7 +51,7 @@ Maintain `pmm` v0.2.0 as a low-context, cross-agent project runtime with Self-Ev
 - The 2026-05-20 skill optimization release passed repository-wide security review, was pushed to public `main`, and was synced into the local `pmm` skill installation from public `main`.
 - `v0.1.0` is the first formal public release version and is published as a GitHub Release.
 - `v0.2.0` passed public safety, shell syntax, diff whitespace, recovery-status, active-task recovery smoke, local sync smoke checks, public push, matching tag publication, GitHub Release publication, and local installed skill sync.
-- The `v0.2.0` GitHub Release notes were updated after publication to include both Chinese and English sections.
+- The `v0.1.0` and `v0.2.0` GitHub Release titles and notes were updated after publication to use the formal project name and Chinese-first bilingual release copy.
 
 ## Remaining Risks
 
