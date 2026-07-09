@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when starting, structuring, continuing, recovering, or executing a commercial software project, app, website, mini program, SaaS, desktop tool, AI product, or large feature that needs low-context project memory, self-evaluating execution, verification, recovery, and cross-agent compatibility.
-version: 0.2.2
+version: 0.3.1
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -41,7 +41,7 @@ Classify every non-trivial task before reading broadly. Use the smallest profile
 | Recovery | Interrupted, failed, compact-disconnected, or retryable task | `AGENTS.md`, `current-state.md`, `active-task.md`, `recovery-rules.md`, `change-log.md` | Yes |
 | Audit | Security, release, deployment, auth, payment, production data, public compatibility | Risk docs plus exact source artifacts | Yes |
 
-Details live in `docs/runtime-profiles.md`.
+Runtime details live in `docs/runtime.md`.
 
 ## Hot Path
 
@@ -56,7 +56,7 @@ docs/00-project-memory/verifier-map.md
 
 Use `task-history.md`, `failure-patterns.md`, product/design/technical docs, and release history only when the active task requires them. Search headings and purpose headers before reading full files.
 
-For existing projects that still use `task-ledger.md`, do not stop at compatibility mode. If the user wants v0.2 behavior or a substantial task is starting, run the light migration in `docs/legacy-migration.md`: create the Core Pack hot path, move only the current active task into `active-task.md`, keep completed history cold, and leave the legacy ledger intact.
+For existing projects that still use `task-ledger.md`, do not stop at compatibility mode. If the user wants v0.2 behavior or a substantial task is starting, run the light migration in `docs/runtime.md`: create the Core Pack hot path, move only the current active task into `active-task.md`, keep completed history cold, and leave the legacy ledger intact.
 
 ## Core Pack And Optional Packs
 
@@ -81,7 +81,9 @@ Add optional packs only when the work needs them:
 | Ops | Deployment, monitoring, support, release operations |
 | Automation | Heartbeats, scheduled checks, compact recovery, long-running tasks |
 
-Templates live under `templates/core/`, `templates/packs/`, and `templates/adapters/`. `templates/document-skeletons.md` is a router, not a dump of every document body.
+Templates live under `templates/core/`, `templates/optional-packs.md`, and `templates/adapters/`. `templates/document-skeletons.md` is a router, not a dump of every document body.
+
+For tiny work, do not force the Core Pack. Use No PMM for one-off low-risk changes, or a Pulse Card in an existing entrypoint/task record when a short objective and verifier are enough.
 
 ## Self-Eval Loop
 
@@ -91,7 +93,7 @@ Every substantial execution task uses this loop:
 Classify -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
 
-Subagent Gate is a lightweight decision, not a default fan-out. Use solo mode for tiny or tightly coupled work. Use assisted, parallel, or review-only mode only when the subtask is bounded, useful, and has clear ownership. Details live in `docs/subagent-routing.md`.
+Subagent Gate is a lightweight decision, not a default fan-out. Use solo mode for tiny or tightly coupled work. Use assisted, parallel, or review-only mode only when the subtask is bounded, useful, and has clear ownership. Details live in `docs/runtime.md`.
 
 Record the task contract in `active-task.md`:
 
@@ -115,7 +117,7 @@ Critic must check for false completion:
 - surface UI changed while product state is invalid
 - unverified behavior described as verified
 
-Full details live in `docs/self-eval-loop.md`.
+Full loop, verifier, repair, and promotion details live in `docs/runtime.md`.
 
 ## Memory Promotion
 
@@ -128,7 +130,7 @@ Promote only durable facts:
 - safety, release, or production rules
 - repeated failure patterns that should alter future behavior
 
-When memory is promoted, prefer project-local files first. Agent-global memory should hold only a short pointer to the project entrypoint or a stable cross-project preference. See `docs/memory-promotion.md`.
+When memory is promoted, prefer project-local files first. Agent-global memory should hold only a short pointer to the project entrypoint or a stable cross-project preference. See `docs/runtime.md`.
 
 ## Cross-Agent Compatibility
 
@@ -161,7 +163,7 @@ Ask the project owner only for decisions involving cost, production data, destru
 
 ## Reading Rules
 
-Use `docs/context-budget.md` for full context-budget rules.
+Use `docs/runtime.md` for full context-budget rules.
 
 Default:
 - Start from `AGENTS.md` and hot path files.
@@ -173,13 +175,14 @@ Default:
 
 ## Verification Rules
 
-Verification is evidence, not confidence. Choose checks from `verifier-map.md` or `docs/verifier-recipes.md`.
+Verification is evidence, not confidence. Choose checks from `verifier-map.md` or `docs/runtime.md`.
 
 Default expectations:
 - Code: focused tests, build, typecheck, lint, or executable smoke validation.
 - Frontend: open the page, test the core flow, inspect desktop/mobile layout, and capture evidence when practical.
 - Backend: verify endpoints, validation, auth, persistence, error paths, and logs.
 - Docs/skills: run repository safety checks, version consistency checks, link/file existence checks, and line-budget checks.
+- Project memory: run `scripts/pmm-doctor.sh <PROJECT_ROOT>` when a lightweight Core Pack consistency check is useful.
 - High risk: verify success and failure paths, rollback plan, and confirmation boundary.
 
 If verification cannot run, record why, what risk remains, and the next best check.

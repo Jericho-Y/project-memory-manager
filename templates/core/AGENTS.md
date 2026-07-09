@@ -33,12 +33,12 @@ Use:
 
 ## Task Reading Map
 
-- Product/features:
+- Product/features: `PRD.md` by default; split product docs only when needed
 - UI/design:
 - Frontend:
 - Backend/API/database:
 - Auth/payment/permissions:
-- PRD/requirements/source review:
+- PRD/requirements/source review: `PRD.md` plus concrete source artifacts
 - Deployment/operations:
 - Testing/bug fixing:
 - Recovery:

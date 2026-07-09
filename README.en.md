@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.2.2`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.3.1`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -21,6 +21,16 @@ The core v0.2.0 output is:
 
 Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, long-lived maintenance work, and tasks that need cross-agent handoff, recovery, or strict verification.
 Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory or a verification loop.
+
+## What's New In v0.3.1
+
+`v0.3.1` simplifies the public documentation set. Runtime profiles, context budget, self-evaluation, subagent routing, verification, memory promotion, and legacy migration now live in [docs/runtime.md](docs/runtime.md). Release, automation, safety maintenance, and compact recovery guidance now live in [docs/maintenance.md](docs/maintenance.md). Optional pack templates now live in [templates/optional-packs.md](templates/optional-packs.md).
+
+## What's New In v0.3.0
+
+`v0.3.0` adds a lightweight runtime checker and clearer installation boundaries. Ordinary users can place the skill directly at `<SKILLS_ROOT>/pmm`; maintainer sync remains a maintainer workflow. `scripts/pmm-doctor.sh` checks Core Pack files, verifier fields, hot-path size, and pointer-only adapters.
+
+It also adds No PMM, Pulse Card, and Core Pack guidance so small tasks are not forced into the full project-memory workflow.
 
 ## What's New In v0.2.0
 
@@ -45,18 +55,14 @@ This does not require every agent runtime to support subagents. Codex-style runt
 
 ## What's New In v0.2.1
 
-`v0.2.1` adds the missing legacy migration path. When a project was created with the v0.1 `task-ledger.md`, new `pmm` runs should not stop at compatibility reading. If the user wants v0.2 behavior or a substantial task is starting, follow [docs/legacy-migration.md](docs/legacy-migration.md) to lightly create the `active-task.md`, `verifier-map.md`, and related hot-path files.
+`v0.2.1` adds the missing legacy migration path. When a project was created with the v0.1 `task-ledger.md`, new `pmm` runs should not stop at compatibility reading. If the user wants v0.2 behavior or a substantial task is starting, follow [docs/runtime.md](docs/runtime.md) to lightly create the `active-task.md`, `verifier-map.md`, and related hot-path files.
 
 Read more:
 
-- [docs/runtime-profiles.md](docs/runtime-profiles.md)
-- [docs/self-eval-loop.md](docs/self-eval-loop.md)
-- [docs/context-budget.md](docs/context-budget.md)
+- [docs/install.md](docs/install.md)
+- [docs/runtime.md](docs/runtime.md)
 - [docs/agent-compatibility.md](docs/agent-compatibility.md)
-- [docs/subagent-routing.md](docs/subagent-routing.md)
-- [docs/legacy-migration.md](docs/legacy-migration.md)
-- [docs/memory-promotion.md](docs/memory-promotion.md)
-- [docs/verifier-recipes.md](docs/verifier-recipes.md)
+- [docs/maintenance.md](docs/maintenance.md)
 
 ## Core Model
 
@@ -110,12 +116,7 @@ Templates live in [templates/core](templates/core).
 
 Use packs only when the current task needs them:
 
-- [templates/packs/product-pack.md](templates/packs/product-pack.md): product behavior, PRD, flows, acceptance.
-- [templates/packs/design-pack.md](templates/packs/design-pack.md): IA, page map, UI/UX, content.
-- [templates/packs/engineering-pack.md](templates/packs/engineering-pack.md): architecture, API, database, integrations.
-- [templates/packs/risk-pack.md](templates/packs/risk-pack.md): security, permissions, payment, production, risks.
-- [templates/packs/ops-pack.md](templates/packs/ops-pack.md): deployment, monitoring, support, releases.
-- [templates/packs/automation-pack.md](templates/packs/automation-pack.md): scheduled checks, heartbeat, long-running recovery.
+- [templates/optional-packs.md](templates/optional-packs.md): optional product (default master document: project-root `PRD.md`), design, engineering, risk, operations, and automation docs.
 
 Do not create empty placeholder files just to match a tree.
 
@@ -137,7 +138,22 @@ A task without a verifier cannot be marked `done`. Mark it `executed-unverified`
 
 ## Installation
 
+### Standard Install (For Agents)
+
 Place this repository in the target agent's skills directory and keep the directory name `pmm`:
+
+```text
+<SKILLS_ROOT>/pmm/
+```
+
+`<SKILLS_ROOT>` is the skills root for the runtime (use the same layout on Windows, macOS, and Linux):
+
+```text
+<SKILLS_ROOT>/pmm/            # macOS / Linux
+<SKILLS_ROOT>\pmm\       # Windows
+```
+
+Minimum install layout:
 
 ```text
 <SKILLS_ROOT>/pmm/
@@ -148,25 +164,47 @@ Place this repository in the target agent's skills directory and keep the direct
   docs/
   templates/
   scripts/recovery-status.sh
+  scripts/pmm-doctor.sh
 ```
 
-Maintainers should run:
+### Maintainer Sync
+
+Maintainers can use the local sync script to copy changes from the public repository into `<SKILLS_ROOT>/pmm`:
+
+```bash
+bash scripts/sync-local-skill.sh
+```
+
+Run safety checks first:
 
 ```bash
 bash scripts/check-public-safety.sh
 ```
 
-The local sync script clones the public repository, runs safety checks, and syncs only into a dedicated `pmm` skill directory. Never point it at a broad directory.
+See [docs/install.md](docs/install.md) for details.
+
+Windows or PowerShell users can also use the ordinary install helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -SkillsRoot <SKILLS_ROOT>
+```
 
 ## Quick Start
 
-1. Install or copy the `pmm` skill.
+1. Install or copy the `pmm` skill to `<SKILLS_ROOT>/pmm`.
 2. Create project-root `AGENTS.md` from [templates/core/AGENTS.md](templates/core/AGENTS.md).
 3. Create the Core Pack: `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
 4. Pick a Runtime Profile for the task.
 5. Define Task/Agent Mode/Harness/Verifier in `active-task.md`.
 6. Execute, verify, critique, and repair if needed.
-7. Write back only durable facts; archive useful completed summaries to `task-history.md`.
+7. Optionally run `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` to check Core Pack and verifier consistency.
+8. Write back only durable facts; archive useful completed summaries to `task-history.md`.
+
+### Lightweight usage guidance
+
+- No PMM: for tiny, single-file, low-risk tasks, do not enable PMM.
+- Pulse Card: for short tasks with clear scope and verifier points, keep a minimal task card in an existing entrypoint or task record; do not create a full Core Pack only for it.
+- Core Pack: for reusable facts, multi-file changes, or tasks requiring verifiable handoff, run through the Core Pack hot path.
 
 ## Agent Compatibility
 
@@ -197,6 +235,7 @@ Before publishing, run at minimum:
 ```bash
 bash scripts/check-public-safety.sh
 bash -n scripts/*.sh
+bash scripts/pmm-doctor.sh .
 git diff --check
 ```
 
@@ -209,4 +248,4 @@ Public releases must update:
 - Chinese and English README mirrors
 - local sync coverage
 
-See [docs/release-checklist.md](docs/release-checklist.md).
+See [docs/maintenance.md](docs/maintenance.md) for release, automation, and safety maintenance rules.

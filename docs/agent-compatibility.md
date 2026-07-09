@@ -18,6 +18,11 @@ Subagent Routing Gate is portable as a decision record, not as a guaranteed runt
 
 ## Adapter Contract
 
+Installation path convention:
+- Ordinary installs place the skill at `<SKILLS_ROOT>/pmm` for any runtime.
+- Maintainer sync targets only the same `<SKILLS_ROOT>/pmm` directory.
+- Runtime-specific helper skills, including Codex-only routing helpers, are optional execution aids and must not be required by generated project memory.
+
 Every adapter must state:
 - which runtime loads it
 - which canonical project entrypoint to read
@@ -32,8 +37,8 @@ Adapters must be short. If an adapter grows, move the content back into `AGENTS.
 
 | Agent family | Skill entry | Project entry | Adapter |
 | --- | --- | --- | --- |
-| Codex / Agent Skills clients | `<skills-root>/pmm/SKILL.md` | `AGENTS.md` | optional nested `AGENTS.md` for subdirectories |
-| Claude Code | `~/.claude/skills/pmm/SKILL.md` or project skill dir | `CLAUDE.md` importing `AGENTS.md` | `templates/adapters/CLAUDE.md` |
+| Codex / Agent Skills clients | `<SKILLS_ROOT>/pmm/SKILL.md` | `AGENTS.md` | optional nested `AGENTS.md` for subdirectories |
+| Claude Code | `<SKILLS_ROOT>/pmm/SKILL.md` or project skill dir | `CLAUDE.md` importing `AGENTS.md` | `templates/adapters/CLAUDE.md` |
 | Hermes Agent | Hermes skill folder if supported | `AGENTS.md`; `.hermes.md` or `HERMES.md` only as shim | `templates/adapters/HERMES.md` |
 | OpenClaw/OpenCode-style agents | agent-specific skill import if available | `AGENTS.md` | `templates/adapters/openclaw-project-card.md` |
 | Other coding agents | optional `SKILL.md` support | `AGENTS.md` | short project card or handoff prompt |
@@ -99,7 +104,7 @@ Store task state in the project folder. Global memory may keep only the pointer 
 `pmm` v0.1 projects may use `task-ledger.md`. v0.2 agents should:
 1. prefer `active-task.md` when present
 2. fall back to `task-ledger.md` when `active-task.md` is absent
-3. run `docs/legacy-migration.md` when the user wants v0.2 behavior or a substantial task is starting
+3. run the legacy migration workflow in `docs/runtime.md` when the user wants v0.2 behavior or a substantial task is starting
 4. archive completed entries into `task-history.md`
 
 Do not delete legacy ledgers without explicit project-owner approval.

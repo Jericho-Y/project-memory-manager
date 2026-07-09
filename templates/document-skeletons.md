@@ -33,12 +33,14 @@ Create optional packs only when facts exist and the profile needs them:
 
 | Pack | Template | Use when |
 | --- | --- | --- |
-| Product | `templates/packs/product-pack.md` | product behavior, PRD, flows, acceptance |
-| Design | `templates/packs/design-pack.md` | UI, UX, IA, page map, copy |
-| Engineering | `templates/packs/engineering-pack.md` | architecture, API, database, integration |
-| Risk | `templates/packs/risk-pack.md` | security, auth, payment, permissions, production |
-| Ops | `templates/packs/ops-pack.md` | deployment, monitoring, support, release ops |
-| Automation | `templates/packs/automation-pack.md` | heartbeats, scheduled checks, long-running recovery |
+| Product | `templates/optional-packs.md` | product behavior, PRD, flows, acceptance |
+| Design | `templates/optional-packs.md` | UI, UX, IA, page map, copy |
+| Engineering | `templates/optional-packs.md` | architecture, API, database, integration |
+| Risk | `templates/optional-packs.md` | security, auth, payment, permissions, production |
+| Ops | `templates/optional-packs.md` | deployment, monitoring, support, release ops |
+| Automation | `templates/optional-packs.md` | heartbeats, scheduled checks, long-running recovery |
+
+Product Pack uses project-root `PRD.md` as the default master document. Split details into `docs/02-product/*` only when the project has enough product facts to justify separate files.
 
 Do not create empty placeholder files just to match a tree. A missing optional pack is better than stale empty docs.
 
@@ -65,7 +67,7 @@ Adapters are not sources of truth. They route agents to `AGENTS.md` and the Core
 | Recovery | Core Pack plus recovery rules when needed | hot path plus recovery/change docs |
 | Audit | Core Pack plus Risk/Ops docs as needed | exact artifacts, risk docs, verifier docs |
 
-See `docs/runtime-profiles.md` for profile details.
+See `docs/runtime.md` for profile details.
 
 ## Self-Eval Contract
 
@@ -75,7 +77,7 @@ For substantial tasks, `active-task.md` must include:
 Task -> Agent Mode -> Harness -> Verifier -> Critic -> Repair -> Record
 ```
 
-See `docs/self-eval-loop.md`, `docs/subagent-routing.md`, and `docs/verifier-recipes.md`.
+See `docs/runtime.md`.
 
 ## Migration From v0.1.x
 
@@ -86,4 +88,4 @@ Existing projects with `task-ledger.md` remain compatible. For lower context use
 3. Move repeated lessons into `failure-patterns.md`.
 4. Keep `task-ledger.md` only as a legacy archive or compatibility bridge.
 
-Use `docs/legacy-migration.md` for the full workflow. The migration is light: it creates the v0.2 hot path and keeps old files available for history.
+Use `docs/runtime.md` for the full workflow. The migration is light: it creates the v0.2 hot path and keeps old files available for history.

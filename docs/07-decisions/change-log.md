@@ -4,10 +4,21 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-07-09
+
+- Consolidated the public document set: runtime/profile/context/self-eval/subagent/verifier/memory/migration guidance now lives in `docs/runtime.md`; release/automation/safety/sync/recovery/customization guidance now lives in `docs/maintenance.md`; optional pack templates now live in `templates/optional-packs.md`.
+- Reduced generated optional-pack defaults to one concise domain document before splitting product, design, engineering, risk, operations, or automation details.
+- Changed Product Pack defaults so generated projects use project-root `PRD.md` as the master requirements/product document, while `docs/02-product/*` remains optional split detail.
+
+## 2026-05-29
+
+- Added `pmm` v0.3.0 maintenance work: lightweight `scripts/pmm-doctor.sh`, ordinary install guidance, No PMM / Pulse Card / Core Pack usage tiers, and configurable public safety rules.
+- Clarified that Codex-specific routing helpers are local execution aids only; generated `pmm` project memory must remain usable by Claude, Hermes, OpenClaw, and other agents without those helpers.
+
 ## 2026-05-28
 
 - Renamed the public GitHub repository slug from `Project-Memory-Manager` to `project-memory-manager` while keeping the display name `Project Memory Manager` and skill call name `pmm`.
-- Added `pmm` v0.2.2 Subagent Routing Gate so tasks choose `solo`, `assisted`, `parallel`, or `review-only` before broad work, with detailed delegation rules kept in `docs/subagent-routing.md`.
+- Added `pmm` v0.2.2 Subagent Routing Gate so tasks choose `solo`, `assisted`, `parallel`, or `review-only` before broad work, with detailed delegation rules later consolidated into `docs/runtime.md`.
 - Added `pmm` v0.2.1 legacy migration workflow so v0.1 projects using `task-ledger.md` can enter the v0.2 hot path with `active-task.md` and `verifier-map.md` instead of only being compatibility-read.
 - Began `pmm` v0.2.0 upgrade from a full document-tree controller to a low-context project runtime with Runtime Profiles, Core Pack templates, optional packs, and Self-Eval Loop.
 - Added project-memory templates for `active-task.md`, `verifier-map.md`, `task-history.md`, and `failure-patterns.md`, while keeping legacy `task-ledger.md` compatibility.
@@ -30,7 +41,7 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-05-15
 
-- Added `docs/context-budget.md` and updated `SKILL.md`, templates, README files, compatibility notes, local sync, and public safety checks so `pmm` reduces context and token use through staged reading and concise durable updates.
+- Added context-budget guidance and updated `SKILL.md`, templates, README files, compatibility notes, local sync, and public safety checks so `pmm` reduces context and token use through staged reading and concise durable updates; the guidance later consolidated into `docs/runtime.md`.
 - Added no-op recovery guidance so routine recovery checks that find no active task, drift, or follow-up do not create task-ledger noise.
 
 ## 2026-05-14

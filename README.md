@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.2.2`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
+当前版本：`v0.3.1`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 协议： [MIT License](LICENSE)。
 
 用途：本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -21,6 +21,16 @@
 
 适用场景：商业级 app、网站、小程序、SaaS、桌面工具、AI 产品、较大的功能链路、长期维护项目，以及需要跨 Agent 接手、断线恢复或严格验证的任务。
 不适用场景：一次性命令、极小改动、临时 demo、无需项目记忆或验证闭环的短任务。
+
+## v0.3.1 维护更新
+
+`v0.3.1` 精简公开文档结构：运行档位、上下文预算、自我评测、子代理、验证、记忆沉淀和旧项目迁移统一到 [docs/runtime.md](docs/runtime.md)；发布、自动化、安全维护和 compact 恢复统一到 [docs/maintenance.md](docs/maintenance.md)；可选包模板统一到 [templates/optional-packs.md](templates/optional-packs.md)。
+
+## v0.3.0 维护更新
+
+`v0.3.0` 增加轻量运行检查和更清晰的安装边界：普通用户可以直接把 skill 放到 `<SKILLS_ROOT>/pmm`，维护者同步脚本继续作为维护工具；`scripts/pmm-doctor.sh` 可检查项目 Core Pack、verifier、热路径行数和 adapter 是否保持指针式。
+
+同时补充 `No PMM`、`Pulse Card`、`Core Pack` 三档轻量使用建议，避免小任务被迫创建完整项目记忆。
 
 ## v0.2.0 关键变化
 
@@ -45,18 +55,14 @@
 
 ## v0.2.1 维护更新
 
-`v0.2.1` 补齐旧项目升级路径：如果项目是用 `v0.1.0` 产生的 `task-ledger.md`，新版 `pmm` 不应该只停留在兼容读取，而应该在用户需要 v0.2 能力或开始重要任务时，按 [docs/legacy-migration.md](docs/legacy-migration.md) 轻量创建 `active-task.md`、`verifier-map.md` 等热路径文件。
+`v0.2.1` 补齐旧项目升级路径：如果项目是用 `v0.1.0` 产生的 `task-ledger.md`，新版 `pmm` 不应该只停留在兼容读取，而应该在用户需要 v0.2 能力或开始重要任务时，按 [docs/runtime.md](docs/runtime.md) 轻量创建 `active-task.md`、`verifier-map.md` 等热路径文件。
 
 详细说明见：
 
-- [docs/runtime-profiles.md](docs/runtime-profiles.md)
-- [docs/self-eval-loop.md](docs/self-eval-loop.md)
-- [docs/context-budget.md](docs/context-budget.md)
+- [docs/install.md](docs/install.md)
+- [docs/runtime.md](docs/runtime.md)
 - [docs/agent-compatibility.md](docs/agent-compatibility.md)
-- [docs/subagent-routing.md](docs/subagent-routing.md)
-- [docs/legacy-migration.md](docs/legacy-migration.md)
-- [docs/memory-promotion.md](docs/memory-promotion.md)
-- [docs/verifier-recipes.md](docs/verifier-recipes.md)
+- [docs/maintenance.md](docs/maintenance.md)
 
 ## 核心概念
 
@@ -110,12 +116,7 @@ docs/00-project-memory/failure-patterns.md
 
 根据项目阶段按需使用：
 
-- [templates/packs/product-pack.md](templates/packs/product-pack.md)：产品、PRD、用户流、验收标准。
-- [templates/packs/design-pack.md](templates/packs/design-pack.md)：IA、页面地图、UI/UX、文案。
-- [templates/packs/engineering-pack.md](templates/packs/engineering-pack.md)：架构、API、数据库、集成。
-- [templates/packs/risk-pack.md](templates/packs/risk-pack.md)：安全、权限、支付、生产、风险。
-- [templates/packs/ops-pack.md](templates/packs/ops-pack.md)：部署、监控、支持、发布。
-- [templates/packs/automation-pack.md](templates/packs/automation-pack.md)：定时检查、心跳、长任务恢复。
+- [templates/optional-packs.md](templates/optional-packs.md)：产品（默认总文档为项目根目录 `PRD.md`）、设计、工程、风险、运维和自动化可选文档。
 
 不要为空白占位创建整棵文档树。没有事实的文档先不要建。
 
@@ -137,7 +138,22 @@ Record: 最终状态、文档变更、是否沉淀记忆
 
 ## 安装
 
-把仓库放入目标 Agent 的 skills 目录，目录名保持为 `pmm`：
+### 普通安装（Agent 用户）
+
+将仓库放入目标 Agent 的技能目录，目录名保持为 `pmm`：
+
+```text
+<SKILLS_ROOT>/pmm/
+```
+
+`<SKILLS_ROOT>` 为该运行时的技能根目录（Windows / macOS / Linux 均使用同一规则）：
+
+```text
+<SKILLS_ROOT>/pmm/            # macOS / Linux
+<SKILLS_ROOT>\pmm\       # Windows
+```
+
+最小安装目录：
 
 ```text
 <SKILLS_ROOT>/pmm/
@@ -148,25 +164,47 @@ Record: 最终状态、文档变更、是否沉淀记忆
   docs/
   templates/
   scripts/recovery-status.sh
+  scripts/pmm-doctor.sh
 ```
 
-本仓库维护者可使用：
+### 维护者同步
+
+仓库维护者在变更公开仓库后，可使用同步脚本将变更同步到本地 `<SKILLS_ROOT>/pmm`：
+
+```bash
+bash scripts/sync-local-skill.sh
+```
+
+同步前请先执行：
 
 ```bash
 bash scripts/check-public-safety.sh
 ```
 
-本地同步脚本会先克隆公开仓库、运行安全检查，再同步到专用 `pmm` skill 目录。不要把同步目标设置成宽泛目录。
+详细说明见 [docs/install.md](docs/install.md)。
+
+Windows 或 PowerShell 用户也可以使用普通安装脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -SkillsRoot <SKILLS_ROOT>
+```
 
 ## 快速上手
 
-1. 安装或复制 `pmm` skill。
+1. 安装或复制 `pmm` skill 到 `<SKILLS_ROOT>/pmm`。
 2. 在项目根目录创建 `AGENTS.md`，使用 [templates/core/AGENTS.md](templates/core/AGENTS.md)。
 3. 创建 Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md`。
 4. 按任务选择 Runtime Profile。
 5. 在 `active-task.md` 写下 Task/Agent Mode/Harness/Verifier。
 6. 执行、验证、Critic 检查、失败修复。
-7. 完成后只把耐久事实写回项目文档，历史归档到 `task-history.md`。
+7. 可选运行 `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` 检查 Core Pack 和 verifier 是否一致。
+8. 完成后只把耐久事实写回项目文档，历史归档到 `task-history.md`。
+
+### 轻量使用建议
+
+- No PMM：极小、单文件、低风险任务，可不启用 PMM。
+- Pulse Card：目标与验收足够明确的短任务，只在已有入口或当前任务记录里写最小任务卡，不为它新建完整 Core Pack。
+- Core Pack：涉及可复用事实、跨文件变更、或需要持续验证/交接时，按完整 Core Pack 热路径推进。
 
 ## Agent 兼容性
 
@@ -197,6 +235,7 @@ bash scripts/check-public-safety.sh
 ```bash
 bash scripts/check-public-safety.sh
 bash -n scripts/*.sh
+bash scripts/pmm-doctor.sh .
 git diff --check
 ```
 
@@ -209,4 +248,4 @@ git diff --check
 - README 中文/英文镜像
 - 本地同步覆盖范围
 
-更多发布要求见 [docs/release-checklist.md](docs/release-checklist.md)。
+更多发布、自动化和安全维护要求见 [docs/maintenance.md](docs/maintenance.md)。

@@ -18,7 +18,7 @@ The source of truth for recovery is inside this project folder:
 - `docs/00-project-memory/task-ledger.md` for legacy v0.1 projects
 - `docs/00-project-memory/recovery-rules.md`
 - `docs/07-decisions/change-log.md`
-- `docs/08-automation/compact-disconnect-recovery.md`
+- `docs/maintenance.md`
 
 Temporary recovery output, logs, local backups, and cloned checkouts belong in `.project-runtime/` or `tmp/`, not in unrelated folders.
 

@@ -9,80 +9,49 @@ cd "$repo_root"
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/pmm-safety.XXXXXX")"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+rules_file="scripts/public-safety-rules.conf"
+
 fail() {
   printf 'ERROR: %s\n' "$1" >&2
   exit 1
 }
 
+is_allowed_script_file() {
+  local file="$1"
+  local allowed
+
+  for allowed in "${PUBLIC_SAFETY_ALLOWED_SCRIPT_FILES[@]}"; do
+    if [[ "$file" == "$allowed" || "$file" == "./$allowed" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 printf 'Running public safety checks...\n'
+
+[[ -f "$rules_file" ]] || fail "missing public safety rules config: $rules_file"
+# shellcheck source=scripts/public-safety-rules.conf
+source "$rules_file"
+bash -n "$rules_file"
+
+local_rules_file="${PUBLIC_SAFETY_LOCAL_RULES_FILE:-.project-runtime/public-safety-local-rules.conf}"
+if [[ -f "$local_rules_file" ]]; then
+  bash -n "$local_rules_file"
+  # shellcheck source=/dev/null
+  source "$local_rules_file"
+fi
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git diff --check
 fi
 
-required_files=(
-  "VERSION"
-  "CHANGELOG.md"
-  "CHANGELOG.en.md"
-  "LICENSE"
-  "SKILL.md"
-  "README.md"
-  "README.en.md"
-  "SECURITY.md"
-  "docs/agent-compatibility.md"
-  "docs/context-budget.md"
-  "docs/runtime-profiles.md"
-  "docs/legacy-migration.md"
-  "docs/self-eval-loop.md"
-  "docs/subagent-routing.md"
-  "docs/memory-promotion.md"
-  "docs/verifier-recipes.md"
-  "templates/document-skeletons.md"
-  "templates/core/AGENTS.md"
-  "templates/core/active-task.md"
-  "templates/core/current-state.md"
-  "templates/core/verifier-map.md"
-  "templates/core/task-history.md"
-  "templates/core/failure-patterns.md"
-  "templates/adapters/CLAUDE.md"
-  "templates/adapters/HERMES.md"
-  "templates/adapters/openclaw-project-card.md"
-  "templates/adapters/codex-subdir-AGENTS.md"
-)
-
-for file in "${required_files[@]}"; do
+for file in "${PUBLIC_SAFETY_REQUIRED_FILES[@]}"; do
   [[ -f "$file" ]] || fail "missing required file: $file"
 done
 
-readme_checks=(
-  "README.md:README.en.md"
-  "README.md:CHANGELOG.md"
-  "README.md:CHANGELOG.en.md"
-  "README.md:LICENSE"
-  "README.en.md:README.md"
-  "README.en.md:CHANGELOG.md"
-  "README.en.md:CHANGELOG.en.md"
-  "README.en.md:LICENSE"
-  "README.md:docs/context-budget.md"
-  "README.md:docs/runtime-profiles.md"
-  "README.md:docs/self-eval-loop.md"
-  "README.md:docs/subagent-routing.md"
-  "README.md:docs/legacy-migration.md"
-  "README.en.md:docs/context-budget.md"
-  "README.en.md:docs/runtime-profiles.md"
-  "README.en.md:docs/self-eval-loop.md"
-  "README.en.md:docs/subagent-routing.md"
-  "README.en.md:docs/legacy-migration.md"
-  "SKILL.md:docs/context-budget.md"
-  "SKILL.md:docs/runtime-profiles.md"
-  "SKILL.md:docs/legacy-migration.md"
-  "SKILL.md:docs/self-eval-loop.md"
-  "SKILL.md:docs/subagent-routing.md"
-  "SKILL.md:docs/memory-promotion.md"
-  "SKILL.md:docs/verifier-recipes.md"
-)
-
-for check in "${readme_checks[@]}"; do
+for check in "${PUBLIC_SAFETY_REFERENCE_CHECKS[@]}"; do
   file="${check%%:*}"
   expected="${check#*:}"
   if ! rg -q -F "$expected" "$file"; then
@@ -113,7 +82,7 @@ if (( active_task_template_lines > 120 )); then
 fi
 
 rg -q -F "Agent Mode" templates/core/active-task.md || fail "templates/core/active-task.md must include Agent Mode fields"
-rg -q -F "Agent Mode" docs/self-eval-loop.md || fail "docs/self-eval-loop.md must include Agent Mode in the task contract"
+rg -q -F "Agent Mode" docs/runtime.md || fail "docs/runtime.md must include Agent Mode in the task contract"
 rg -q -F "Subagent Gate" SKILL.md || fail "SKILL.md must include the Subagent Gate hot-path rule"
 
 for adapter in templates/adapters/*.md; do
@@ -126,41 +95,20 @@ for adapter in templates/adapters/*.md; do
   fi
 done
 
-forbidden_patterns=(
-  'Jericho'
-  '/Users/'
-  'Desktop/Projects/Codex'
-  'cnallvip'
-  'cmallvip'
-  'caseapp'
-  'machouse'
-  'singapore-server'
-  '/www/wwwroot'
-  'macOS Keychain: mac-mouse'
-  'wechatminiprogram'
-  'allvip'
-)
-
-for pattern in "${forbidden_patterns[@]}"; do
-  if rg -n --hidden --glob '!scripts/check-public-safety.sh' --glob '!.git/**' --glob '!.project-runtime/**' --glob '!tmp/**' "$pattern" . >"$tmp_dir/private-markers.txt"; then
+for pattern in "${PUBLIC_SAFETY_FORBIDDEN_PATTERNS[@]}"; do
+  if rg -n --hidden \
+    --glob '!scripts/check-public-safety.sh' \
+    --glob '!scripts/public-safety-rules.conf' \
+    --glob '!.git/**' \
+    --glob '!.project-runtime/**' \
+    --glob '!tmp/**' \
+    "$pattern" . >"$tmp_dir/private-markers.txt"; then
     cat "$tmp_dir/private-markers.txt" >&2
     fail "forbidden private marker found: $pattern"
   fi
 done
 
-secret_patterns=(
-  '-----BEGIN (RSA |OPENSSH |EC |DSA |PRIVATE )?PRIVATE KEY-----'
-  'sk-[A-Za-z0-9_-]{20,}'
-  'gh[pousr]_[A-Za-z0-9_]{20,}'
-  'xox[baprs]-[A-Za-z0-9-]{20,}'
-  'AKIA[0-9A-Z]{16}'
-  'password[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']'
-  'DATABASE_URL[[:space:]]*='
-  'api[_-]?key[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']'
-  'token[[:space:]]*=[[:space:]]*["'\''][^"'\'']+["'\'']'
-)
-
-for pattern in "${secret_patterns[@]}"; do
+for pattern in "${PUBLIC_SAFETY_SECRET_PATTERNS[@]}"; do
   if rg -n --hidden --glob '!.git/**' --glob '!.project-runtime/**' --glob '!tmp/**' -e "$pattern" . >"$tmp_dir/secret-scan.txt"; then
     cat "$tmp_dir/secret-scan.txt" >&2
     fail "secret-like content found"
@@ -183,10 +131,12 @@ unexpected_executable_files="$(
   find . -type f -perm -111 \
     -not -path './.git/*' \
     -not -path './.project-runtime/*' \
-    -not -path './tmp/*' \
-    -not -path './scripts/check-public-safety.sh' \
-    -not -path './scripts/sync-local-skill.sh' \
-    -not -path './scripts/recovery-status.sh'
+    -not -path './tmp/*' |
+    while IFS= read -r file; do
+      if ! is_allowed_script_file "$file"; then
+        printf '%s\n' "$file"
+      fi
+    done
 )"
 
 if [[ -n "$unexpected_executable_files" ]]; then
@@ -194,23 +144,30 @@ if [[ -n "$unexpected_executable_files" ]]; then
   fail "unexpected executable file present"
 fi
 
+unexpected_script_files="$(
+  find . -type f \( -name '*.sh' -o -name '*.ps1' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
+    -not -path './.git/*' \
+    -not -path './.project-runtime/*' \
+    -not -path './tmp/*' |
+    while IFS= read -r file; do
+      if ! is_allowed_script_file "$file"; then
+        printf '%s\n' "$file"
+      fi
+    done
+)"
+
+if [[ -n "$unexpected_script_files" ]]; then
+  printf '%s\n' "$unexpected_script_files" >&2
+  fail "unexpected script file present"
+fi
+
 blocked_files="$(
-  find . -type f \( \
-    -name '.env' -o \
-    -name '.env.*' -o \
-    -name '*.pem' -o \
-    -name '*.key' -o \
-    -name '*.p12' -o \
-    -name '*.crt' -o \
-    -name '*.token' -o \
-    -name '*.secret' -o \
-    -name '*.zip' -o \
-    -name '*.tar' -o \
-    -name '*.gz' -o \
-    -name '*.dylib' -o \
-    -name '*.so' -o \
-    -name '*.bin' \
-  \) -not -path './.git/*' -not -path './.project-runtime/*' -not -path './tmp/*'
+  for pattern in "${PUBLIC_SAFETY_BLOCKED_FILE_PATTERNS[@]}"; do
+    find . -type f -name "$pattern" \
+      -not -path './.git/*' \
+      -not -path './.project-runtime/*' \
+      -not -path './tmp/*'
+  done | sort -u
 )"
 
 if [[ -n "$blocked_files" ]]; then

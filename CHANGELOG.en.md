@@ -6,12 +6,34 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.3.1 - 2026-07-09
+
+### Changed
+
+- Simplified the public documentation set by consolidating runtime profiles, context budget, self-evaluation, subagent routing, verifier recipes, memory promotion, and legacy migration into [docs/runtime.md](docs/runtime.md).
+- Consolidated release checks, automation boundaries, safety maintenance, local sync boundaries, compact recovery prompts, and customization guidance into [docs/maintenance.md](docs/maintenance.md).
+- Consolidated product, design, engineering, risk, operations, and automation optional-pack templates into [templates/optional-packs.md](templates/optional-packs.md), with one domain document preferred before splitting.
+- Updated public safety checks and local skill sync rules to validate the consolidated document entrypoints.
+
+## v0.3.0 - 2026-05-29
+
+### Added
+
+- Added `scripts/pmm-doctor.sh` to check project Core Pack files, `active-task.md` verifier fields, hot-path line budgets, and pointer-only adapters.
+- Added [docs/install.md](docs/install.md) and `scripts/install-local-skill.ps1` to distinguish ordinary installation from maintainer sync and document the cross-platform `<SKILLS_ROOT>/pmm` layout.
+- Added No PMM, Pulse Card, and Core Pack guidance so tiny tasks are not forced into the full project-memory workflow.
+
+### Changed
+
+- Moved public safety required files, reference checks, generic forbidden markers, secret-like patterns, allowed scripts, and blocked file types into `scripts/public-safety-rules.conf`, with `.project-runtime/public-safety-local-rules.conf` available for uncommitted private markers.
+- Local skill sync now includes `docs/install.md` and `scripts/pmm-doctor.sh`.
+
 ## v0.2.2 - 2026-05-28
 
 ### Added
 
 - Subagent Routing Gate for deciding whether a task should run as `solo`, `assisted`, `parallel`, or `review-only`.
-- `docs/subagent-routing.md` with bounded delegation rules, default limits, sensitive-data guardrails, and active-task recording guidance.
+- Subagent routing guidance with bounded delegation rules, default limits, sensitive-data guardrails, and active-task recording guidance; this content was later consolidated into [docs/runtime.md](docs/runtime.md).
 - `Agent Mode` fields in the Core Pack `active-task.md` template.
 
 ### Changed
@@ -30,7 +52,7 @@ This project follows semantic versioning for public skill releases.
 ### Changed
 
 - `SKILL.md`, context-budget guidance, agent compatibility notes, and template router now point to the legacy migration workflow.
-- Local sync and public safety checks now include `docs/legacy-migration.md`.
+- Local sync and public safety checks now include legacy migration guidance; this content was later consolidated into [docs/runtime.md](docs/runtime.md).
 
 ## v0.2.0 - 2026-05-28
 
