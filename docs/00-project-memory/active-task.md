@@ -4,16 +4,16 @@ task_id: 2026-07-18-pmm-v0.4-task-runtime
 parent_task_id: none
 task_kind: primary
 execution_status: active
-verification_status: pending
+verification_status: passed
 delivery_status: ready
 owner: codex-root
 branch: main
 base_sha: 466276e4f8dcfbeb17986674ef19c720e8d77c4e
-revision: 6
-verification_head: none
-verification_source_hash: none
-verified_at: none
-updated_at: 2026-07-18T11:27:07Z
+revision: 7
+verification_head: 374d3d7355b74fa979293a8f858d82b2632b36b5
+verification_source_hash: 82a1ec2b5af3414bdaa20babe8237153af62ff3273f9a795210d02c948eafc5c
+verified_at: 2026-07-18T12:24:19Z
+updated_at: 2026-07-18T12:24:19Z
 ---
 
 # Active Task
@@ -59,10 +59,10 @@ Skip when: Looking up unrelated static repository history.
 
 ## Critic
 
-- Pass/Fail: implementation and independent review pass; release delivery remains pending.
-- Missing Evidence: committed-package verification, push, tag, GitHub Release, and installed-skill verification remain.
+- Pass/Fail: pass
+- Missing Evidence: push, tag, GitHub Release, and installed-skill verification remain.
 - False-Pass Risk: tests could pass while the installed package omits new scripts/templates or legacy status handling regresses.
-- Next Action: run the final working-tree gate, commit only intended v0.4 files, and reverify the committed package.
+- Next Action: push the verified commits, publish the v0.4.0 tag and GitHub Release, then sync and verify the installed skill.
 
 ## Repair
 
@@ -73,8 +73,8 @@ Skip when: Looking up unrelated static repository history.
 
 ## Record
 
-- Verification Evidence: TDD RED reproduced every review blocker; the expanded runtime contract passes 233/233 in the working tree, including takeover rollback, legacy current/history and multi-section field preservation, strict primary claims, sibling-primary Recovery, and failure/signal transaction cleanup. Final release checks still remain.
+- Verification Evidence: committed HEAD 374d3d7: runtime contract 233/233; shell syntax, public safety, Doctor text/JSON, Recovery, version, diff checks passed; independent review Critical=0 Important=0
 - Docs Updated: implementation plan, runtime, templates, install/compatibility, README mirrors, changelogs, and project memory.
-- Remaining Risk: committed-package verification, local install sync, and public release remain unverified.
+- Remaining Risk: local install sync and public release remain unverified.
 - Memory Promotion Decision: keep behavior in the public skill and project memory; do not promote operational task state globally.
-- Last Updated: 2026-07-18T12:20:57Z
+- Last Updated: 2026-07-18T12:24:19Z
