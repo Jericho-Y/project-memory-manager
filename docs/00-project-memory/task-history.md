@@ -14,3 +14,16 @@ Purpose: Append-only compact summaries of closed tasks.
 - Delivery State: released
 - Verification Evidence: committed HEAD 374d3d7: runtime contract 233/233; shell syntax, public safety, Doctor text/JSON, Recovery, version, diff checks passed; independent review Critical=0 Important=0
 - Closed At: 2026-07-18T15:15:04Z
+
+## 2026-07-18 2026-07-18-pmm-v0.4.1-installed-contract
+
+<!-- pmm-task-id: 2026-07-18-pmm-v0.4.1-installed-contract -->
+
+- Status: done
+- Parent Task: none
+- Title: pmm v0.4.1 installed contract hotfix
+- Execution State: done
+- Verification State: passed
+- Delivery State: released
+- Verification Evidence: committed source, simulated install, isolated sync, and final local installed contracts each passed 233/233; public safety, Doctor text/JSON, shell syntax, version and diff checks passed; v0.4.1 Release is public and latest
+- Closed At: 2026-07-18T15:34:53Z
