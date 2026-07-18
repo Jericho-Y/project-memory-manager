@@ -47,10 +47,19 @@ Use:
 ## Execution Rules
 
 - Keep project state in project docs, not in agent-global memory.
-- Update `active-task.md` before broad, risky, or long-running work.
+- Run the Workspace Gate before the Subagent Gate: inspect the primary task, branch/worktree, owner, allowed scope, and existing work items.
+- Keep exactly one primary task in `active-task.md`; never append a second task contract.
+- Use `docs/00-project-memory/work-items/<task-id>.md` only for branch/worktree-isolated child work.
+- Put queued, paused, confirmation-gated, deployment, and release work in an optional task queue instead of the active hot path.
+- Update the owned task file before broad, risky, or long-running work.
 - Define Task, Harness, Verifier, Critic, Repair, and Stop Condition for substantial tasks.
 - Choose Agent Mode before broad work: `solo`, `assisted`, `parallel`, or `review-only`.
 - Use specialized skills or subagents only when they add value, ownership is clear, and the parent agent keeps final verification.
+- Never allow two active writers to share one branch/worktree; overlapping scopes execute sequentially.
+- Keep one non-idle primary claim across local worktrees, including paused/blocked tasks; require each non-idle task file to match its complete owner/branch/parent/kind claim, and never reuse an archived task ID.
+- Use the lifecycle CLI for whole-file task transactions; interrupted writes must leave neither partial task state nor orphan temporary files/claims, and an interrupted takeover must restore the owner matching the durable task file.
+- Treat any source-touching commit after verification as stale evidence even when a later commit reverts it.
+- Keep a verified child claim at `ready-to-integrate` until its commit is merged and the primary owner runs `pmm-task.sh integrate`; then reverify the primary task.
 - Do not copy full project rules into agent-specific adapters.
 
 ## Safety Boundaries
@@ -63,7 +72,8 @@ Use:
 ## Definition Of Done
 
 - Requested behavior implemented or blocker recorded.
-- Verifier run after the final change, or limitation recorded.
+- Verifier run after the final change and evidence still matches the current HEAD/source hash, or limitation recorded.
 - Critic checked false-pass risk.
 - `active-task.md`, `current-state.md`, `change-log.md`, and source docs updated only when durable state changed.
 - Remaining risk is explicit.
+- Every child work item is merged, explicitly integrated, and followed by fresh primary-task verification.

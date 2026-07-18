@@ -1,63 +1,80 @@
+---
+pmm_schema: pmm.task/v1
+task_id: 2026-07-18-pmm-v0.4-task-runtime
+parent_task_id: none
+task_kind: primary
+execution_status: active
+verification_status: pending
+delivery_status: ready
+owner: codex-root
+branch: main
+base_sha: 466276e4f8dcfbeb17986674ef19c720e8d77c4e
+revision: 6
+verification_head: none
+verification_source_hash: none
+verified_at: none
+updated_at: 2026-07-18T11:27:07Z
+---
+
 # Active Task
 
-Purpose: Current repository maintenance task contract, verifier, and recovery checkpoint.
-Read when: Starting, executing, verifying, or recovering the current repository task.
-Skip when: Doing a read-only lookup that does not change repository state.
+Purpose: Single repository task for the backward-compatible `pmm` v0.4.0 task runtime upgrade.
+Read when: Implementing, verifying, publishing, or recovering this upgrade.
+Skip when: Looking up unrelated static repository history.
 
 ## Status
 
-- Runtime Profile: Sprint
-- Task ID: 2026-07-09-doc-simplification
-- Source Request: Reduce the number of project documents and optimize each remaining document's responsibility.
-- Status: done
-- Risk Level: normal
-- Loop Budget: 3
-- Current Attempt: 1
-- Stop Condition: overlapping runtime, maintenance, and optional-pack docs are consolidated; references and safety/sync rules are updated; verification passed.
+- Title: pmm v0.4.0 structured task runtime
+- Runtime Profile: Audit
+- Risk Level: high
+- Loop Budget: 3 repair rounds per failed acceptance point
+- Current Attempt: 6
+- Stop Condition: backward-compatible runtime, tests, public release, and installed local sync are all freshly verified.
 
 ## Task
 
-- Objective: make the public `pmm` documentation set smaller and easier to route without weakening runtime, compatibility, safety, install, or verification behavior.
-- Scope: consolidate runtime guidance, maintenance guidance, and optional-pack templates; update source references, safety rules, sync/install coverage, README mirrors, and project memory.
-- Allowed Files or Areas: public docs, templates, scripts that enforce required docs/sync coverage, README mirrors, `SKILL.md`, `AGENTS.md`, changelogs, and project memory.
-- Forbidden Actions: workflow publishing, repository visibility changes, destructive git history edits, private paths, secrets, real local install sync, or changing behavior outside documentation/template routing.
-- Source Artifacts: user request, current repository files, `pmm` skill rules, repository verifier map, and read-only document audit subagent.
+- Objective: prevent multi-conversation task-state corruption while preserving legacy project execution and recovery.
+- Scope: structured task state, lifecycle CLI, workspace/concurrency gate, Doctor v2, Recovery v2, evidence freshness, safe migration, templates, public docs, versioning, release, and local sync.
+- Allowed Files or Areas: public skill repository files and the dedicated installed `pmm` skill directory during authorized sync.
+- Forbidden Actions: secrets, private paths, destructive legacy migration, unrelated file cleanup, workflow activation, repository visibility changes, or production-system operations.
+- Source Artifacts: user request, current repository behavior, backward-compatibility fixtures, and recent real-project failure evidence.
 
 ## Harness
 
-- Tools: shell, apply_patch, git, local safety scripts.
-- Skills: repository `pmm` rules.
-- Agent Mode: assisted
-- Delegated Scopes: read-only document structure audit and post-change review.
-- Parent-Owned Path: implementation, integration, script/rule updates, and final verification.
-- Agents or Roles: document-audit subagent and review subagent.
-- Commands: `bash scripts/check-public-safety.sh`, `bash -n scripts/*.sh`, `bash scripts/pmm-doctor.sh .`, `git diff --check`, and targeted stale-reference searches.
-- Environment Notes: repository is public and must remain generic; no real local paths, credentials, private domains, or user-specific machine details.
+- Agent Mode: solo implementation with independent read-only review and forward-test evidence.
+- Owner: codex-root
+- Branch: main
+- Parent Task: none
+- Delegated Scopes: independent old-skill baseline, revised-skill forward test, and final release review only.
+- Tools: shell, apply_patch, Git, GitHub CLI, public safety and sync helpers.
+- Skills: `pmm`, `skill-creator`, `superpowers:writing-skills`, `superpowers:test-driven-development`, `superpowers:verification-before-completion`.
+- Commands: runtime contract tests, shell syntax, Doctor/Recovery fixtures, public safety, link/version checks, Git checks, local sync smoke, installed-skill checks, and GitHub release verification.
+- Environment Notes: existing untracked retired docs/templates belong to the user and remain outside the release commit.
 
 ## Verifier
 
-- Required Checks: `bash scripts/check-public-safety.sh`; `bash -n scripts/*.sh`; `bash scripts/pmm-doctor.sh .`; `git diff --check`; stale-reference search for deleted docs and old optional-pack paths.
-- Manual Acceptance: the remaining docs have clear responsibilities; the installed skill still includes needed runtime, maintenance, compatibility, install, templates, and helpers.
-- Evidence Needed: command results, changed/deleted/added-file summary, subagent review summary, and remaining risk.
+- Required Checks: `bash tests/pmm-runtime-contract.sh`; `bash -n scripts/*.sh scripts/lib/*.sh tests/*.sh`; `bash scripts/check-public-safety.sh`; `bash scripts/pmm-doctor.sh .`; `git diff --check`; release and installed-skill verification.
+- Manual Acceptance: legacy single-task and task-ledger projects remain readable; ambiguous multi-task files are reported without rewrite; concurrent writers require isolated branches/worktrees.
+- Evidence Needed: observed RED then GREEN, final command outputs, commit/tag/release identity, remote checks, and installed file/version checks.
 
 ## Critic
 
-- Pass/Fail: pass.
-- Missing Evidence: no real local install sync was run because this task did not update the user's installed skill.
-- False-Pass Risk: low; stale path scans, public safety rules, sync includes, local Markdown links, and independent review found no blocking issue.
-- Next Action: optional local sync smoke when preparing a release or updating an installed skill.
+- Pass/Fail: implementation and independent review pass; release delivery remains pending.
+- Missing Evidence: committed-package verification, push, tag, GitHub Release, and installed-skill verification remain.
+- False-Pass Risk: tests could pass while the installed package omits new scripts/templates or legacy status handling regresses.
+- Next Action: run the final working-tree gate, commit only intended v0.4 files, and reverify the committed package.
 
 ## Repair
 
-- Last Failure: none.
-- Failure Class: none.
-- Attempted Fix: not applicable.
-- Next Concrete Action: none.
+- Last Failure: final independent review found interrupted takeover claim drift, legacy ledger zero/multi-current selection gaps, permissive primary claim diagnostics, and missing sibling-primary Recovery.
+- Failure Class: ownership rollback, backward-compatible current-task selection, strict claim integrity, and shared-state recovery completeness.
+- Attempted Fix: restored takeover claims from durable owner state, parsed legacy records per task field, made non-idle primary claim mismatch fatal, and merged primary/work-item sibling claims into Recovery.
+- Next Concrete Action: commit the reviewed v0.4 source after the final working-tree gate.
 
 ## Record
 
-- Verification Evidence: `bash scripts/check-public-safety.sh` passed; `bash -n scripts/*.sh` passed; `bash scripts/pmm-doctor.sh .` passed; `git diff --check` passed; stale-reference search for deleted docs returned no matches outside historical `task-ledger.md`; Markdown local link check passed across 36 Markdown files; read-only review subagent found no blocking issue.
-- Docs Updated: `docs/runtime.md`, `docs/maintenance.md`, `templates/optional-packs.md`, `AGENTS.md`, `SKILL.md`, README mirrors, changelog mirrors, project memory, safety rules, sync script, and template router.
-- Remaining Risk: real installed skill sync was not executed; local private marker extensions remain maintainer-local through `.project-runtime/public-safety-local-rules.conf` if needed.
-- Memory Promotion Decision: record durable simplified-document behavior in project memory only; no global memory promotion.
-- Last Updated: 2026-07-09
+- Verification Evidence: TDD RED reproduced every review blocker; the expanded runtime contract passes 233/233 in the working tree, including takeover rollback, legacy current/history and multi-section field preservation, strict primary claims, sibling-primary Recovery, and failure/signal transaction cleanup. Final release checks still remain.
+- Docs Updated: implementation plan, runtime, templates, install/compatibility, README mirrors, changelogs, and project memory.
+- Remaining Risk: committed-package verification, local install sync, and public release remain unverified.
+- Memory Promotion Decision: keep behavior in the public skill and project memory; do not promote operational task state globally.
+- Last Updated: 2026-07-18T12:20:57Z

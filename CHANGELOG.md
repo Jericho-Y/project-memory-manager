@@ -6,6 +6,36 @@
 
 本项目遵循语义化版本。中文是主更新日志；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 
+## v0.4.0 - 2026-07-18
+
+### 新增
+
+- 新增 `pmm.task/v1` 结构化任务状态，独立记录执行、验证和交付状态。
+- 新增 `scripts/pmm-task.sh` 生命周期命令与共享状态库，支持 start、status、checkpoint、verify、resume、close、integrate 和安全迁移。
+- 新增 branch/worktree 隔离的 work-item 与 task-queue 模板，支持同一项目的多对话协作。
+- Doctor v2 新增任务唯一性、状态枚举、分支所有权、证据新鲜度检查和 JSON 输出。
+- Recovery v2 新增显式任务选择、旧状态归一化、`task-ledger.md` 回退、sibling worktree primary/work-item claim 发现、paused/blocked/待集成恢复和歧义拒绝。
+- 新增 233 项运行时合同测试，覆盖 legacy 状态迁移、官方 v0.1 ledger 当前/历史任务筛选、v0.2/v0.3 多区段字段保留、证据失效、未跟踪文件 hash 失败、同/跨 worktree 并发 start、paused 主任务占槽、父子关闭竞态、worktree parent 发现、显式集成、verify 后源码 commit/revert/rename 拒绝、跨 Git ref 的 marker-less 历史任务 ID 复用拒绝与 ref 检查 fail-closed、孤儿锁恢复、owner/branch/claim 边界、takeover 中断回滚、delivery 保留、事务回滚、signal 临时文件清理和安装包完整性。
+
+### 调整
+
+- `active-task.md` 明确为单一主任务槽位，不再允许追加多个功能合同。
+- 验证证据绑定当前 Git HEAD 和源码 hash；逐 commit 检查 verify 后的历史，源码 commit 即使随后 revert 也必须重新验证。
+- 生命周期写入通过 Git common-dir mutation lock 串行化，并以整文件 staged transaction 原子提交；失败或 signal 会清理临时文件、回滚尚未提交的新 claim，并使中断的 takeover 恢复到与任务文件一致的 owner。变更命令必须匹配 owner、branch 和完整 claim，同机死亡进程遗留的短锁会安全恢复。
+- work-item close 改为进入 `ready-to-integrate` 并保留 claim；主任务 owner 仅在 verified commit 已合并时才能 integrate，之后必须重验主任务。
+- primary close 将 execution、verification、delivery 三轴写入历史，并把未完成 delivery 放入 task queue。
+- 同一 clone 只允许一个非 idle primary claim；paused/blocked 任务持续占槽，已归档 primary/work-item `task_id` 不可复用。
+- Bash 维护者同步与 PowerShell 普通安装都包含 lifecycle CLI、共享库、并发模板和合同测试。
+- 旧版单任务 `active-task.md` 和 `task-ledger.md` 保持可读；迁移是显式可选操作，多任务歧义文件不会自动改写。
+
+### 安全
+
+- 同一 branch/worktree 的并发写入会被拒绝；跨设备协作仍必须使用远端分支所有权，不能把本地 claim 当作分布式锁。
+- 单任务迁移 apply 前创建项目本地备份，自动迁移不会删除 legacy ledger。
+- legacy `done` 在缺少 v0.4 新鲜证据时迁移为 paused，legacy `idle` 迁移为标准空槽，避免生成 Doctor 会拒绝的假完成状态。
+- legacy ledger 按每条任务字段识别当前合同，忽略 completed 历史；零当前任务或多个当前任务都会拒绝自动迁移。
+- Git diff、tracked/untracked source hash 或任务文件写入失败时 fail-closed，并保留或回滚 claim，不能产生假验证或孤儿状态；源码 rename 到 operational path 也不能绕过 verify 后的 freshness 检查。
+
 ## v0.3.1 - 2026-07-09
 
 ### 调整

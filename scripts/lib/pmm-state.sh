@@ -1,0 +1,762 @@
+#!/usr/bin/env bash
+# Purpose: Shared dependency-free state helpers for pmm task lifecycle, Doctor, and Recovery.
+# Read when: Changing structured task state, evidence freshness, migration, or local claims.
+# Skip when: The task only changes public prose with no runtime behavior.
+
+pmm_now() {
+  date -u '+%Y-%m-%dT%H:%M:%SZ'
+}
+
+pmm_hash_stream() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{print $1}'
+  else
+    printf 'ERROR: shasum or sha256sum is required\n' >&2
+    return 1
+  fi
+}
+
+pmm_file_hash() {
+  local file="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  else
+    return 1
+  fi
+}
+
+pmm_frontmatter_value() {
+  local file="$1"
+  local key="$2"
+  [[ -f "$file" ]] || return 1
+  awk -v key="$key" '
+    NR == 1 && $0 == "---" { inside=1; next }
+    inside && $0 == "---" { exit }
+    inside && index($0, key ":") == 1 {
+      value=substr($0, length(key) + 2)
+      sub(/^[[:space:]]+/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      if (value ~ /^".*"$/ || value ~ /^'"'"'.*'"'"'$/) {
+        value=substr(value, 2, length(value) - 2)
+      }
+      print value
+      exit
+    }
+  ' "$file"
+}
+
+pmm_has_schema() {
+  local file="$1"
+  [[ "$(pmm_frontmatter_value "$file" pmm_schema 2>/dev/null || true)" == 'pmm.task/v1' ]]
+}
+
+pmm_validate_scalar() {
+  local label="$1"
+  local value="$2"
+  if [[ -z "$value" || "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+    printf 'ERROR: %s must be a non-empty single-line value\n' "$label" >&2
+    return 1
+  fi
+}
+
+pmm_validate_id() {
+  local value="$1"
+  [[ "$value" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$ ]]
+}
+
+pmm_execution_status_valid() {
+  case "$1" in
+    idle | queued | active | paused | blocked | ready-to-integrate | done) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pmm_verification_status_valid() {
+  case "$1" in
+    pending | partial | passed | stale | failed | not-required) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pmm_delivery_status_valid() {
+  case "$1" in
+    not-requested | waiting-confirmation | ready | deployed | released) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pmm_normalize_legacy_status() {
+  local value
+  value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  value="${value%.}"
+  case "$value" in
+    active | 'in progress' | in-progress | working | failed-retryable) printf 'active\n' ;;
+    paused | on-hold | 'on hold') printf 'paused\n' ;;
+    blocked | failed-blocked) printf 'blocked\n' ;;
+    done | complete | completed | 'code-complete locally' | 'complete locally') printf 'done\n' ;;
+    idle | none) printf 'idle\n' ;;
+    *) printf 'unknown\n' ;;
+  esac
+}
+
+pmm_set_frontmatter() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  local tmp
+  [[ -f "$file" ]] || return 1
+  [[ "$(sed -n '1p' "$file")" == '---' ]] || return 1
+  tmp="${file}.tmp.$$"
+  awk -v key="$key" -v value="$value" '
+    NR == 1 && $0 == "---" { inside=1; print; next }
+    inside && $0 == "---" {
+      if (!updated) print key ": " value
+      inside=0
+      print
+      next
+    }
+    inside && index($0, key ":") == 1 {
+      if (!updated) print key ": " value
+      updated=1
+      next
+    }
+    { print }
+  ' "$file" >"$tmp"
+  mv "$tmp" "$file"
+}
+
+pmm_replace_bullet() {
+  local file="$1"
+  local label="$2"
+  local value="$3"
+  local tmp="${file}.tmp.$$"
+  awk -v prefix="- ${label}:" -v value="$value" '
+    !updated && index($0, prefix) == 1 {
+      print prefix " " value
+      updated=1
+      next
+    }
+    { print }
+    END {
+      if (!updated) print prefix " " value
+    }
+  ' "$file" >"$tmp"
+  mv "$tmp" "$file"
+}
+
+pmm_git_head() {
+  git -C "$1" rev-parse HEAD 2>/dev/null || printf 'none\n'
+}
+
+pmm_git_branch() {
+  local branch
+  branch="$(git -C "$1" branch --show-current 2>/dev/null || true)"
+  if [[ -n "$branch" ]]; then
+    printf '%s\n' "$branch"
+  else
+    printf 'detached\n'
+  fi
+}
+
+pmm_operational_path() {
+  case "$1" in
+    docs/00-project-memory/active-task.md | \
+      docs/00-project-memory/task-history.md | \
+      docs/00-project-memory/task-queue.md | \
+      docs/00-project-memory/work-items/* | \
+      docs/07-decisions/change-log.md | \
+      .project-runtime/* | tmp/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pmm_source_hash() {
+  local root="$1"
+  local hash
+  local -a pipeline_status
+  if ! git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf 'none\n'
+    return 0
+  fi
+
+  hash="$(
+    set -o pipefail
+    {
+      cd "$root" || exit 1
+      git diff HEAD --no-ext-diff --binary -- . \
+        ':(exclude)docs/00-project-memory/active-task.md' \
+        ':(exclude)docs/00-project-memory/task-history.md' \
+        ':(exclude)docs/00-project-memory/task-queue.md' \
+        ':(exclude)docs/00-project-memory/work-items/**' \
+        ':(exclude)docs/07-decisions/change-log.md' || exit 1
+      git ls-files --others --exclude-standard -z |
+        while IFS= read -r -d '' file; do
+          pmm_operational_path "$file" && continue
+          printf 'untracked:%s:' "$file"
+          pmm_file_hash "$file" || exit 1
+        done
+      pipeline_status=("${PIPESTATUS[@]}")
+      (( pipeline_status[0] == 0 && pipeline_status[1] == 0 )) || exit 1
+    } | pmm_hash_stream
+  )" || {
+    printf 'ERROR: unable to hash the current Git source state\n' >&2
+    return 1
+  }
+  printf '%s\n' "$hash"
+}
+
+pmm_source_is_clean() {
+  local root="$1"
+  local file
+  local -a pipeline_status
+  git -C "$root" diff --quiet HEAD -- . \
+    ':(exclude)docs/00-project-memory/active-task.md' \
+    ':(exclude)docs/00-project-memory/task-history.md' \
+    ':(exclude)docs/00-project-memory/task-queue.md' \
+    ':(exclude)docs/00-project-memory/work-items/**' \
+    ':(exclude)docs/07-decisions/change-log.md' || return 1
+  git -C "$root" ls-files --others --exclude-standard -z |
+    while IFS= read -r -d '' file; do
+      pmm_operational_path "$file" || exit 1
+    done
+  pipeline_status=("${PIPESTATUS[@]}")
+  (( pipeline_status[0] == 0 && pipeline_status[1] == 0 ))
+}
+
+pmm_evidence_is_fresh() {
+  local root="$1"
+  local file="$2"
+  local expected_head expected_hash current_head
+  expected_head="$(pmm_frontmatter_value "$file" verification_head 2>/dev/null || true)"
+  expected_hash="$(pmm_frontmatter_value "$file" verification_source_hash 2>/dev/null || true)"
+  [[ -n "$expected_head" && "$expected_head" != 'none' ]] || return 1
+  [[ -n "$expected_hash" && "$expected_hash" != 'none' ]] || return 1
+  current_head="$(pmm_git_head "$root")"
+  if [[ "$expected_head" != "$current_head" ]]; then
+    git -C "$root" merge-base --is-ancestor "$expected_head" "$current_head" 2>/dev/null || return 1
+    pmm_git_range_is_operational "$root" "$expected_head" "$current_head" || return 1
+  fi
+  [[ "$expected_hash" == "$(pmm_source_hash "$root")" ]]
+}
+
+pmm_git_range_is_operational() {
+  local root="$1"
+  local from="$2"
+  local to="$3"
+  local commits commit parent file
+  local -a pipeline_status
+  git -C "$root" merge-base --is-ancestor "$from" "$to" 2>/dev/null || return 1
+  commits="$(git -C "$root" rev-list --reverse "$from..$to" -- 2>/dev/null)" || return 1
+  while IFS= read -r commit; do
+    [[ -n "$commit" ]] || continue
+    parent="$(git -C "$root" rev-parse "$commit^1" 2>/dev/null)" || return 1
+    git -C "$root" diff --no-renames --name-only -z "$parent" "$commit" -- |
+      while IFS= read -r -d '' file; do
+        pmm_operational_path "$file" || exit 1
+      done
+    pipeline_status=("${PIPESTATUS[@]}")
+    (( pipeline_status[0] == 0 && pipeline_status[1] == 0 )) || return 1
+  done <<<"$commits"
+}
+
+pmm_ready_evidence_is_fresh_on_branch() {
+  local root="$1"
+  local file="$2"
+  local branch expected_head expected_hash branch_tip empty_hash
+  [[ "$(pmm_frontmatter_value "$file" task_kind 2>/dev/null || true)" == 'work-item' ]] || return 1
+  [[ "$(pmm_frontmatter_value "$file" execution_status 2>/dev/null || true)" == 'ready-to-integrate' ]] || return 1
+  branch="$(pmm_frontmatter_value "$file" branch 2>/dev/null || true)"
+  expected_head="$(pmm_frontmatter_value "$file" verification_head 2>/dev/null || true)"
+  expected_hash="$(pmm_frontmatter_value "$file" verification_source_hash 2>/dev/null || true)"
+  [[ -n "$branch" && "$branch" != 'none' && -n "$expected_head" && "$expected_head" != 'none' ]] || return 1
+  branch_tip="$(git -C "$root" rev-parse "refs/heads/$branch" 2>/dev/null || true)"
+  [[ -n "$branch_tip" ]] || return 1
+  empty_hash="$(printf '' | pmm_hash_stream)" || return 1
+  [[ "$expected_hash" == "$empty_hash" ]] || return 1
+  git -C "$root" merge-base --is-ancestor "$expected_head" "$branch_tip" 2>/dev/null || return 1
+  pmm_git_range_is_operational "$root" "$expected_head" "$branch_tip"
+}
+
+pmm_legacy_contract_count() {
+  local file="$1"
+  local mode="${2:-all}"
+  awk -v mode="$mode" '
+    function normalize(value, normalized) {
+      normalized=tolower(value)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", normalized)
+      gsub(/[.]+$/, "", normalized)
+      if (normalized ~ /^(done|completed|complete|closed|code-complete locally|complete locally)$/) return "done"
+      return normalized
+    }
+    function is_contract_section(value) {
+      return value ~ /^(Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/
+    }
+    function reset_contract() {
+      has_task=0
+      has_id=0
+      has_task_field=0
+      status=""
+    }
+    function flush_contract() {
+      if (has_task && (mode != "current" || normalize(status) != "done" || heading == "Active Task")) count++
+      reset_contract()
+    }
+    /^## / {
+      next_heading=substr($0, 4)
+      if (!is_contract_section(next_heading)) {
+        flush_contract()
+        heading=next_heading
+      }
+      next
+    }
+    /^- Task ID:/ {
+      flush_contract()
+      value=$0
+      sub(/^- Task ID:[[:space:]]*/, "", value)
+      if (value != "") {
+        has_task=1
+        has_id=1
+      }
+      next
+    }
+    /^- Task:/ {
+      value=$0
+      sub(/^- Task:[[:space:]]*/, "", value)
+      if (value == "") next
+      if (has_task && (!has_id || has_task_field)) flush_contract()
+      has_task=1
+      has_task_field=1
+      next
+    }
+    /^- Status:/ && has_task {
+      status=$0
+      sub(/^- Status:[[:space:]]*/, "", status)
+    }
+    END { flush_contract(); print count + 0 }
+  ' "$file"
+}
+
+pmm_legacy_contract_field() {
+  local file="$1"
+  local mode="${2:-all}"
+  local wanted="$3"
+  awk -v mode="$mode" -v wanted="$wanted" '
+    function normalize(value, normalized) {
+      normalized=tolower(value)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", normalized)
+      gsub(/[.]+$/, "", normalized)
+      if (normalized ~ /^(done|completed|complete|closed|code-complete locally|complete locally)$/) return "done"
+      return normalized
+    }
+    function is_contract_section(value) {
+      return value ~ /^(Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/
+    }
+    function reset_contract() {
+      has_task=0
+      has_id=0
+      has_task_field=0
+      task_id=""
+      task=""
+      status=""
+      objective=""
+      source_request=""
+      verifier=""
+      next_action=""
+    }
+    function title_value() {
+      if (task_id != "") return task_id
+      if (heading != "" && heading !~ /^(Active Task|Completed Tasks|Blocked Tasks|Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/) return heading
+      return task
+    }
+    function selected() {
+      return has_task && (mode != "current" || normalize(status) != "done" || heading == "Active Task")
+    }
+    function flush_contract(value) {
+      if (found || !selected()) {
+        reset_contract()
+        return
+      }
+      if (wanted == "title") value=title_value()
+      else if (wanted == "objective") value=(objective != "" ? objective : (source_request != "" ? source_request : (task != "" ? task : title_value())))
+      else if (wanted == "status") value=status
+      else if (wanted == "verifier") value=verifier
+      else if (wanted == "next") value=next_action
+      print value
+      found=1
+      exit
+    }
+    /^## / {
+      next_heading=substr($0, 4)
+      if (!is_contract_section(next_heading)) {
+        flush_contract()
+        heading=next_heading
+      }
+      next
+    }
+    /^- Task ID:/ {
+      flush_contract()
+      task_id=$0
+      sub(/^- Task ID:[[:space:]]*/, "", task_id)
+      if (task_id != "") {
+        has_task=1
+        has_id=1
+      }
+      next
+    }
+    /^- Task:/ {
+      value=$0
+      sub(/^- Task:[[:space:]]*/, "", value)
+      if (value == "") next
+      if (has_task && (!has_id || has_task_field)) flush_contract()
+      task=value
+      has_task=1
+      has_task_field=1
+      next
+    }
+    /^- Status:/ && has_task { status=$0; sub(/^- Status:[[:space:]]*/, "", status); next }
+    /^- Objective:/ && has_task { objective=$0; sub(/^- Objective:[[:space:]]*/, "", objective); next }
+    /^- Source Request:/ && has_task { source_request=$0; sub(/^- Source Request:[[:space:]]*/, "", source_request); next }
+    /^- (Verifier|Required Checks):/ && has_task { verifier=$0; sub(/^- (Verifier|Required Checks):[[:space:]]*/, "", verifier); next }
+    /^- (Next Concrete Action|Next Action):/ && has_task { next_action=$0; sub(/^- (Next Concrete Action|Next Action):[[:space:]]*/, "", next_action); next }
+    END { if (!found) flush_contract() }
+  ' "$file"
+}
+
+pmm_legacy_title() {
+  pmm_legacy_contract_field "$1" "${2:-all}" title
+}
+
+pmm_task_file() {
+  local root="$1"
+  local id="$2"
+  local active="$root/docs/00-project-memory/active-task.md"
+  local work_item="$root/docs/00-project-memory/work-items/$id.md"
+  if [[ -f "$active" && "$(pmm_frontmatter_value "$active" task_id 2>/dev/null || true)" == "$id" ]]; then
+    printf '%s\n' "$active"
+  elif [[ -f "$work_item" && "$(pmm_frontmatter_value "$work_item" task_id 2>/dev/null || true)" == "$id" ]]; then
+    printf '%s\n' "$work_item"
+  else
+    return 1
+  fi
+}
+
+pmm_claim_root() {
+  local root="$1"
+  local common
+  common="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null || true)"
+  if [[ -n "$common" ]]; then
+    if [[ "$common" == /* ]]; then
+      printf '%s/pmm-claims\n' "$common"
+    else
+      printf '%s/%s/pmm-claims\n' "$root" "$common"
+    fi
+  else
+    printf '%s/.project-runtime/pmm/claims\n' "$root"
+  fi
+}
+
+pmm_history_has_task_id() {
+  local id="$1"
+  shift
+  awk -v id="$id" '
+    $0 == "<!-- pmm-task-id: " id " -->" { found=1 }
+    /^- Task ID:/ {
+      value=$0
+      sub(/^- Task ID:[[:space:]]*/, "", value)
+      sub(/[[:space:]]+$/, "", value)
+      if (value == id) found=1
+    }
+    ($1 == "##" || $1 == "###") &&
+      $2 ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/ && $3 == id { found=1 }
+    END { exit(found ? 0 : 1) }
+  ' "$@"
+}
+
+pmm_task_id_is_archived() {
+  local root="$1"
+  local id="$2"
+  local history archive_dir refs ref ref_entry blob history_content history_status seen_blobs='|'
+  history="$root/docs/00-project-memory/task-history.md"
+  archive_dir="$(pmm_claim_root "$root")/.archived/$id"
+  if [[ -f "$history" ]]; then
+    if pmm_history_has_task_id "$id" "$history"; then
+      return 0
+    else
+      history_status=$?
+      (( history_status == 1 )) || return 2
+    fi
+  fi
+  [[ ! -d "$archive_dir" ]] || return 0
+  refs="$(git -C "$root" for-each-ref --format='%(refname)' refs/heads refs/remotes refs/tags 2>/dev/null)" || return 2
+  while IFS= read -r ref; do
+    [[ -n "$ref" ]] || continue
+    ref_entry="$(git -C "$root" ls-tree "$ref" -- docs/00-project-memory/task-history.md 2>/dev/null)" || return 2
+    [[ -n "$ref_entry" ]] || continue
+    blob="$(printf '%s\n' "$ref_entry" | awk 'NR == 1 { print $3 }')"
+    [[ "$blob" =~ ^[0-9a-fA-F]{40,64}$ ]] || return 2
+    [[ "$seen_blobs" != *"|$blob|"* ]] || continue
+    seen_blobs="${seen_blobs}${blob}|"
+    history_content="$(git -C "$root" cat-file blob "$blob" 2>/dev/null)" || return 2
+    if pmm_history_has_task_id "$id" <<<"$history_content"; then
+      return 0
+    else
+      history_status=$?
+      (( history_status == 1 )) || return 2
+    fi
+  done <<<"$refs"
+  return 1
+}
+
+pmm_task_id_archive() {
+  local root="$1"
+  local id="$2"
+  local archive_root archive_dir
+  archive_root="$(pmm_claim_root "$root")/.archived"
+  archive_dir="$archive_root/$id"
+  mkdir -p "$archive_root" || return 1
+  mkdir "$archive_dir" 2>/dev/null || [[ -d "$archive_dir" ]]
+}
+
+pmm_claim_acquire() {
+  local root="$1"
+  local id="$2"
+  local owner="$3"
+  local branch="${4:-unknown}"
+  local parent="${5:-none}"
+  local kind="${6:-unknown}"
+  local claim_root claim_dir existing existing_branch existing_parent existing_kind
+  claim_root="$(pmm_claim_root "$root")"
+  claim_dir="$claim_root/$id"
+  mkdir -p "$claim_root"
+  if mkdir "$claim_dir" 2>/dev/null; then
+    printf '%s\n' "$owner" >"$claim_dir/owner"
+    printf '%s\n' "$branch" >"$claim_dir/branch"
+    printf '%s\n' "$parent" >"$claim_dir/parent"
+    printf '%s\n' "$kind" >"$claim_dir/kind"
+    return 0
+  fi
+  existing="$(sed -n '1p' "$claim_dir/owner" 2>/dev/null || printf 'unknown')"
+  existing_branch="$(sed -n '1p' "$claim_dir/branch" 2>/dev/null || printf 'unknown')"
+  existing_parent="$(sed -n '1p' "$claim_dir/parent" 2>/dev/null || printf 'unknown')"
+  existing_kind="$(sed -n '1p' "$claim_dir/kind" 2>/dev/null || printf 'unknown')"
+  [[ "$existing" == "$owner" && "$existing_branch" == "$branch" && "$existing_parent" == "$parent" && "$existing_kind" == "$kind" ]]
+}
+
+pmm_claim_matches() {
+  local root="$1"
+  local id="$2"
+  local owner="$3"
+  local branch="$4"
+  local parent="$5"
+  local kind="$6"
+  local claim_dir
+  claim_dir="$(pmm_claim_root "$root")/$id"
+  [[ -d "$claim_dir" ]] || return 1
+  [[ "$(sed -n '1p' "$claim_dir/owner" 2>/dev/null || true)" == "$owner" ]] || return 1
+  [[ "$(sed -n '1p' "$claim_dir/branch" 2>/dev/null || true)" == "$branch" ]] || return 1
+  [[ "$(sed -n '1p' "$claim_dir/parent" 2>/dev/null || true)" == "$parent" ]] || return 1
+  [[ "$(sed -n '1p' "$claim_dir/kind" 2>/dev/null || true)" == "$kind" ]]
+}
+
+pmm_claim_value() {
+  local root="$1"
+  local id="$2"
+  local field="$3"
+  local claim_dir
+  case "$field" in
+    owner | branch | parent | kind) ;;
+    *) return 1 ;;
+  esac
+  claim_dir="$(pmm_claim_root "$root")/$id"
+  [[ -d "$claim_dir" && -f "$claim_dir/$field" ]] || return 1
+  sed -n '1p' "$claim_dir/$field"
+}
+
+pmm_claim_primary_task() {
+  local root="$1"
+  local claim_root claim_dir claimed_parent claimed_kind found=''
+  claim_root="$(pmm_claim_root "$root")"
+  [[ -d "$claim_root" ]] || return 1
+  for claim_dir in "$claim_root"/*; do
+    [[ -d "$claim_dir" ]] || continue
+    claimed_parent="$(sed -n '1p' "$claim_dir/parent" 2>/dev/null || true)"
+    claimed_kind="$(sed -n '1p' "$claim_dir/kind" 2>/dev/null || true)"
+    if [[ "$claimed_parent" == 'none' && "$claimed_kind" == 'primary' ]]; then
+      [[ -z "$found" ]] || return 2
+      found="$(basename "$claim_dir")"
+    fi
+  done
+  [[ -n "$found" ]] || return 1
+  printf '%s\n' "$found"
+}
+
+pmm_claim_task_for_branch() {
+  local root="$1"
+  local branch="$2"
+  local claim_root claim_dir claimed_branch
+  claim_root="$(pmm_claim_root "$root")"
+  [[ -d "$claim_root" ]] || return 1
+  for claim_dir in "$claim_root"/*; do
+    [[ -d "$claim_dir" ]] || continue
+    claimed_branch="$(sed -n '1p' "$claim_dir/branch" 2>/dev/null || true)"
+    if [[ "$claimed_branch" == "$branch" ]]; then
+      basename "$claim_dir"
+      return 0
+    fi
+  done
+  return 1
+}
+
+pmm_claim_children() {
+  local root="$1"
+  local parent="$2"
+  local claim_root claim_dir claimed_parent claimed_kind
+  claim_root="$(pmm_claim_root "$root")"
+  [[ -d "$claim_root" ]] || return 0
+  for claim_dir in "$claim_root"/*; do
+    [[ -d "$claim_dir" ]] || continue
+    claimed_parent="$(sed -n '1p' "$claim_dir/parent" 2>/dev/null || true)"
+    claimed_kind="$(sed -n '1p' "$claim_dir/kind" 2>/dev/null || true)"
+    if [[ "$claimed_parent" == "$parent" && "$claimed_kind" == 'work-item' ]]; then
+      basename "$claim_dir"
+    fi
+  done
+}
+
+pmm_claim_work_items() {
+  local root="$1"
+  local claim_root claim_dir claimed_kind
+  claim_root="$(pmm_claim_root "$root")"
+  [[ -d "$claim_root" ]] || return 0
+  for claim_dir in "$claim_root"/*; do
+    [[ -d "$claim_dir" ]] || continue
+    claimed_kind="$(sed -n '1p' "$claim_dir/kind" 2>/dev/null || true)"
+    [[ "$claimed_kind" == 'work-item' ]] || continue
+    basename "$claim_dir"
+  done
+}
+
+pmm_claim_release() {
+  local root="$1"
+  local id="$2"
+  local claim_dir
+  claim_dir="$(pmm_claim_root "$root")/$id"
+  [[ -d "$claim_dir" ]] || return 0
+  rm -f "$claim_dir/owner" "$claim_dir/branch" "$claim_dir/parent" "$claim_dir/kind"
+  rmdir "$claim_dir" 2>/dev/null
+}
+
+pmm_mutation_lock_acquire() {
+  local root="$1"
+  local lock_id="$2"
+  local claim_root lock_dir owner_dir host
+  claim_root="$(pmm_claim_root "$root")"
+  lock_dir="$claim_root/.mutation-lock"
+  mkdir -p "$claim_root"
+  if ! mkdir "$lock_dir" 2>/dev/null; then
+    pmm_mutation_lock_recover "$root" || return 1
+    mkdir "$lock_dir" 2>/dev/null || return 1
+  fi
+  owner_dir="$lock_dir/$lock_id"
+  if ! mkdir "$owner_dir" 2>/dev/null; then
+    rmdir "$lock_dir" 2>/dev/null || true
+    return 1
+  fi
+  host="$(uname -n)"
+  if ! printf '%s\n' "$host" >"$owner_dir/host" || ! printf '%s\n' "$$" >"$owner_dir/pid"; then
+    rm -f "$owner_dir/host" "$owner_dir/pid"
+    rmdir "$owner_dir" 2>/dev/null || true
+    rmdir "$lock_dir" 2>/dev/null || true
+    return 1
+  fi
+}
+
+pmm_mutation_lock_release() {
+  local root="$1"
+  local lock_id="$2"
+  local lock_dir owner_dir
+  lock_dir="$(pmm_claim_root "$root")/.mutation-lock"
+  [[ -d "$lock_dir" ]] || return 0
+  owner_dir="$lock_dir/$lock_id"
+  [[ -d "$owner_dir" ]] || return 1
+  rm -f "$owner_dir/host" "$owner_dir/pid"
+  rmdir "$owner_dir" 2>/dev/null || return 1
+  rmdir "$lock_dir" 2>/dev/null
+}
+
+pmm_mutation_lock_owner() {
+  local root="$1"
+  local lock_dir owner_dir found=''
+  lock_dir="$(pmm_claim_root "$root")/.mutation-lock"
+  [[ -d "$lock_dir" ]] || return 1
+  for owner_dir in "$lock_dir"/*; do
+    [[ -d "$owner_dir" ]] || continue
+    [[ -z "$found" ]] || return 2
+    found="$owner_dir"
+  done
+  [[ -n "$found" ]] || return 1
+  printf '%s\n' "$found"
+}
+
+pmm_mutation_lock_is_orphan() {
+  local root="$1"
+  local lock_dir owner_dir recorded_host recorded_pid
+  lock_dir="$(pmm_claim_root "$root")/.mutation-lock"
+  [[ -d "$lock_dir" ]] || return 1
+  owner_dir="$(pmm_mutation_lock_owner "$root" 2>/dev/null || true)"
+  if [[ -z "$owner_dir" ]]; then
+    [[ -z "$(find "$lock_dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]] || return 1
+    pmm_path_is_old "$lock_dir" 5
+    return
+  fi
+  recorded_host="$(sed -n '1p' "$owner_dir/host" 2>/dev/null || true)"
+  recorded_pid="$(sed -n '1p' "$owner_dir/pid" 2>/dev/null || true)"
+  if [[ -z "$recorded_host" || -z "$recorded_pid" ]]; then
+    pmm_path_is_old "$owner_dir" 5
+    return
+  fi
+  [[ "$recorded_host" == "$(uname -n)" && "$recorded_pid" =~ ^[0-9]+$ ]] || return 1
+  ! kill -0 "$recorded_pid" 2>/dev/null
+}
+
+pmm_path_is_old() {
+  local path="$1"
+  local minimum_age="$2"
+  local modified now
+  modified="$(stat -f '%m' "$path" 2>/dev/null || true)"
+  [[ "$modified" =~ ^[0-9]+$ ]] || modified="$(stat -c '%Y' "$path" 2>/dev/null || true)"
+  now="$(date '+%s')"
+  [[ "$modified" =~ ^[0-9]+$ && "$now" =~ ^[0-9]+$ ]] || return 1
+  (( now - modified >= minimum_age ))
+}
+
+pmm_mutation_lock_recover() {
+  local root="$1"
+  local claim_root lock_dir owner_dir stale_dir owner_id
+  pmm_mutation_lock_is_orphan "$root" || return 1
+  claim_root="$(pmm_claim_root "$root")"
+  lock_dir="$claim_root/.mutation-lock"
+  owner_dir="$(pmm_mutation_lock_owner "$root" 2>/dev/null || true)"
+  pmm_mutation_lock_is_orphan "$root" || return 1
+  if [[ -z "$owner_dir" ]]; then
+    rmdir "$lock_dir" 2>/dev/null
+    return
+  fi
+  owner_id="$(basename "$owner_dir")"
+  stale_dir="$claim_root/.mutation-lock-stale-$owner_id-$$"
+  mv "$owner_dir" "$stale_dir" 2>/dev/null || return 1
+  if ! rmdir "$lock_dir" 2>/dev/null; then
+    mv "$stale_dir" "$owner_dir" 2>/dev/null || true
+    return 1
+  fi
+  rm -f "$stale_dir/host" "$stale_dir/pid"
+  rmdir "$stale_dir" 2>/dev/null || return 1
+}
+
+pmm_json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/[[:cntrl:]]/ /g'
+}

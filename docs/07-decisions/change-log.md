@@ -4,6 +4,20 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-07-18
+
+- Upgraded the public runtime contract to `pmm` v0.4.0: `active-task.md` is one primary-task slot, while concurrent writers use isolated branches/worktrees and work-item files.
+- Added `pmm.task/v1` three-axis state, lifecycle CLI, shared state helpers, local same-machine claims, Git HEAD/source-hash evidence freshness, Doctor v2, Recovery v2, and explicit legacy migration.
+- Preserved backward compatibility for unstructured single-task `active-task.md` and `task-ledger.md`; ambiguous multi-task migration is diagnostic-only and never rewrites the source file.
+- Added runtime contract tests and expanded Bash/PowerShell install, public safety, templates, bilingual docs, and release metadata for the v0.4 package.
+- Added Git common-dir mutation serialization, strict owner/branch/claim checks, parent-child close/start exclusion, failed-write rollback, delivery queue preservation, ledger-source migration, stronger Doctor invariants, and fail-closed source hashing after independent review.
+- Added the post-review integration gate: uncommitted primary state is discoverable from sibling worktrees through shared claims; verified children remain `ready-to-integrate` until merged and accepted by the primary owner; primary verification is invalidated after integration.
+- Added fail-closed untracked hashing, safe same-host orphan-lock recovery, non-active Recovery markers, and valid done/idle/paused/blocked legacy migration behavior.
+- Closed the final v0.4 concurrency and false-pass gaps: common-dir primary uniqueness now includes paused/blocked migration states, Doctor fails multiple primary claims, archived IDs are reserved across local worktrees, and evidence freshness inspects each post-verification commit so source changes cannot be hidden by revert.
+- Completed the v0.4 compatibility and transaction hardening: official v0.1 ledger fields and marker-less history remain recognized across refs, sibling-worktree claims participate in Recovery, source-to-operational-path renames cannot hide stale evidence, and whole-file lifecycle transactions remove temporary state and roll back new claims after failure or signal.
+- Closed final release-review gaps: interrupted takeover restores the claim owner matching the durable task file; ledger parsing counts individual current-task records while leaving completed history cold; Doctor fails missing or mismatched primary claims; and Recovery discovers uncommitted sibling-worktree primary as well as child claims.
+- Preserved formal v0.2/v0.3 multi-section migration fields by treating Status, Task, Verifier, and Repair headings as one contract and verifying objective, required checks, and next action before the appended legacy-source section.
+
 ## 2026-07-09
 
 - Consolidated the public document set: runtime/profile/context/self-eval/subagent/verifier/memory/migration guidance now lives in `docs/runtime.md`; release/automation/safety/sync/recovery/customization guidance now lives in `docs/maintenance.md`; optional pack templates now live in `templates/optional-packs.md`.

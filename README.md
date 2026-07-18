@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.3.1`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
+当前版本：`v0.4.0`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 协议： [MIT License](LICENSE)。
 
 用途：本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -11,16 +11,32 @@
 
 `pmm` 是一个面向长期软件项目的低上下文、跨 Agent 项目运行时（Agent Skill）。它的目标不是生成更多项目文档，而是让 Agent 在最少必要上下文里持续执行、验证、批判、修复和恢复任务。
 
-`v0.2.0` 的核心输出是：
+`v0.4.0` 的核心输出是：
 
 - `AGENTS.md`：项目事实和协作规则的唯一入口。
 - Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md` 等最小热路径文件。
 - Self-Eval Loop：让任务有明确的 Task、Harness、Verifier、Critic、Repair、Record。
 - Agent adapters：让 Codex、Claude Code、Hermes Agent、OpenClaw/OpenCode 读取同一份项目事实，而不是各自复制一套记忆。
 - Memory promotion rules：只沉淀耐久事实，不把当前任务状态塞进全局记忆。
+- Task Runtime：`active-task.md` 保持一个主任务；并发写入使用独立 branch/worktree 和 work-item，验证证据绑定当前 Git HEAD 与源码状态。
 
 适用场景：商业级 app、网站、小程序、SaaS、桌面工具、AI 产品、较大的功能链路、长期维护项目，以及需要跨 Agent 接手、断线恢复或严格验证的任务。
 不适用场景：一次性命令、极小改动、临时 demo、无需项目记忆或验证闭环的短任务。
+
+## v0.4.0 关键变化
+
+`v0.4.0` 修复同一项目在多个对话或 Agent 中并行开发时，`active-task.md` 被追加成多任务列表的问题：
+
+- `active-task.md` 是单一主任务槽位，不再承载多个功能合同。
+- `pmm.task/v1` frontmatter 分开记录执行、验证和交付状态。
+- `scripts/pmm-task.sh` 提供 start、status、checkpoint、verify、resume、close、integrate 和 migrate 生命周期。
+- 并发写任务必须使用独立 branch/worktree 和 `work-items/<task-id>.md`；同分支并发会被拒绝。
+- 同机生命周期写入通过 Git common-dir lock 串行化并整文件原子提交；失败或 signal 会清理临时文件、回滚新 claim，并恢复中断 takeover 的原 owner。同一 clone 只允许一个非 idle primary claim，paused/blocked 任务也持续占槽。
+- 已归档 `task_id` 不可复用，包括旧版无 marker 的历史记录；verify 后任何触及源码的 commit 都会使证据失效，即使后续 revert 或将源码 rename 到运行时文档路径。
+- Doctor v2 检查任务唯一性、状态、完整 claim、分支所有权和证据新鲜度，并支持 `--json`。
+- Recovery v2 兼容旧状态和 `task-ledger.md`，可从 sibling worktree 的共享 claim 发现未提交主任务或子任务；多个可恢复任务时要求显式 `--task-id`。
+- 旧项目无需立即迁移；ledger 按任务字段区分当前任务与 completed 历史，只有一个当前任务时才允许 dry-run 后显式迁移。
+- work-item close 只进入 `ready-to-integrate` 并保留 claim；合并后由主任务 owner 执行 integrate，再重验主任务。主任务 close 才会完成归档，并将未完成 delivery 放入 task queue。
 
 ## v0.3.1 维护更新
 
@@ -122,7 +138,7 @@ docs/00-project-memory/failure-patterns.md
 
 ## Self-Eval Loop
 
-重要任务都应该在 `active-task.md` 里写清楚：
+重要任务都应该在自己拥有的 `active-task.md` 或 work-item 文件里写清楚：
 
 ```text
 Task: 目标、范围、风险、允许/禁止动作
@@ -134,7 +150,9 @@ Repair: 失败类型、尝试次数、下一步修复
 Record: 最终状态、文档变更、是否沉淀记忆
 ```
 
-没有 verifier 的任务不能标记为 `done`，只能标记为 `executed-unverified` 或 `blocked`。
+没有 verifier 或新鲜证据的任务不能关闭。执行受阻时使用 `execution_status: blocked`；验证未完成或失败时使用 `verification_status: pending` 或 `failed`。
+
+`active-task.md` 始终只保留一个主任务。第二个写入对话应排队，或切到独立 branch/worktree 后使用 [templates/concurrency/work-item.md](templates/concurrency/work-item.md)。work-item 验证后仍需合并、由主任务 owner 执行 `integrate`，并重新验证主任务；生命周期命令和迁移方式见 [docs/runtime.md](docs/runtime.md)。
 
 ## 安装
 
@@ -165,6 +183,9 @@ Record: 最终状态、文档变更、是否沉淀记忆
   templates/
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
+  scripts/pmm-task.sh
+  scripts/lib/pmm-state.sh
+  tests/pmm-runtime-contract.sh
 ```
 
 ### 维护者同步
@@ -195,10 +216,11 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 2. 在项目根目录创建 `AGENTS.md`，使用 [templates/core/AGENTS.md](templates/core/AGENTS.md)。
 3. 创建 Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md`。
 4. 按任务选择 Runtime Profile。
-5. 在 `active-task.md` 写下 Task/Agent Mode/Harness/Verifier。
-6. 执行、验证、Critic 检查、失败修复。
-7. 可选运行 `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` 检查 Core Pack 和 verifier 是否一致。
-8. 完成后只把耐久事实写回项目文档，历史归档到 `task-history.md`。
+5. 运行 Workspace Gate；`active-task.md` 已有主任务时，不追加第二个任务。
+6. 使用 `scripts/pmm-task.sh start` 启动主任务；并发写任务先创建独立 branch/worktree，再启动 work-item。
+7. 执行、验证、Critic 检查、失败修复，并用 `verify` 记录新鲜证据。
+8. 运行 `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` 检查状态、分支和 verifier。
+9. work-item 使用 `close` 进入待集成，合并后由主任务 owner 执行 `integrate` 并重验；主任务最后使用 `close` 归档。
 
 ### 轻量使用建议
 
@@ -234,7 +256,8 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 
 ```bash
 bash scripts/check-public-safety.sh
-bash -n scripts/*.sh
+bash -n scripts/*.sh scripts/lib/*.sh tests/*.sh
+bash tests/pmm-runtime-contract.sh
 bash scripts/pmm-doctor.sh .
 git diff --check
 ```

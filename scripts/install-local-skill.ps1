@@ -47,6 +47,8 @@ if (Test-Path $destination) {
 
 New-Item -ItemType Directory -Force -Path $destination | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $destination "scripts") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path (Join-Path $destination "scripts") "lib") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $destination "tests") | Out-Null
 
 $topLevelFiles = @(
   "SKILL.md",
@@ -69,10 +71,18 @@ foreach ($dir in @("docs", "templates")) {
   Copy-Item -Recurse -Force -Path $sourceDir -Destination $destDir
 }
 
-foreach ($script in @("recovery-status.sh", "pmm-doctor.sh")) {
+foreach ($script in @("recovery-status.sh", "pmm-doctor.sh", "pmm-task.sh")) {
   $sourceScript = Join-Path (Join-Path $source "scripts") $script
   $destScript = Join-Path (Join-Path $destination "scripts") $script
   Copy-Item -Force -Path $sourceScript -Destination $destScript
 }
+
+$sourceStateLibrary = Join-Path (Join-Path (Join-Path $source "scripts") "lib") "pmm-state.sh"
+$destStateLibrary = Join-Path (Join-Path (Join-Path $destination "scripts") "lib") "pmm-state.sh"
+Copy-Item -Force -Path $sourceStateLibrary -Destination $destStateLibrary
+
+$sourceRuntimeTest = Join-Path (Join-Path $source "tests") "pmm-runtime-contract.sh"
+$destRuntimeTest = Join-Path (Join-Path $destination "tests") "pmm-runtime-contract.sh"
+Copy-Item -Force -Path $sourceRuntimeTest -Destination $destRuntimeTest
 
 Write-Output "Installed pmm to $destination"

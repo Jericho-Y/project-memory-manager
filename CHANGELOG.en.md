@@ -6,6 +6,36 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.4.0 - 2026-07-18
+
+### Added
+
+- Added `pmm.task/v1` structured task state with independent execution, verification, and delivery axes.
+- Added `scripts/pmm-task.sh` and a shared state library for start, status, checkpoint, verify, resume, close, integrate, and safe migration lifecycle commands.
+- Added branch/worktree-isolated work-item and task-queue templates for multi-conversation collaboration in one project.
+- Doctor v2 now validates task identity, state enums, branch ownership, and evidence freshness, with optional JSON output.
+- Recovery v2 now supports explicit task selection, legacy status normalization, `task-ledger.md` fallback, sibling-worktree primary/work-item claim discovery, paused/blocked/pending-integration recovery, and ambiguity refusal.
+- Added 233 runtime contract assertions covering legacy status migration, official v0.1 ledger current/history selection, v0.2/v0.3 multi-section field preservation, stale evidence, untracked hash failure, same/cross-worktree simultaneous starts, paused primary reservation, parent/child close races, worktree parent discovery, explicit integration, post-verification source commit/revert/rename refusal, cross-Git-ref marker-less archived-ID reuse refusal with fail-closed ref inspection, orphan-lock recovery, owner/branch/claim boundaries, interrupted takeover rollback, delivery preservation, transactional rollback, signal-time temp cleanup, and package completeness.
+
+### Changed
+
+- `active-task.md` is now explicitly a singleton primary-task slot and must not accumulate multiple feature contracts.
+- Verification evidence is bound to the current Git HEAD and source hash. Freshness is checked commit by commit, so a source commit still requires re-verification after a later revert.
+- Lifecycle writes are serialized through a Git common-dir mutation lock and atomically committed as whole-file staged transactions. Failure or a signal cleans temporary files, rolls back an uncommitted new claim, and restores an interrupted takeover to the owner matching the task file. Mutating commands must match the recorded owner, branch, and complete claim, while a short-lived lock left by a dead same-host process is safely recovered.
+- Work-item close now enters `ready-to-integrate` and retains its claim. The primary owner can integrate only after the verified commit is merged, then must reverify the primary task.
+- Primary close archives execution, verification, and delivery state, and routes unfinished delivery into the task queue.
+- One clone permits one non-idle primary claim; paused/blocked tasks retain the slot, and archived primary/work-item task IDs cannot be reused.
+- Bash maintainer sync and the ordinary PowerShell installer now include the lifecycle CLI, shared library, concurrency templates, and contract test.
+- Legacy single-task `active-task.md` and `task-ledger.md` files remain readable; migration is optional and ambiguous multi-task files are never rewritten automatically.
+
+### Security
+
+- Concurrent writers on one branch/worktree are refused. Cross-device coordination still requires remote branch ownership because local claims are not distributed locks.
+- Applying a single-task migration creates a project-local backup and never deletes the legacy ledger automatically.
+- Legacy `done` migrates to paused when fresh v0.4 evidence is unavailable, while legacy `idle` becomes the canonical empty slot instead of an invalid false completion.
+- Legacy ledgers identify current contracts per task field and keep completed history cold; zero or multiple current tasks refuse automatic migration.
+- Git diff, tracked/untracked source hashing, or task-file write failures fail closed and preserve or roll back claims instead of recording false evidence or orphan state. Renaming source into an operational path cannot bypass post-verification freshness checks.
+
 ## v0.3.1 - 2026-07-09
 
 ### Changed

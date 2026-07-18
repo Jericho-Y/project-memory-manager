@@ -83,14 +83,22 @@ fi
 [[ -f docs/maintenance.md ]] || fail "maintenance guide missing after clone"
 [[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
 [[ -f scripts/pmm-doctor.sh ]] || fail "pmm doctor helper missing after clone"
+[[ -f scripts/pmm-task.sh ]] || fail "pmm task lifecycle helper missing after clone"
+[[ -f scripts/lib/pmm-state.sh ]] || fail "pmm shared state library missing after clone"
 [[ -f scripts/install-local-skill.ps1 ]] || fail "PowerShell install helper missing after clone"
+[[ -f templates/concurrency/work-item.md ]] || fail "work-item template missing after clone"
+[[ -f templates/concurrency/task-queue.md ]] || fail "task-queue template missing after clone"
+[[ -f tests/pmm-runtime-contract.sh ]] || fail "runtime contract test missing after clone"
 
 if find . -type f \( -name '*.sh' -o -name '*.ps1' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
   -not -path './scripts/check-public-safety.sh' \
   -not -path './scripts/sync-local-skill.sh' \
   -not -path './scripts/recovery-status.sh' \
   -not -path './scripts/pmm-doctor.sh' \
+  -not -path './scripts/pmm-task.sh' \
+  -not -path './scripts/lib/pmm-state.sh' \
   -not -path './scripts/install-local-skill.ps1' \
+  -not -path './tests/pmm-runtime-contract.sh' \
   -not -path './.git/*' | rg .; then
   fail "unexpected executable/script file found outside allowed scripts"
 fi
@@ -100,7 +108,10 @@ if find . -type f -perm -111 \
   -not -path './scripts/sync-local-skill.sh' \
   -not -path './scripts/recovery-status.sh' \
   -not -path './scripts/pmm-doctor.sh' \
+  -not -path './scripts/pmm-task.sh' \
+  -not -path './scripts/lib/pmm-state.sh' \
   -not -path './scripts/install-local-skill.ps1' \
+  -not -path './tests/pmm-runtime-contract.sh' \
   -not -path './.git/*' | rg .; then
   fail "unexpected executable file found outside allowed scripts"
 fi
@@ -125,9 +136,14 @@ rsync -a --delete \
   --include='docs/runtime.md' \
   --include='docs/maintenance.md' \
   --include='scripts/' \
+  --include='scripts/lib/' \
+  --include='scripts/lib/pmm-state.sh' \
   --include='scripts/recovery-status.sh' \
   --include='scripts/pmm-doctor.sh' \
+  --include='scripts/pmm-task.sh' \
   --include='scripts/install-local-skill.ps1' \
+  --include='tests/' \
+  --include='tests/pmm-runtime-contract.sh' \
   --exclude='*' \
   "$WORKDIR/" "$LOCAL_SKILL_DIR/"
 
@@ -140,6 +156,8 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/templates/optional-packs.md" ]] || fail "local sync did not produce optional packs template"
 [[ -f "$LOCAL_SKILL_DIR/templates/core/active-task.md" ]] || fail "local sync did not produce active-task template"
 [[ -f "$LOCAL_SKILL_DIR/templates/core/verifier-map.md" ]] || fail "local sync did not produce verifier-map template"
+[[ -f "$LOCAL_SKILL_DIR/templates/concurrency/work-item.md" ]] || fail "local sync did not produce work-item template"
+[[ -f "$LOCAL_SKILL_DIR/templates/concurrency/task-queue.md" ]] || fail "local sync did not produce task-queue template"
 [[ -f "$LOCAL_SKILL_DIR/templates/adapters/CLAUDE.md" ]] || fail "local sync did not produce Claude adapter template"
 [[ -f "$LOCAL_SKILL_DIR/templates/adapters/HERMES.md" ]] || fail "local sync did not produce Hermes adapter template"
 [[ -f "$LOCAL_SKILL_DIR/docs/agent-compatibility.md" ]] || fail "local sync did not produce agent compatibility guide"
@@ -148,6 +166,9 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/docs/maintenance.md" ]] || fail "local sync did not produce maintenance guide"
 [[ -f "$LOCAL_SKILL_DIR/scripts/recovery-status.sh" ]] || fail "local sync did not produce recovery helper"
 [[ -f "$LOCAL_SKILL_DIR/scripts/pmm-doctor.sh" ]] || fail "local sync did not produce pmm doctor helper"
+[[ -f "$LOCAL_SKILL_DIR/scripts/pmm-task.sh" ]] || fail "local sync did not produce pmm task lifecycle helper"
+[[ -f "$LOCAL_SKILL_DIR/scripts/lib/pmm-state.sh" ]] || fail "local sync did not produce pmm shared state library"
 [[ -f "$LOCAL_SKILL_DIR/scripts/install-local-skill.ps1" ]] || fail "local sync did not produce PowerShell install helper"
+[[ -f "$LOCAL_SKILL_DIR/tests/pmm-runtime-contract.sh" ]] || fail "local sync did not produce runtime contract test"
 
 printf 'Synced pmm to %s\n' "$LOCAL_SKILL_DIR"

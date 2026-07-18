@@ -10,7 +10,7 @@ This repository publishes the `pmm` Agent Skill. Its job is to help agents creat
 
 ## Current Phase
 
-Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.3.x as a low-context, cross-agent project runtime with Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, lightweight runtime checks, and trusted local sync.
+Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.4.x as a low-context, cross-agent project runtime with singleton primary-task state, branch-isolated work items, Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, lightweight runtime checks, and trusted local sync.
 
 ## Mandatory Reading Order
 

@@ -16,6 +16,10 @@ Project memory is the source of truth. Adapters route agents to that source; the
 
 Subagent Routing Gate is portable as a decision record, not as a guaranteed runtime feature. If the agent supports subagents, it may delegate within the recorded boundaries. If it does not, it records `solo` mode or uses the field as a manual handoff plan.
 
+Workspace Gate is portable as a safety contract. Every agent must treat `active-task.md` as one primary-task slot. A concurrent writer either queues or uses a separate branch/worktree plus `docs/00-project-memory/work-items/<task-id>.md`; agents that cannot establish that isolation must run tasks sequentially.
+
+The `pmm.task/v1` frontmatter remains human-readable Markdown. Agents may update it with `scripts/pmm-task.sh` or preserve the same field contract manually. CLI mutations require an explicit owner and recorded branch; a Git common-dir lock serializes local lifecycle changes, whole-file staged transactions prevent partial task updates, and short-lived locks recover only when a same-host recorded process is dead. Interrupted takeover restores the claim owner matching the durable task file, and Doctor rejects missing or mismatched non-idle claims. One clone allows one non-idle primary claim, archived task IDs from structured or marker-less legacy history are not reusable, and post-verification source commits invalidate evidence even if reverted or moved into an operational path later. Recovery reads sibling-worktree primary and work-item claims to locate uncommitted tasks. Claims improve same-machine coordination but are not distributed and do not replace remote branch ownership across devices. A verified child remains `ready-to-integrate` until the primary owner proves its commit was merged, runs `integrate`, and re-verifies the primary task.
+
 ## Adapter Contract
 
 Installation path convention:
@@ -50,6 +54,7 @@ Codex reads `AGENTS.md` files and supports nested project instructions. Keep roo
 For Codex:
 - canonical entry: `AGENTS.md`
 - active task: `docs/00-project-memory/active-task.md`
+- concurrent task: `docs/00-project-memory/work-items/<task-id>.md` on an isolated branch/worktree
 - verifier map: `docs/00-project-memory/verifier-map.md`
 - optional adapter: `templates/adapters/codex-subdir-AGENTS.md`
 
@@ -66,6 +71,7 @@ Claude Code reads `CLAUDE.md`. If the project uses `AGENTS.md`, create a short `
 
 - Treat `AGENTS.md` as canonical.
 - Read `docs/00-project-memory/active-task.md` only when starting or resuming a task.
+- Refuse to append a second task; queue it or use an isolated work item.
 - Do not copy project docs into this file.
 ```
 
@@ -78,6 +84,7 @@ Hermes supports multiple project context files, and a Hermes-specific file may w
 ```text
 Use AGENTS.md as the canonical project entrypoint.
 Read active-task.md only when starting, resuming, or verifying a task.
+Use a separate branch/worktree and work-item file for a concurrent writer.
 Do not copy active task state into Hermes MEMORY.md.
 ```
 
@@ -94,6 +101,7 @@ Project:
 Path:
 Canonical entry: AGENTS.md
 Current task: docs/00-project-memory/active-task.md
+Concurrent task: docs/00-project-memory/work-items/<task-id>.md
 Verifier map: docs/00-project-memory/verifier-map.md
 ```
 
@@ -101,11 +109,14 @@ Store task state in the project folder. Global memory may keep only the pointer 
 
 ## Legacy Compatibility
 
-`pmm` v0.1 projects may use `task-ledger.md`. v0.2 agents should:
+`pmm` v0.1-v0.3 projects may use `task-ledger.md` or unstructured `active-task.md`. v0.4 agents should:
 1. prefer `active-task.md` when present
 2. fall back to `task-ledger.md` when `active-task.md` is absent
-3. run the legacy migration workflow in `docs/runtime.md` when the user wants v0.2 behavior or a substantial task is starting
-4. archive completed entries into `task-history.md`
+3. keep reading the legacy file without requiring immediate conversion
+4. run `pmm-task.sh migrate --dry-run` before an explicit structured-state conversion
+5. count task fields rather than ledger section headings, keep completed history cold, and refuse migration unless exactly one current contract exists
+6. preserve v0.2/v0.3 multi-section objective, verifier, and next-action fields in the structured hot path
+7. archive completed entries into `task-history.md`; existing marker-less history still reserves its task IDs
 
 Do not delete legacy ledgers without explicit project-owner approval.
 
@@ -115,10 +126,17 @@ Before claiming cross-agent compatibility:
 - `SKILL.md` frontmatter has a valid lowercase `name`, version, and clear description.
 - `AGENTS.md` remains usable as a standalone project rule file.
 - Core Pack references `active-task.md` and `verifier-map.md`.
+- `active-task.md` is documented as one primary-task slot, not a task list.
+- Concurrent writers require separate branches/worktrees and work-item files.
+- One clone rejects multiple non-idle primary claims, and archived task IDs are never reused.
+- Work items retain ownership through merge and explicit primary-owner integration; child close alone is not project completion.
+- Structured state keeps execution, verification, and delivery independent.
+- Legacy `active-task.md` and `task-ledger.md` remain readable without forced migration.
 - Active task templates include Agent Mode without requiring subagent support.
 - Legacy `task-ledger.md` behavior is documented if supported.
 - Claude, Hermes, OpenClaw/OpenCode, and Codex adapter paths are documented.
 - Adapters point to project memory instead of copying it.
 - Agent-global memory is not used for active task state.
 - Installed docs and templates are included in local sync.
+- Installed helpers include `pmm-task.sh`, `pmm-state.sh`, Doctor, Recovery, and the runtime contract test.
 - `bash scripts/check-public-safety.sh` passes.

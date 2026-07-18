@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.3.1`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.4.0`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -11,16 +11,32 @@ Skip when: You already know the repository and only need a specific implementati
 
 `pmm` is a low-context, cross-agent project runtime packaged as an Agent Skill for long-lived software projects. Its job is not to generate more project documentation; it gives agents a compact runtime contract for executing, verifying, critiquing, repairing, and recovering work with the minimum useful context.
 
-The core v0.2.0 output is:
+The core v0.4.0 output is:
 
 - `AGENTS.md`: the single project entrypoint for durable facts and collaboration rules.
 - Core Pack: compact hot-path files such as `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
 - Self-Eval Loop: Task, Harness, Verifier, Critic, Repair, and Record for substantial work.
 - Agent adapters: Codex, Claude Code, Hermes Agent, and OpenClaw/OpenCode point to the same project facts instead of copying separate memories.
 - Memory promotion rules: promote durable facts only; keep active task state out of global memory.
+- Task Runtime: `active-task.md` remains one primary task; concurrent writers use isolated branches/worktrees and work items, while verification evidence is bound to the current Git HEAD and source state.
 
 Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, long-lived maintenance work, and tasks that need cross-agent handoff, recovery, or strict verification.
 Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory or a verification loop.
+
+## What's New In v0.4.0
+
+`v0.4.0` fixes the failure mode where multiple conversations or agents append unrelated feature contracts to one project's `active-task.md`:
+
+- `active-task.md` is a singleton primary-task slot, not a task list.
+- `pmm.task/v1` frontmatter tracks execution, verification, and delivery separately.
+- `scripts/pmm-task.sh` provides start, status, checkpoint, verify, resume, close, integrate, and migrate lifecycle commands.
+- Concurrent writers require separate branches/worktrees and `work-items/<task-id>.md`; same-branch concurrency is refused.
+- Same-machine lifecycle writes are serialized through a Git common-dir lock and atomically committed as whole files; failure or a signal cleans temporary files, rolls back a new claim, and restores an interrupted takeover to its original owner. One clone permits only one non-idle primary claim, so paused/blocked tasks retain the slot.
+- Archived task IDs cannot be reused, including IDs in marker-less legacy history. Any source-touching commit after verification makes evidence stale, even after a later revert or a rename into an operational-doc path.
+- Doctor v2 validates task identity, state, complete claims, branch ownership, and evidence freshness, with optional `--json` output.
+- Recovery v2 understands legacy statuses and `task-ledger.md`, discovers uncommitted primary or child tasks through sibling-worktree claims, and requires an explicit `--task-id` when recovery is ambiguous.
+- Existing projects do not need immediate migration. Ledger parsing separates current task fields from completed history, and explicit migration proceeds only when exactly one current task exists.
+- Work-item close enters `ready-to-integrate` and retains its claim. After merge, the primary owner runs integrate and re-verifies the primary task; primary close then archives all three axes and queues unfinished delivery follow-up.
 
 ## What's New In v0.3.1
 
@@ -122,7 +138,7 @@ Do not create empty placeholder files just to match a tree.
 
 ## Self-Eval Loop
 
-Substantial tasks should define this contract in `active-task.md`:
+Substantial tasks should define this contract in their owned `active-task.md` or work-item file:
 
 ```text
 Task: objective, scope, risk, allowed/forbidden actions
@@ -134,7 +150,9 @@ Repair: failure class, attempts, next fix
 Record: final status, docs changed, memory promotion decision
 ```
 
-A task without a verifier cannot be marked `done`. Mark it `executed-unverified` or `blocked` instead.
+A task without a verifier and fresh evidence cannot close. Use `execution_status: blocked` for blocked execution, and `verification_status: pending` or `failed` for incomplete or failed verification.
+
+`active-task.md` always holds one primary task. A second writing conversation must queue, or switch to a separate branch/worktree and use [templates/concurrency/work-item.md](templates/concurrency/work-item.md). A verified work item still requires merge, primary-owner `integrate`, and fresh primary verification. See [docs/runtime.md](docs/runtime.md) for lifecycle and migration commands.
 
 ## Installation
 
@@ -165,6 +183,9 @@ Minimum install layout:
   templates/
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
+  scripts/pmm-task.sh
+  scripts/lib/pmm-state.sh
+  tests/pmm-runtime-contract.sh
 ```
 
 ### Maintainer Sync
@@ -195,10 +216,11 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 2. Create project-root `AGENTS.md` from [templates/core/AGENTS.md](templates/core/AGENTS.md).
 3. Create the Core Pack: `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
 4. Pick a Runtime Profile for the task.
-5. Define Task/Agent Mode/Harness/Verifier in `active-task.md`.
-6. Execute, verify, critique, and repair if needed.
-7. Optionally run `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` to check Core Pack and verifier consistency.
-8. Write back only durable facts; archive useful completed summaries to `task-history.md`.
+5. Run the Workspace Gate; do not append a second task when `active-task.md` already owns a primary task.
+6. Use `scripts/pmm-task.sh start` for the primary task; create a separate branch/worktree before starting a concurrent work item.
+7. Execute, verify, critique, repair, and record fresh evidence with `verify`.
+8. Run `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` to validate state, branch ownership, and verifier evidence.
+9. Use work-item `close` to enter pending integration; after merge, let the primary owner run `integrate` and reverify, then use primary `close` to archive.
 
 ### Lightweight usage guidance
 
@@ -234,7 +256,8 @@ Before publishing, run at minimum:
 
 ```bash
 bash scripts/check-public-safety.sh
-bash -n scripts/*.sh
+bash -n scripts/*.sh scripts/lib/*.sh tests/*.sh
+bash tests/pmm-runtime-contract.sh
 bash scripts/pmm-doctor.sh .
 git diff --check
 ```

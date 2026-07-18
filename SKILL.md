@@ -1,7 +1,7 @@
 ---
 name: pmm
-description: Use when starting, structuring, continuing, recovering, or executing a commercial software project, app, website, mini program, SaaS, desktop tool, AI product, or large feature that needs low-context project memory, self-evaluating execution, verification, recovery, and cross-agent compatibility.
-version: 0.3.1
+description: Use when a software project or large feature spans multiple sessions, agents, branches, recovery checkpoints, or verification stages and needs durable project-local task state; skip one-off, tiny, single-session work.
+version: 0.4.0
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -54,9 +54,18 @@ docs/00-project-memory/active-task.md
 docs/00-project-memory/verifier-map.md
 ```
 
+`active-task.md` is one primary task slot, not a task list. When a second conversation or Agent needs independent write access, run the Workspace Gate in `docs/runtime.md`: use a separate branch/worktree and `docs/00-project-memory/work-items/<task-id>.md`, or queue the work. Never append another task contract to `active-task.md`.
+
+Load these only when concurrency or scheduling exists:
+
+```text
+docs/00-project-memory/work-items/<task-id>.md
+docs/00-project-memory/task-queue.md
+```
+
 Use `task-history.md`, `failure-patterns.md`, product/design/technical docs, and release history only when the active task requires them. Search headings and purpose headers before reading full files.
 
-For existing projects that still use `task-ledger.md`, do not stop at compatibility mode. If the user wants v0.2 behavior or a substantial task is starting, run the light migration in `docs/runtime.md`: create the Core Pack hot path, move only the current active task into `active-task.md`, keep completed history cold, and leave the legacy ledger intact.
+For existing projects that still use `task-ledger.md`, keep compatibility reading available. If the project wants structured v0.4 behavior, run the migration dry-run in `docs/runtime.md`; migration counts individual task fields, converts exactly one current task, keeps completed history cold, preserves v0.2/v0.3 multi-section objective/verifier/next-action fields, and refuses zero-current or multi-current ledgers without rewriting them.
 
 ## Core Pack And Optional Packs
 
@@ -90,8 +99,10 @@ For tiny work, do not force the Core Pack. Use No PMM for one-off low-risk chang
 Every substantial execution task uses this loop:
 
 ```text
-Classify -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
+Classify -> Workspace Gate -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
+
+Workspace Gate checks the primary task, owner, branch/worktree, source scope, and active work items before any write. Two active writers never share one branch/worktree; overlapping scopes run sequentially.
 
 Subagent Gate is a lightweight decision, not a default fan-out. Use solo mode for tiny or tightly coupled work. Use assisted, parallel, or review-only mode only when the subtask is bounded, useful, and has clear ownership. Details live in `docs/runtime.md`.
 
@@ -107,7 +118,14 @@ Repair: attempts, last failure, next fix
 Record: final status, docs changed, memory promotion decision
 ```
 
-Verifier first: if a task has no verifier, it cannot be marked done. It can only be marked `executed-unverified` or `blocked`.
+Machine state uses `pmm.task/v1` frontmatter with three independent axes:
+- `execution_status`: `idle`, `queued`, `active`, `paused`, `blocked`, `ready-to-integrate`, `done`
+- `verification_status`: `pending`, `partial`, `passed`, `stale`, `failed`, `not-required`
+- `delivery_status`: `not-requested`, `waiting-confirmation`, `ready`, `deployed`, `released`
+
+Use `scripts/pmm-task.sh` for lifecycle changes. Every mutation requires the recorded owner and branch; only explicit `resume --takeover` changes ownership. Local lifecycle writes are serialized through the Git common directory and committed as whole-file staged transactions; failures and signals clean temporary state, roll back uncommitted new claims, and restore an interrupted takeover to the claim owner matching the durable task file. One non-idle primary claim is permitted across local worktrees, so paused and blocked primary tasks retain that slot. Doctor requires every non-idle task file to have a complete matching claim. Archived task IDs cannot be reused, including IDs found in marker-less legacy history reachable from local refs. `verify` binds evidence to the current Git HEAD and source hash and fails closed on Git/hash errors; any later source-touching commit makes evidence stale even if another commit reverts it or renames the source into an operational path. A work-item `close` keeps its claim and moves it to `ready-to-integrate`; after the verified commit is merged, the primary owner runs `integrate`, re-verifies the primary task, and only then closes it. Primary close preserves all three state axes in history and queues unfinished delivery follow-up.
+
+Verifier first: a task without a verifier and fresh evidence cannot close. Record blocked execution with `execution_status: blocked`; record incomplete or failed verification with `verification_status: pending` or `failed`.
 
 Critic must check for false completion:
 - skipped checks reported as passed
@@ -140,6 +158,7 @@ Rules:
 - `AGENTS.md` is the canonical project entrypoint.
 - `CLAUDE.md`, `.hermes.md`, OpenClaw project cards, and handoffs are adapters.
 - Adapters cite paths and startup behavior; they do not copy full docs.
+- Structured state is optional for legacy projects: old single-task `active-task.md` and `task-ledger.md` remain readable. Run `pmm-task.sh migrate --dry-run` before conversion; ambiguous multi-task files are never rewritten automatically.
 - Subagent routing is best-effort: agents with subagent tools may delegate; agents without them record solo mode or a manual handoff.
 - Root `AGENTS.md` stays short; specialized instructions belong in nested `AGENTS.md` files or task docs.
 - Do not rely on a single agent's hidden or global memory to preserve project state.
@@ -153,11 +172,12 @@ For any non-trivial task:
 1. Identify the project root and project `AGENTS.md`.
 2. Pick the runtime profile.
 3. Read the hot path for that profile.
-4. Update or create `active-task.md` before broad or long-running work.
-5. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
-6. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
-7. Select specialized skills or subagents only when they add value and ownership is clear.
-8. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
+4. Run the Workspace Gate: inspect the primary task, owner, branch/worktree, allowed scope, and active work items.
+5. Start or resume exactly one owned task file. Queue unrelated work; use a separate branch/worktree for a child work item.
+6. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
+7. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
+8. Select specialized skills or subagents only when they add value and ownership is clear.
+9. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
 
 Ask the project owner only for decisions involving cost, production data, destructive changes, credentials, publication, external messaging, legal/business identity, or product direction.
 
@@ -171,7 +191,7 @@ Default:
 - Search before opening long files.
 - Read purpose headers and relevant sections first.
 - Do not load historical logs, completed tasks, or release notes unless the current task needs them.
-- Record selected docs once in `active-task.md`; do not repeat the same list every turn.
+- Record selected docs once in the owned primary task or work-item file; do not repeat the same list every turn.
 
 ## Verification Rules
 
@@ -195,9 +215,10 @@ When a task is interrupted or compact/disconnect occurs:
 1. Read `AGENTS.md`.
 2. Read `current-state.md`, `active-task.md`, `recovery-rules.md`, and `change-log.md`.
 3. Run `scripts/recovery-status.sh` if available.
-4. Inspect workspace state before repeating commands.
-5. Continue from `Next Concrete Action`.
-6. Update `active-task.md` before stopping if work remains.
+4. If multiple candidates exist, pass `--task-id`; never guess which task owns the workspace.
+5. Inspect branch/worktree ownership, partial side effects, source state, and evidence freshness before repeating commands.
+6. Continue from the owned task's `Next Concrete Action`.
+7. Update the owned task file before stopping if work remains.
 
 No-op recovery checks should stop cleanly without durable noise when no active or failed-retryable task exists and no drift is found.
 
@@ -205,11 +226,11 @@ No-op recovery checks should stop cleanly without durable noise when no active o
 
 After substantial or state-changing work, update:
 - `docs/00-project-memory/current-state.md`
-- `docs/00-project-memory/active-task.md` or legacy `task-ledger.md`
+- the owned `active-task.md`, work-item file, or legacy `task-ledger.md`
 - `docs/07-decisions/change-log.md`
 - any changed source-of-truth docs
 
-For completed tasks, move the compact result to `task-history.md` when using the v0.2 Core Pack. Keep `active-task.md` focused on the current task only.
+For completed primary tasks, use `pmm-task.sh close` or move the compact result to `task-history.md`. A child work item must pass through `ready-to-integrate`, merge, and primary-owner `integrate` before its claim is released. Restore `active-task.md` to `idle`; preserve all three state axes in history and keep confirmation/release waits in the optional task queue.
 
 Do not update durable docs for read-only lookups, tiny wording edits, one-off commands, or no-op recovery checks unless they create a durable decision, blocker, drift finding, or follow-up.
 
@@ -239,6 +260,11 @@ When improving `pmm` itself:
 - Making a full document tree the default for every task.
 - Letting `AGENTS.md`, `CLAUDE.md`, `.hermes.md`, or global memory become large archives.
 - Mixing current task state with historical task logs.
+- Appending multiple feature headings to `active-task.md`.
+- Starting a second writer in the same branch/worktree.
+- Treating code-complete, verification-complete, deployment, and release as one status.
+- Reusing verification evidence after HEAD or source state changed.
+- Releasing a work item before its verified commit is merged and accepted by the primary owner.
 - Claiming completion without a verifier.
 - Copying project docs into agent-specific adapters.
 - Promoting transient task state into global agent memory.

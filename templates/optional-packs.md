@@ -68,4 +68,4 @@ Use when the project needs timed follow-up, recurring checks, or automatic recov
 docs/maintenance.md
 ```
 
-Automation prompts must be self-contained and must stop when `active-task.md` is done, blocked, or requires confirmation. Split scheduled checks, heartbeat prompts, and runbooks only when they are independently operated.
+Automation prompts must be self-contained, resolve an explicit task ID, and stop on ambiguity. They must respect execution, verification, and delivery as separate states: blocked execution, stale/failed verification, or a delivery confirmation wait require different handling. Split scheduled checks, heartbeat prompts, and runbooks only when they are independently operated.

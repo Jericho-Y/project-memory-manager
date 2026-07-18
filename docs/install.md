@@ -31,6 +31,9 @@ Minimum useful install:
   templates/
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
+  scripts/pmm-task.sh
+  scripts/lib/pmm-state.sh
+  tests/pmm-runtime-contract.sh
 ```
 
 Non-maintainer users can install by downloading or copying the repository into that directory. They do not need to run `scripts/sync-local-skill.sh`.
@@ -41,7 +44,9 @@ PowerShell users can run the ordinary install helper from the repository root:
 powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -SkillsRoot <SKILLS_ROOT>
 ```
 
-Pass the skills root, not the `pmm` directory itself; the helper creates `<SKILLS_ROOT>/pmm`. If `<SKILLS_ROOT>/pmm` already exists, the helper stops unless `-Force` is passed. `-Force` replaces managed `pmm` docs, templates, metadata, and helper files; use it only when you intentionally want to refresh that install.
+Pass the skills root, not the `pmm` directory itself; the helper creates `<SKILLS_ROOT>/pmm`. If `<SKILLS_ROOT>/pmm` already exists, the helper stops unless `-Force` is passed. `-Force` replaces managed `pmm` docs, templates, metadata, helper files, and runtime tests; use it only when you intentionally want to refresh that install.
+
+The PowerShell helper installs the complete package, but the v0.4 runtime helpers are Bash scripts. Running `pmm-task.sh`, `pmm-doctor.sh`, `recovery-status.sh`, or the contract test on Windows requires a Bash environment with Git and `rg`; source hashing also requires `shasum` or `sha256sum`. Projects may still follow the Markdown contract manually when those tools are unavailable.
 
 ## Maintainer Sync
 
@@ -67,6 +72,17 @@ Installed users may run the lightweight checker against a project:
 
 ```bash
 bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>
+bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh --json <PROJECT_ROOT>
 ```
 
-The checker reports missing Core Pack files, missing verifier fields, overgrown hot-path files, and adapters that appear to copy task state. It is a validation aid, not a database, MCP service, indexer, or mandatory runtime dependency.
+The checker reports missing Core Pack files, invalid or duplicate task state, same-branch concurrency, stale verifier evidence, overgrown hot-path files, and adapters that appear to copy task state. It is a validation aid, not a database, MCP service, indexer, or mandatory runtime dependency.
+
+Use the lifecycle helper for structured v0.4 tasks:
+
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh status --project <PROJECT_ROOT>
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh integrate --project <PROJECT_ROOT> --id <WORK_ITEM_ID> --owner <PRIMARY_OWNER>
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project <PROJECT_ROOT> --dry-run
+```
+
+Legacy projects remain readable without conversion. Run migration only when a project wants structured lifecycle state; automatic apply is limited to one unambiguous task and writes a project-local backup. Split overloaded multi-task files manually because the helper deliberately refuses to guess.
