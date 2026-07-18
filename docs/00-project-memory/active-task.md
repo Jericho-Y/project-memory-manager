@@ -4,16 +4,16 @@ task_id: 2026-07-18-pmm-v0.4.1-installed-contract
 parent_task_id: none
 task_kind: primary
 execution_status: active
-verification_status: pending
-delivery_status: not-requested
+verification_status: passed
+delivery_status: ready
 owner: codex-root
 branch: main
 base_sha: 73ffbcf22092c336913341ca30898c0e473c58af
-revision: 1
-verification_head: none
-verification_source_hash: none
-verified_at: none
-updated_at: 2026-07-18T15:19:09Z
+revision: 3
+verification_head: 073ce13cbcb075480ca61dc4845db208ef800554
+verification_source_hash: 82a1ec2b5af3414bdaa20babe8237153af62ff3273f9a795210d02c948eafc5c
+verified_at: 2026-07-18T15:30:34Z
+updated_at: 2026-07-18T15:30:43Z
 ---
 
 # Active Task
@@ -56,10 +56,10 @@ Skip when: The task is unrelated to the current execution context.
 
 ## Critic
 
-- Pass/Fail: pending
-- Missing Evidence: required checks have not completed.
+- Pass/Fail: pass
+- Missing Evidence: remote push, tag, GitHub Release, and final local installed-skill verification remain.
 - False-Pass Risk: stale or unrelated evidence must not count.
-- Next Action: execute the first unverified acceptance step.
+- Next Action: push the verified commits, publish v0.4.1, sync from public main, and rerun the installed contract.
 
 ## Repair
 
@@ -70,8 +70,8 @@ Skip when: The task is unrelated to the current execution context.
 
 ## Record
 
-- Verification Evidence: pending
-- Docs Updated: pending
-- Remaining Risk: pending verification.
-- Memory Promotion Decision: pending
+- Verification Evidence: committed source contract 233/233; simulated installed contract 233/233; isolated sync installed contract 233/233; public safety, Doctor text/JSON, shell syntax, version and diff checks passed
+- Docs Updated: version metadata, bilingual changelogs, current state, and change log.
+- Remaining Risk: public release and final local installed-skill verification remain.
+- Memory Promotion Decision: keep the source/install layout distinction in the public contract test and changelog.
 - Last Updated: 2026-07-18T15:19:09Z
