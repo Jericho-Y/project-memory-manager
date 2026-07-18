@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when a software project or large feature spans multiple sessions, agents, branches, recovery checkpoints, or verification stages and needs durable project-local task state; skip one-off, tiny, single-session work.
-version: 0.4.0
+version: 0.4.1
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 

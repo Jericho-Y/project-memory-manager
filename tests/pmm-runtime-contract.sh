@@ -86,6 +86,16 @@ assert_file_contains() {
   fi
 }
 
+assert_file_exists() {
+  local file="$1"
+  local label="$2"
+  if [[ -f "$file" ]]; then
+    pass "$label"
+  else
+    fail "$label (missing $file)"
+  fi
+}
+
 assert_equals() {
   local expected="$1"
   local actual="$2"
@@ -1190,14 +1200,25 @@ assert_equals '1' "$interleave_cleanup_ok" 'Serialized winner cleanup leaves no 
 assert_file_contains "$interleave_root/docs/00-project-memory/active-task.md" 'execution_status: idle' 'Interleave fixture converges to an idle primary slot'
 git -C "$interleave_root" worktree remove --force "$interleave_worktree"
 
-assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-task.sh' 'Maintainer sync includes the v0.4 lifecycle CLI'
-assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/lib/pmm-state.sh' 'Maintainer sync includes the shared state library'
-assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'tests/pmm-runtime-contract.sh' 'Maintainer sync includes the runtime contract test'
-assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-task.sh' 'PowerShell install includes the v0.4 lifecycle CLI'
-assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-state.sh' 'PowerShell install includes the shared state library'
-assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-runtime-contract.sh' 'PowerShell install includes the runtime contract test'
-assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'templates/concurrency/work-item.md' 'Public safety requires the work-item template'
-assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'tests/pmm-runtime-contract.sh' 'Public safety reviews the runtime contract test'
+if [[ -f "$repo_root/README.md" ]]; then
+  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-task.sh' 'Maintainer sync includes the v0.4 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/lib/pmm-state.sh' 'Maintainer sync includes the shared state library'
+  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'tests/pmm-runtime-contract.sh' 'Maintainer sync includes the runtime contract test'
+  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-task.sh' 'PowerShell install includes the v0.4 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-state.sh' 'PowerShell install includes the shared state library'
+  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-runtime-contract.sh' 'PowerShell install includes the runtime contract test'
+  assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'templates/concurrency/work-item.md' 'Public safety requires the work-item template'
+  assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'tests/pmm-runtime-contract.sh' 'Public safety reviews the runtime contract test'
+else
+  assert_file_exists "$repo_root/scripts/pmm-task.sh" 'Installed package includes the v0.4 lifecycle CLI'
+  assert_file_exists "$repo_root/scripts/lib/pmm-state.sh" 'Installed package includes the shared state library'
+  assert_file_exists "$repo_root/tests/pmm-runtime-contract.sh" 'Installed package includes the runtime contract test'
+  assert_file_exists "$repo_root/scripts/install-local-skill.ps1" 'Installed package includes the PowerShell installer'
+  assert_file_exists "$repo_root/templates/concurrency/work-item.md" 'Installed package includes the work-item template'
+  assert_file_exists "$repo_root/templates/concurrency/task-queue.md" 'Installed package includes the task-queue template'
+  assert_file_exists "$repo_root/scripts/pmm-doctor.sh" 'Installed package includes Doctor'
+  assert_file_exists "$repo_root/scripts/recovery-status.sh" 'Installed package includes Recovery'
+fi
 
 printf 'PMM_RUNTIME_TESTS tests=%s failures=%s\n' "$tests" "$failures"
 if (( failures > 0 )); then

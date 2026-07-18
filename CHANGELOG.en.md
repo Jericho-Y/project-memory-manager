@@ -6,6 +6,13 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.4.1 - 2026-07-18
+
+### Fixed
+
+- Fixed the installed runtime contract test treating repository-maintenance files as installed runtime dependencies. The contract now distinguishes source checkouts from installed packages: source mode still validates maintainer sync and public-safety configuration, while installed mode validates the lifecycle CLI, shared library, Doctor, Recovery, concurrency templates, and the contract test actually shipped in the package.
+- Kept the v0.4.0 runtime and legacy-project compatibility behavior unchanged; this patch only corrects post-install self-validation.
+
 ## v0.4.0 - 2026-07-18
 
 ### Added

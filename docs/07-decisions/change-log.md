@@ -6,6 +6,7 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-07-18
 
+- Released the v0.4.1 installed-contract hotfix: the same 233-assertion contract now validates repository-maintenance sources in a checkout and actual shipped runtime files in an installed package, without changing v0.4.0 lifecycle or legacy compatibility behavior.
 - Upgraded the public runtime contract to `pmm` v0.4.0: `active-task.md` is one primary-task slot, while concurrent writers use isolated branches/worktrees and work-item files.
 - Added `pmm.task/v1` three-axis state, lifecycle CLI, shared state helpers, local same-machine claims, Git HEAD/source-hash evidence freshness, Doctor v2, Recovery v2, and explicit legacy migration.
 - Preserved backward compatibility for unstructured single-task `active-task.md` and `task-ledger.md`; ambiguous multi-task migration is diagnostic-only and never rewrites the source file.

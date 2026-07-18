@@ -10,7 +10,7 @@ The public repository is initialized and published as a generic Agent Skill repo
 
 ## Active Objective
 
-Publish and maintain `pmm` v0.4.0 as a backward-compatible, concurrency-aware task runtime that preserves one primary task, isolates concurrent work, verifies evidence freshness, and recovers legacy projects deterministically.
+Publish and maintain `pmm` v0.4.1 as a backward-compatible, concurrency-aware task runtime that preserves one primary task, isolates concurrent work, verifies evidence freshness, recovers legacy projects deterministically, and passes the same contract in source and installed-package layouts.
 
 ## Current Source Of Truth
 
@@ -50,6 +50,7 @@ Publish and maintain `pmm` v0.4.0 as a backward-compatible, concurrency-aware ta
 - Legacy single-task `active-task.md` and `task-ledger.md` remain readable; migration is explicit, backed up, refuses multi-task ambiguity, maps unverified done to paused, and normalizes idle to the empty slot.
 - Single-task migration supports official v0.1 ledger records and formal v0.2/v0.3 multi-section tasks, separates current fields from completed history, preserves objective/verifier/next-action values in the structured hot path, and leaves legacy source unchanged; marker-less history continues to reserve archived task IDs across reachable refs.
 - Recovery merges sibling-worktree primary/work-item claims with project files, so uncommitted tasks remain discoverable by task ID.
+- The runtime contract detects source-checkout and installed-package layouts so repository-only maintenance assertions do not create false installation failures.
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory after safety checks pass.
 - Workflow examples remain under `docs/github-actions-drafts/` until workflow publication is explicitly reviewed and enabled.
 
