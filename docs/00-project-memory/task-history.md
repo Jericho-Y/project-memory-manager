@@ -40,3 +40,16 @@ Purpose: Append-only compact summaries of closed tasks.
 - Delivery State: released
 - Verification Evidence: source preflight 289/289; isolated and real local installed-package preflight 288/288; public safety passed; Doctor failures=0 warnings=0; shell syntax and diff checks passed; public v0.5.0 Release verified
 - Closed At: 2026-07-21T07:17:49Z
+
+## 2026-07-21 2026-07-21-pmm-v0.5.1-project-upgrade
+
+<!-- pmm-task-id: 2026-07-21-pmm-v0.5.1-project-upgrade -->
+
+- Status: done
+- Parent Task: none
+- Title: pmm v0.5.1 automatic project upgrade gate
+- Execution State: done
+- Verification State: passed
+- Delivery State: released
+- Verification Evidence: v0.5.1 release verification: source PMM_PREFLIGHT_PASS version=0.5.1; source contract tests=359 failures=0; installed package contract tests=358 failures=0; public safety passed; Doctor failures=0 warnings=0; shell syntax and git diff checks passed; tag v0.5.1 and GitHub Release published from commit 53c3c46.
+- Closed At: 2026-07-21T08:55:59Z
