@@ -6,6 +6,7 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-07-21
 
+- Released `pmm` v0.5.0, synced the maintainer install from public `main`, and verified the source and real installed-package layouts before closing the primary task.
 - Prepared `pmm` v0.5.0 as a compatibility-first upgrade: added read-only per-contract migration plans, strict source/status ambiguity refusal, stable Doctor JSON codes, delivery CLI, global help/version, and a source-plus-installed release preflight.
 - Expanded legacy parsing and Recovery for real project shapes: bare fields, `## Task <id>` headings, code spans, trailing whitespace, verbose status text, empty active-task placeholders, completed/deferred history, duplicate conflicting status fields, and explicit missing task IDs.
 - Preserved downgrade safety: old ledgers remain readable and unchanged, migration apply creates a project-local backup, conflicting state becomes paused review or refuses apply, and installed package verification uses the same runtime contract as the source checkout.

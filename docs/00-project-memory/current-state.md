@@ -10,7 +10,7 @@ The public repository is initialized and published as a generic Agent Skill repo
 
 ## Active Objective
 
-Publish and maintain `pmm` v0.5.0 as a compatibility-first, concurrency-aware task runtime that preserves one primary task, upgrades legacy project state without forced rewrites, isolates concurrent work, verifies evidence freshness, and passes the same contract in source and installed-package layouts.
+Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime that preserves one primary task, upgrades legacy project state without forced rewrites, isolates concurrent work, verifies evidence freshness, and passes the same contract in source and installed-package layouts.
 
 ## Current Source Of Truth
 
@@ -34,6 +34,7 @@ Publish and maintain `pmm` v0.5.0 as a compatibility-first, concurrency-aware ta
 ## Current Facts
 
 - Public releases use `VERSION`, `SKILL.md` frontmatter `version:`, public `CHANGELOG.md`, matching git tags, and GitHub Releases.
+- `v0.5.0` is published from the verified release commit; the maintainer install was synced from public `main` and passed the installed-package contract.
 - Public release notes are bilingual: Chinese is primary, with English mirror coverage in `CHANGELOG.en.md` and release bodies when publishing.
 - New generated projects should start with Core Pack only and add optional packs only when real facts exist.
 - Product Pack uses project-root `PRD.md` as the default master requirements/product document.
