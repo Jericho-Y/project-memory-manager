@@ -34,7 +34,7 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 ## Current Facts
 
 - Public releases use `VERSION`, `SKILL.md` frontmatter `version:`, public `CHANGELOG.md`, matching git tags, and GitHub Releases.
-- `v0.5.0` is the currently published release. `v0.5.1` automatic project upgrade is implemented locally and remains pending final preflight, commit, push, GitHub Release, and post-release installed-package verification.
+- `v0.5.1` is published from tag `v0.5.1` at source commit `53c3c46`; the operational task-close commit is `e7974d9`. The maintainer install was synced from public `main` and the installed-package contract passed at version `0.5.1`.
 - Public release notes are bilingual: Chinese is primary, with English mirror coverage in `CHANGELOG.en.md` and release bodies when publishing.
 - New generated projects should start with Core Pack only and add optional packs only when real facts exist.
 - Product Pack uses project-root `PRD.md` as the default master requirements/product document.
@@ -57,7 +57,7 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - Recovery merges sibling-worktree primary/work-item claims with project files, so uncommitted tasks remain discoverable by task ID.
 - The runtime contract detects source-checkout and installed-package layouts, and `pmm-preflight.sh` runs both as one release gate so repository-only maintenance assertions do not create false installation failures.
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory after safety checks pass.
-- The v0.5.1 source runtime contract passes all 359 assertions; release and installed-package verification remain pending until the release commit exists.
+- The v0.5.1 source runtime contract passes all 359 assertions and the installed-package contract passes 358 assertions; public safety, Doctor, shell syntax, release preflight, tag, and GitHub Release verification are complete.
 - Workflow examples remain under `docs/github-actions-drafts/` until workflow publication is explicitly reviewed and enabled.
 
 ## Remaining Risks
