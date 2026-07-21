@@ -21,6 +21,20 @@ Lightweight modes:
 - Pulse Card: a short task card in an existing task record when scope and verifier are clear.
 - Core Pack: Sprint+ work needing durable state, handoff, or multi-file verification.
 
+## Upgrade Gate
+
+Before a substantial task can write project state, run:
+
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project . --auto --owner <agent-id>
+```
+
+The gate is project-level and idempotent. It compares `docs/00-project-memory/runtime-state.md` with the installed `VERSION`, rejects a project created by a newer runtime, and otherwise upgrades the project in one common-directory-locked transaction. The transaction stages all outputs before commit, backs up every existing file it will rewrite, preserves non-managed `AGENTS.md` content, and rolls back files and provisional claims after a failure or signal.
+
+An upgrade writes `runtime-state.md`, the marker-managed PMM block in `AGENTS.md`, and only missing Core Pack files. It converts one unambiguous legacy current task, derives a deterministic `legacy-<sha256-prefix>` ID when the old title is not a valid structured ID, and creates an idle primary slot for history-only projects. Multiple tasks, active-task/ledger source conflicts, repeated conflicting statuses, newer runtime markers, and invalid managed markers fail closed with no project-state writes.
+
+`runtime-state.md` is durable project metadata, not a default hot-path reading file. Compatibility readers remain available for migration discovery, recovery, rollback, and manual ambiguity review; ordinary lifecycle writes require the current runtime state.
+
 ## Workspace Gate
 
 Run this before Subagent Gate or any write:
@@ -79,6 +93,8 @@ verification_head, verification_source_hash, verified_at, updated_at
 ## Task Lifecycle CLI
 
 Use the installed helper from the project root. Replace `<SKILLS_ROOT>` with the runtime's skill root.
+
+`start`, `checkpoint`, `verify`, `resume`, `close`, `integrate`, and delivery mutations automatically run the Upgrade Gate before their normal ownership and task checks. `status` remains read-only. Use `upgrade --auto` directly when you want to complete the project transition before starting work.
 
 Start one primary task:
 
@@ -151,7 +167,7 @@ Search before opening long files. Record selected docs once in the owned task fi
 Every substantial task follows:
 
 ```text
-Classify -> Workspace Gate -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
+Classify -> Upgrade Gate -> Workspace Gate -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
 
 The task contract covers objective, scope, allowed/forbidden actions, owner, branch, Agent Mode, harness, verifier, loop budget, stop condition, repair state, next action, evidence, and remaining risk.
@@ -210,7 +226,7 @@ Legacy aliases such as `In progress` and `failed-retryable` remain recoverable. 
 
 ## Legacy Migration
 
-Legacy `active-task.md` and `task-ledger.md` remain readable. Migration is optional and explicit:
+Legacy `active-task.md` and `task-ledger.md` remain readable for compatibility and recovery. Normal writes first run the Upgrade Gate; these migration commands remain backward-compatible explicit APIs:
 
 ```bash
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project . --plan
@@ -224,6 +240,7 @@ bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project . --dry-run
 - `migrate --plan` is read-only and prints one `MIGRATION_CANDIDATE` per current contract. `--dry-run` keeps the validation gate and refuses zero or multiple candidates; `--apply` creates a project-local backup and rejects conflicting `Status` fields.
 - The migration source is backed up under `.project-runtime/pmm/backups/`; a legacy ledger remains unchanged.
 - Multiple feature contracts return `MIGRATION_AMBIGUOUS` and remain unchanged.
+- `migrate --apply` also writes the current `runtime-state.md` and managed `AGENTS.md` block, so task conversion cannot leave a project in an older runtime mode.
 - Never delete a legacy `task-ledger.md` without project-owner approval.
 
 ## Memory Promotion

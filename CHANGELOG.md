@@ -6,6 +6,27 @@
 
 本项目遵循语义化版本。中文是主更新日志；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 
+## v0.5.1 - 2026-07-21
+
+### 新增
+
+- 新增项目级 Upgrade Gate：`pmm-task.sh upgrade --project PATH --auto --owner OWNER` 在普通写操作前把旧项目自动收敛到已安装 runtime，并以 `runtime-state.md` 记录版本、来源、备份、迁移状态和证据。
+- 新增 v0.1 ledger、v0.2/v0.3 sectioned task、未标记 v0.4/v0.5 structured state、旧 runtime marker 和 history-only 项目的自动升级合同。
+- 新增 marker 管理的 `AGENTS.md` PMM Runtime 区块和 `templates/core/runtime-state.md`；只维护 PMM 区块，不覆盖项目自定义规则。
+
+### 调整
+
+- `start`、`checkpoint`、`verify`、`resume`、`close`、`integrate` 和 delivery 写操作自动执行 Upgrade Gate；升级成功后，旧版兼容读取只用于迁移发现、恢复、回滚和歧义审计。
+- Doctor 默认要求当前 runtime，旧项目返回 `PROJECT_UPGRADE_REQUIRED`；`--allow-legacy` 仅保留为显式兼容审计模式。
+- 旧 `migrate --apply` API 保持可用，并同步写入当前 runtime state 与受 marker 管理的项目规则。
+
+### 安全与兼容
+
+- 升级在 Git common-dir mutation lock 内执行，先备份所有待修改文件，再统一提交；失败或 signal 会恢复原文件、清理临时状态并释放 provisional claim。
+- 多任务、双来源、冲突状态和未来 runtime 版本 fail-closed 且零项目写入；非法旧标题使用确定性 `legacy-<sha256-prefix>` task ID。
+- 子 worktree 复用共享主任务 claim 时保持 work-item 生命周期，不会误建 idle 主任务或错误触发 branch mismatch。
+- 完整源码合同现含 359 项，覆盖升级幂等、备份、事务回滚、并发升级、生命周期自动升级和源码/安装包交付边界。
+
 ## v0.5.0 - 2026-07-21
 
 ### 新增

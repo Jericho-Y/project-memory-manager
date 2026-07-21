@@ -89,6 +89,7 @@ fi
 [[ -f scripts/install-local-skill.ps1 ]] || fail "PowerShell install helper missing after clone"
 [[ -f templates/concurrency/work-item.md ]] || fail "work-item template missing after clone"
 [[ -f templates/concurrency/task-queue.md ]] || fail "task-queue template missing after clone"
+[[ -f templates/core/runtime-state.md ]] || fail "runtime-state template missing after clone"
 [[ -f tests/pmm-runtime-contract.sh ]] || fail "runtime contract test missing after clone"
 
 if find . -type f \( -name '*.sh' -o -name '*.ps1' -o -name '*.py' -o -name '*.js' -o -name '*.ts' \) \
@@ -159,6 +160,7 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/templates/document-skeletons.md" ]] || fail "local sync did not produce document skeleton template"
 [[ -f "$LOCAL_SKILL_DIR/templates/optional-packs.md" ]] || fail "local sync did not produce optional packs template"
 [[ -f "$LOCAL_SKILL_DIR/templates/core/active-task.md" ]] || fail "local sync did not produce active-task template"
+[[ -f "$LOCAL_SKILL_DIR/templates/core/runtime-state.md" ]] || fail "local sync did not produce runtime-state template"
 [[ -f "$LOCAL_SKILL_DIR/templates/core/verifier-map.md" ]] || fail "local sync did not produce verifier-map template"
 [[ -f "$LOCAL_SKILL_DIR/templates/concurrency/work-item.md" ]] || fail "local sync did not produce work-item template"
 [[ -f "$LOCAL_SKILL_DIR/templates/concurrency/task-queue.md" ]] || fail "local sync did not produce task-queue template"

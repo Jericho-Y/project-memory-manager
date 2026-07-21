@@ -6,6 +6,27 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.5.1 - 2026-07-21
+
+### Added
+
+- Added the project-level Upgrade Gate, `pmm-task.sh upgrade --project PATH --auto --owner OWNER`, which converges an older project to the installed runtime before normal writes and records version, source, backup, migration status, and evidence in `runtime-state.md`.
+- Added automatic upgrade contracts for v0.1 ledgers, v0.2/v0.3 sectioned tasks, unmarked v0.4/v0.5 structured state, older runtime markers, and history-only projects.
+- Added a marker-managed PMM Runtime block for project `AGENTS.md` files and `templates/core/runtime-state.md`; project-owned rules outside the block are preserved.
+
+### Changed
+
+- `start`, `checkpoint`, `verify`, `resume`, `close`, `integrate`, and delivery mutations now run the Upgrade Gate automatically. After upgrade, compatibility readers are limited to migration discovery, recovery, rollback, and ambiguity review.
+- Doctor now requires the current runtime by default and reports `PROJECT_UPGRADE_REQUIRED` for old projects. `--allow-legacy` remains only as an explicit compatibility audit mode.
+- The backward-compatible `migrate --apply` API remains available and now also writes the current runtime state and marker-managed project rules.
+
+### Safety And Compatibility
+
+- Upgrade runs under the Git common-directory mutation lock, backs up every existing file before replacement, and commits all staged changes together. Failure or a signal restores original files, removes temporary state, and releases provisional claims.
+- Multiple tasks, competing sources, conflicting statuses, and future runtime versions fail closed with zero project writes. Invalid legacy titles receive deterministic `legacy-<sha256-prefix>` task IDs.
+- A child worktree that matches the shared primary claim stays in the work-item lifecycle instead of creating a false idle primary or failing with a branch mismatch.
+- The complete source contract now contains 359 assertions covering idempotency, backups, transactional rollback, concurrent upgrades, automatic lifecycle upgrades, and source/installed-package delivery boundaries.
+
 ## v0.5.0 - 2026-07-21
 
 ### Added

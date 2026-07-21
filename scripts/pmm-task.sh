@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: Manage pmm v0.5 structured task lifecycle, local claims, verification evidence, delivery, and migration.
-# Read when: Starting, checkpointing, verifying, resuming, closing, or migrating project tasks.
+# Purpose: Manage pmm structured task lifecycle, project upgrades, local claims, verification evidence, delivery, and migration.
+# Read when: Upgrading, starting, checkpointing, verifying, resuming, closing, or migrating project tasks.
 # Skip when: Performing a read-only lookup with no durable task state.
 set -euo pipefail
 
@@ -22,6 +22,7 @@ Usage:
   pmm-task.sh integrate --project PATH --id WORK_ITEM_ID --owner PRIMARY_OWNER
   pmm-task.sh delivery --project PATH --id ID --owner ID --status STATUS --evidence TEXT
   pmm-task.sh delivery --project PATH --id ID
+  pmm-task.sh upgrade --project PATH --auto --owner OWNER [--id ID]
   pmm-task.sh migrate --project PATH --plan
   pmm-task.sh migrate --project PATH --dry-run
   pmm-task.sh migrate --project PATH --apply --id ID --owner ID
@@ -58,6 +59,7 @@ dry_run=0
 apply=0
 plan=0
 takeover=0
+auto=0
 delivery_status=""
 
 while (( $# > 0 )); do
@@ -77,6 +79,7 @@ while (( $# > 0 )); do
     --plan) plan=1; shift ;;
     --apply) apply=1; shift ;;
     --takeover) takeover=1; shift ;;
+    --auto) auto=1; shift ;;
     -h | --help) usage; exit 0 ;;
     *) die "ERROR: unknown option: $1" ;;
   esac
@@ -94,6 +97,12 @@ fi
 project="$(cd "$project" && pwd)"
 memory_dir="$project/docs/00-project-memory"
 active_task="$memory_dir/active-task.md"
+runtime_state="$memory_dir/runtime-state.md"
+agents_file="$project/AGENTS.md"
+current_state="$memory_dir/current-state.md"
+verifier_map="$memory_dir/verifier-map.md"
+change_log="$project/docs/07-decisions/change-log.md"
+current_runtime_version="$(tr -d '[:space:]' <"$script_dir/../VERSION")"
 work_items_dir="$memory_dir/work-items"
 history="$memory_dir/task-history.md"
 task_queue="$memory_dir/task-queue.md"
@@ -108,8 +117,32 @@ rollback_claim_new_owner=""
 rollback_claim_branch=""
 rollback_claim_parent=""
 rollback_claim_kind=""
+upgrade_stage_dir=""
+upgrade_backup_dir=""
+upgrade_manifest=""
+upgrade_rollback_active=0
 
 release_state_lock() {
+  if (( upgrade_rollback_active == 1 )) && [[ -f "$upgrade_manifest" ]]; then
+    while IFS='|' read -r upgrade_rel upgrade_existed; do
+      [[ -n "$upgrade_rel" ]] || continue
+      upgrade_target="$project/$upgrade_rel"
+      if [[ "$upgrade_existed" == '1' ]]; then
+        mkdir -p "$(dirname "$upgrade_target")" || true
+        cp "$upgrade_backup_dir/$upgrade_rel" "$upgrade_target" || true
+      else
+        rm -f "$upgrade_target" || true
+      fi
+    done <"$upgrade_manifest"
+    upgrade_rollback_active=0
+  fi
+  if [[ -n "$upgrade_stage_dir" ]]; then
+    rm -rf "$upgrade_stage_dir" || true
+    upgrade_stage_dir=""
+  fi
+  if (( upgrade_rollback_active == 0 )) && [[ -n "$upgrade_backup_dir" && ! -f "$runtime_state" ]]; then
+    rm -rf "$upgrade_backup_dir" || true
+  fi
   if [[ -n "$staged_task_file" ]]; then
     rm -f "$staged_task_file" "${staged_task_file}.tmp.$$" || true
     staged_task_file=""
@@ -369,13 +402,14 @@ write_task_file() {
 }
 
 write_idle_task() {
+  local target="${1:-$active_task}"
   local branch base now tmp
-  [[ ! -d "$active_task" ]] || return 1
+  [[ ! -d "$target" ]] || return 1
   branch="$(pmm_git_branch "$project")"
   base="$(pmm_git_head "$project")"
   now="$(pmm_now)"
-  mkdir -p "$memory_dir"
-  tmp="${active_task}.tmp.$$"
+  mkdir -p "$(dirname "$target")"
+  tmp="${target}.tmp.$$"
   pending_temp_file="$tmp"
   {
     printf '%s\n' '---'
@@ -400,7 +434,7 @@ write_idle_task() {
     printf 'Skip when: Performing a tiny read-only lookup.\n\n'
     printf '## Status\n\n- No active primary task.\n'
   } >"$tmp" || return 1
-  mv "$tmp" "$active_task" || return 1
+  mv "$tmp" "$target" || return 1
   pending_temp_file=""
 }
 
@@ -479,8 +513,9 @@ write_migrated_task() {
   local source_label="$2"
   local legacy_status="$3"
   local selection_mode="${4:-all}"
+  local target="${5:-$active_task}"
   local title_value objective_value verifier_value next_value branch base now tmp
-  [[ ! -d "$active_task" ]] || return 1
+  [[ ! -d "$target" ]] || return 1
   title_value="$(pmm_legacy_title "$source_file" "$selection_mode")"
   objective_value="$(pmm_legacy_contract_field "$source_file" "$selection_mode" objective)"
   verifier_value="$(pmm_legacy_contract_field "$source_file" "$selection_mode" verifier)"
@@ -492,7 +527,8 @@ write_migrated_task() {
   branch="$(pmm_git_branch "$project")"
   base="$(pmm_git_head "$project")"
   now="$(pmm_now)"
-  tmp="${active_task}.tmp.$$"
+  mkdir -p "$(dirname "$target")"
+  tmp="${target}.tmp.$$"
   pending_temp_file="$tmp"
   {
     printf '%s\n' '---'
@@ -524,7 +560,7 @@ write_migrated_task() {
     printf '## Legacy Source\n\n'
     sed -n '1,$p' "$source_file"
   } >"$tmp" || return 1
-  mv "$tmp" "$active_task" || return 1
+  mv "$tmp" "$target" || return 1
   pending_temp_file=""
 }
 
@@ -564,7 +600,385 @@ print_migration_plan() {
   printf 'MIGRATION_PLAN_RESULT candidates=%s\n' "$index"
 }
 
+write_managed_runtime_block() {
+  local target="$1"
+  {
+    printf '%s\n' '<!-- pmm-runtime:start -->'
+    printf '## PMM Runtime\n\n'
+    printf -- '- Managed runtime version: `%s`.\n' "$current_runtime_version"
+    printf -- '- Before non-trivial task writes, run the installed `pmm-task.sh upgrade --project . --auto --owner <agent-id>` Upgrade Gate.\n'
+    printf -- '- Treat `docs/00-project-memory/runtime-state.md` as project runtime state; compatibility readers are for migration, recovery, rollback, and ambiguity review only.\n'
+    printf -- '- Keep exactly one primary task in `active-task.md`; concurrent writers use isolated branches/worktrees and work-item files.\n'
+    printf '%s\n' '<!-- pmm-runtime:end -->'
+  } >"$target"
+}
+
+render_upgraded_agents() {
+  local target="$1"
+  local base="$2"
+  local block="$3"
+  local start_count end_count
+  start_count="$(awk '$0 == "<!-- pmm-runtime:start -->" { count++ } END { print count + 0 }' "$base")"
+  end_count="$(awk '$0 == "<!-- pmm-runtime:end -->" { count++ } END { print count + 0 }' "$base")"
+  if [[ "$start_count" != "$end_count" || "$start_count" -gt 1 ]]; then
+    die 'PROJECT_UPGRADE_INVALID_MANAGED_BLOCK: AGENTS.md has unmatched or duplicate pmm runtime markers'
+  fi
+  if [[ "$start_count" == '1' ]]; then
+    awk -v block="$block" '
+      $0 == "<!-- pmm-runtime:start -->" {
+        while ((getline line < block) > 0) print line
+        close(block)
+        skipping=1
+        next
+      }
+      skipping && $0 == "<!-- pmm-runtime:end -->" { skipping=0; next }
+      !skipping { print }
+    ' "$base" >"$target"
+  else
+    {
+      sed -n '1,$p' "$base"
+      printf '\n'
+      sed -n '1,$p' "$block"
+    } >"$target"
+  fi
+}
+
+upgrade_source_hash() {
+  local rel file
+  {
+    for rel in AGENTS.md docs/00-project-memory/runtime-state.md \
+      docs/00-project-memory/active-task.md docs/00-project-memory/task-ledger.md; do
+      file="$project/$rel"
+      [[ -f "$file" ]] || continue
+      printf '%s:' "$rel"
+      pmm_file_hash "$file" || return 1
+    done
+  } | pmm_hash_stream
+}
+
+derive_upgrade_task_id() {
+  local source_file="$1"
+  local selection_mode="$2"
+  local requested_id="$3"
+  local candidate source_digest
+  if [[ -n "$requested_id" ]]; then
+    pmm_validate_id "$requested_id" || die 'ERROR: --id must use 2-80 letters, digits, dots, underscores, or hyphens'
+    printf '%s\n' "$requested_id"
+    return
+  fi
+  candidate="$(pmm_legacy_title "$source_file" "$selection_mode" 2>/dev/null || true)"
+  if pmm_validate_id "$candidate"; then
+    printf '%s\n' "$candidate"
+    return
+  fi
+  source_digest="$(pmm_file_hash "$source_file")" || die 'PROJECT_UPGRADE_SOURCE_HASH_FAILED'
+  printf 'legacy-%s\n' "${source_digest:0:16}"
+}
+
+require_upgrade_task_id_available() {
+  local candidate="$1"
+  local archive_status
+  if pmm_task_id_is_archived "$project" "$candidate"; then
+    die "TASK_ID_ALREADY_ARCHIVED: $candidate"
+  else
+    archive_status=$?
+  fi
+  case "$archive_status" in
+    1) return 0 ;;
+    *) die "TASK_ID_ARCHIVE_CHECK_FAILED: $candidate" ;;
+  esac
+}
+
+upgrade_register_target() {
+  local rel="$1"
+  local targets="$upgrade_stage_dir/targets"
+  if [[ ! -f "$targets" ]] || ! rg -q --fixed-strings -x -- "$rel" "$targets"; then
+    printf '%s\n' "$rel" >>"$targets"
+  fi
+}
+
+upgrade_backup_file() {
+  local rel="$1"
+  local source="$project/$rel"
+  local destination="$upgrade_backup_dir/$rel"
+  [[ -f "$source" ]] || return 0
+  [[ ! -e "$destination" ]] || return 0
+  mkdir -p "$(dirname "$destination")"
+  cp "$source" "$destination" || die "PROJECT_UPGRADE_BACKUP_FAILED: $rel"
+}
+
+write_runtime_state() {
+  local target="$1"
+  local migrated_from="$2"
+  local source_hash="$3"
+  local backup_path="$4"
+  local now="$5"
+  mkdir -p "$(dirname "$target")"
+  {
+    printf '%s\n' '---'
+    printf 'pmm_schema: pmm.runtime/v1\n'
+    printf 'runtime_version: %s\n' "$current_runtime_version"
+    printf 'migration_status: complete\n'
+    printf 'migrated_from: %s\n' "$migrated_from"
+    printf 'source_hash: %s\n' "$source_hash"
+    printf 'backup_path: %s\n' "$backup_path"
+    printf 'upgraded_at: %s\n' "$now"
+    printf '%s\n\n' '---'
+    printf '# PMM Runtime State\n\n'
+    printf 'Purpose: Project-level runtime version and completed migration evidence.\n'
+    printf 'Read when: Upgrading, auditing, or recovering the PMM project runtime.\n'
+    printf 'Skip when: Executing a current task after the Upgrade Gate passes.\n'
+  } >"$target"
+}
+
+prepare_upgrade_claim() {
+  local task_file="$1"
+  local execution_value task_id_value owner_value branch_value claimed_primary claim_status
+  execution_value="$(pmm_frontmatter_value "$task_file" execution_status 2>/dev/null || true)"
+  if [[ "$execution_value" == 'idle' ]]; then
+    if claimed_primary="$(pmm_claim_primary_task "$project" 2>/dev/null)"; then
+      die "PRIMARY_TASK_ALREADY_CLAIMED: $claimed_primary"
+    else
+      claim_status=$?
+      [[ "$claim_status" == '1' ]] || die 'MULTIPLE_PRIMARY_TASK_CLAIMS: repair claims before upgrading'
+    fi
+    return
+  fi
+  task_id_value="$(pmm_frontmatter_value "$task_file" task_id 2>/dev/null || true)"
+  owner_value="$(pmm_frontmatter_value "$task_file" owner 2>/dev/null || true)"
+  branch_value="$(pmm_frontmatter_value "$task_file" branch 2>/dev/null || true)"
+  pmm_validate_id "$task_id_value" || die "PROJECT_UPGRADE_INVALID_TASK_ID: $task_id_value"
+  pmm_validate_id "$owner_value" || die "PROJECT_UPGRADE_INVALID_OWNER: $owner_value"
+  [[ "$branch_value" == "$(pmm_git_branch "$project")" ]] || \
+    die "PROJECT_UPGRADE_BRANCH_MISMATCH: task $task_id_value belongs to $branch_value"
+  if claimed_primary="$(pmm_claim_primary_task "$project" 2>/dev/null)"; then
+    [[ "$claimed_primary" == "$task_id_value" ]] || die "PRIMARY_TASK_ALREADY_CLAIMED: $claimed_primary"
+    pmm_claim_matches "$project" "$task_id_value" "$owner_value" "$branch_value" none primary || \
+      die "PROJECT_UPGRADE_PRIMARY_CLAIM_MISMATCH: $task_id_value"
+  else
+    claim_status=$?
+    [[ "$claim_status" == '1' ]] || die 'MULTIPLE_PRIMARY_TASK_CLAIMS: repair claims before upgrading'
+    pmm_claim_acquire "$project" "$task_id_value" "$owner_value" "$branch_value" none primary || \
+      die "TASK_OWNED_BY_OTHER: $task_id_value"
+    pending_claim_id="$task_id_value"
+  fi
+}
+
+perform_project_upgrade() {
+  local requested_id="${1:-}"
+  local allow_shared_primary="${2:-0}"
+  local existing_runtime_version='' runtime_compare='' migrated_from='unversioned-project'
+  local active_legacy_count=0 ledger_legacy_count=0 legacy_source='' legacy_label='' legacy_mode='all'
+  local legacy_status_raw='' legacy_status='' migration_execution='' migrated_task_id=''
+  local base_agents managed_block agents_candidate active_candidate result_task_file
+  local needs_upgrade=0 rel source_hash backup_rel now target existed
+  local saved_id="$id"
+  local saved_owner="$owner"
+  local shared_primary_id='' shared_primary_status=0
+
+  require_owner
+  require_git_context
+  [[ "$current_runtime_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 'PROJECT_RUNTIME_VERSION_INVALID: installed VERSION must be semantic x.y.z'
+
+  if [[ -f "$runtime_state" ]]; then
+    pmm_has_runtime_schema "$runtime_state" || die 'PROJECT_RUNTIME_STATE_INVALID: runtime-state.md must use pmm.runtime/v1'
+    existing_runtime_version="$(pmm_frontmatter_value "$runtime_state" runtime_version 2>/dev/null || true)"
+    runtime_compare="$(pmm_version_compare "$existing_runtime_version" "$current_runtime_version" 2>/dev/null || true)"
+    [[ -n "$runtime_compare" ]] || die "PROJECT_RUNTIME_VERSION_INVALID: $existing_runtime_version"
+    [[ "$runtime_compare" != '1' ]] || die "PROJECT_RUNTIME_NEWER_THAN_INSTALLED: project=$existing_runtime_version installed=$current_runtime_version"
+    migrated_from="runtime-$existing_runtime_version"
+    if [[ "$runtime_compare" != '0' || "$(pmm_frontmatter_value "$runtime_state" migration_status 2>/dev/null || true)" != 'complete' ]]; then
+      needs_upgrade=1
+    fi
+  else
+    needs_upgrade=1
+  fi
+
+  if shared_primary_id="$(pmm_claim_primary_task "$project" 2>/dev/null)"; then
+    :
+  else
+    shared_primary_status=$?
+    [[ "$shared_primary_status" == '1' ]] || die 'MULTIPLE_PRIMARY_TASK_CLAIMS: repair claims before upgrading'
+  fi
+
+  if [[ -f "$active_task" ]] && pmm_has_schema "$active_task"; then
+    migrated_from="${migrated_from:-unversioned-structured}"
+    [[ -n "$existing_runtime_version" ]] || migrated_from='unversioned-structured'
+    if (( allow_shared_primary == 1 )) && [[ -n "$shared_primary_id" ]] && \
+      { [[ "$(pmm_frontmatter_value "$active_task" execution_status 2>/dev/null || true)" == 'idle' ]] || \
+        [[ "$(pmm_frontmatter_value "$active_task" task_id 2>/dev/null || true)" == "$shared_primary_id" ]]; }; then
+      result_task_file=''
+    else
+      result_task_file="$active_task"
+    fi
+  else
+    if [[ -f "$active_task" ]]; then
+      active_legacy_count="$(pmm_legacy_contract_count "$active_task" all 2>/dev/null || printf '0')"
+    fi
+    if [[ -f "$memory_dir/task-ledger.md" ]]; then
+      ledger_legacy_count="$(pmm_legacy_contract_count "$memory_dir/task-ledger.md" current 2>/dev/null || printf '0')"
+    fi
+    if (( active_legacy_count > 0 && ledger_legacy_count > 0 )); then
+      die 'PROJECT_UPGRADE_AMBIGUOUS_SOURCES: active-task.md and task-ledger.md both contain current contracts'
+    elif (( active_legacy_count > 0 )); then
+      legacy_source="$active_task"
+      legacy_label='active-task.md'
+      legacy_mode='all'
+      migrated_from='legacy-active-task'
+    elif (( ledger_legacy_count > 0 )); then
+      legacy_source="$memory_dir/task-ledger.md"
+      legacy_label='task-ledger.md'
+      legacy_mode='current'
+      migrated_from='legacy-task-ledger'
+    elif [[ -f "$memory_dir/task-ledger.md" || -f "$active_task" ]]; then
+      legacy_source="${legacy_source:-${memory_dir}/task-ledger.md}"
+      [[ -f "$legacy_source" ]] || legacy_source="$active_task"
+      legacy_label="$(basename "$legacy_source")"
+      legacy_mode='current'
+      migrated_from='legacy-history-only'
+    fi
+    if (( active_legacy_count > 1 || ledger_legacy_count > 1 )); then
+      die "PROJECT_UPGRADE_AMBIGUOUS: task_contracts=$((active_legacy_count + ledger_legacy_count))"
+    fi
+    if [[ -n "$legacy_source" && $((active_legacy_count + ledger_legacy_count)) -eq 1 ]]; then
+      legacy_status_raw="$(pmm_legacy_contract_field "$legacy_source" "$legacy_mode" status 2>/dev/null || true)"
+      [[ "$legacy_status_raw" != 'ambiguous' ]] || die 'PROJECT_UPGRADE_AMBIGUOUS_STATUS: legacy contract contains conflicting Status fields'
+      legacy_status="$(pmm_normalize_legacy_status "$legacy_status_raw")"
+      [[ "$legacy_status" != 'unknown' ]] || legacy_status='paused'
+      migration_execution="$legacy_status"
+      [[ "$migration_execution" != 'done' ]] || migration_execution='paused'
+      if [[ "$migration_execution" != 'idle' ]]; then
+        migrated_task_id="$(derive_upgrade_task_id "$legacy_source" "$legacy_mode" "$requested_id")"
+        require_upgrade_task_id_available "$migrated_task_id"
+      fi
+    elif (( allow_shared_primary == 1 )) && [[ -n "$shared_primary_id" ]]; then
+      migration_execution='shared-primary'
+      migrated_from='shared-primary-claim'
+    else
+      migration_execution='idle'
+    fi
+    needs_upgrade=1
+  fi
+
+  upgrade_stage_dir="$project/.project-runtime/pmm/transactions/upgrade-$(pmm_now | tr -d ':-')-$$"
+  mkdir -p "$upgrade_stage_dir"
+  upgrade_manifest="$upgrade_stage_dir/manifest"
+  : >"$upgrade_manifest"
+  : >"$upgrade_stage_dir/targets"
+
+  managed_block="$upgrade_stage_dir/managed-block.md"
+  write_managed_runtime_block "$managed_block"
+  base_agents="$agents_file"
+  if [[ ! -f "$base_agents" ]]; then
+    base_agents="$script_dir/../templates/core/AGENTS.md"
+    [[ -f "$base_agents" ]] || die 'PROJECT_UPGRADE_TEMPLATE_MISSING: templates/core/AGENTS.md'
+  fi
+  agents_candidate="$upgrade_stage_dir/AGENTS.md"
+  render_upgraded_agents "$agents_candidate" "$base_agents" "$managed_block"
+  if [[ ! -f "$agents_file" ]] || ! cmp -s "$agents_candidate" "$agents_file"; then
+    upgrade_register_target 'AGENTS.md'
+    needs_upgrade=1
+  fi
+
+  for rel in docs/00-project-memory/current-state.md docs/00-project-memory/verifier-map.md docs/07-decisions/change-log.md; do
+    [[ -f "$project/$rel" ]] && continue
+    case "$rel" in
+      docs/00-project-memory/current-state.md) template="$script_dir/../templates/core/current-state.md" ;;
+      docs/00-project-memory/verifier-map.md) template="$script_dir/../templates/core/verifier-map.md" ;;
+      docs/07-decisions/change-log.md) template="$script_dir/../templates/core/change-log.md" ;;
+    esac
+    [[ -f "$template" ]] || die "PROJECT_UPGRADE_TEMPLATE_MISSING: ${template#$script_dir/../}"
+    mkdir -p "$upgrade_stage_dir/$(dirname "$rel")"
+    cp "$template" "$upgrade_stage_dir/$rel"
+    upgrade_register_target "$rel"
+    needs_upgrade=1
+  done
+
+  if [[ "$migration_execution" != 'shared-primary' ]] && \
+    { [[ ! -f "$active_task" ]] || ! pmm_has_schema "$active_task"; }; then
+    active_candidate="$upgrade_stage_dir/docs/00-project-memory/active-task.md"
+    if [[ "$migration_execution" == 'idle' ]]; then
+      write_idle_task "$active_candidate" || die 'PROJECT_UPGRADE_TASK_RENDER_FAILED'
+    else
+      id="$migrated_task_id"
+      write_migrated_task "$legacy_source" "$legacy_label" "$migration_execution" "$legacy_mode" "$active_candidate" || \
+        die 'PROJECT_UPGRADE_TASK_RENDER_FAILED'
+      id="$saved_id"
+    fi
+    upgrade_register_target 'docs/00-project-memory/active-task.md'
+    result_task_file="$active_candidate"
+    needs_upgrade=1
+  fi
+
+  if (( needs_upgrade == 0 )); then
+    [[ -z "$result_task_file" ]] || prepare_upgrade_claim "$result_task_file"
+    pending_claim_id=""
+    rm -rf "$upgrade_stage_dir"
+    upgrade_stage_dir=""
+    upgrade_manifest=""
+    printf 'PROJECT_UP_TO_DATE runtime_version=%s\n' "$current_runtime_version"
+    last_upgrade_task_id="$(pmm_frontmatter_value "$result_task_file" task_id 2>/dev/null || true)"
+    id="$saved_id"
+    owner="$saved_owner"
+    return 0
+  fi
+
+  now="$(pmm_now)"
+  backup_rel=".project-runtime/pmm/backups/upgrade-$(printf '%s' "$now" | tr -d ':-')-$$"
+  upgrade_backup_dir="$project/$backup_rel"
+  mkdir -p "$upgrade_backup_dir"
+  source_hash="$(upgrade_source_hash)" || die 'PROJECT_UPGRADE_SOURCE_HASH_FAILED'
+  write_runtime_state "$upgrade_stage_dir/docs/00-project-memory/runtime-state.md" \
+    "$migrated_from" "$source_hash" "$backup_rel" "$now"
+  upgrade_register_target 'docs/00-project-memory/runtime-state.md'
+
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    target="$project/$rel"
+    existed=0
+    if [[ -f "$target" ]]; then
+      existed=1
+      upgrade_backup_file "$rel"
+    fi
+    printf '%s|%s\n' "$rel" "$existed" >>"$upgrade_manifest"
+  done <"$upgrade_stage_dir/targets"
+  if [[ -n "$legacy_source" && -f "$legacy_source" ]]; then
+    upgrade_backup_file "${legacy_source#$project/}"
+  fi
+
+  [[ -z "$result_task_file" ]] || prepare_upgrade_claim "$result_task_file"
+  upgrade_rollback_active=1
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    target="$project/$rel"
+    mkdir -p "$(dirname "$target")"
+    mv "$upgrade_stage_dir/$rel" "$target" || die "PROJECT_UPGRADE_COMMIT_FAILED: $rel"
+  done <"$upgrade_stage_dir/targets"
+  upgrade_rollback_active=0
+  pending_claim_id=""
+  last_upgrade_task_id="$(pmm_frontmatter_value "$active_task" task_id 2>/dev/null || true)"
+  rm -rf "$upgrade_stage_dir"
+  upgrade_stage_dir=""
+  upgrade_manifest=""
+  id="$saved_id"
+  owner="$saved_owner"
+  printf 'PROJECT_UPGRADED runtime_version=%s migrated_from=%s backup=%s\n' \
+    "$current_runtime_version" "$migrated_from" "$backup_rel"
+}
+
+ensure_project_runtime() {
+  local requested_id="${1:-}"
+  local allow_shared_primary="${2:-0}"
+  perform_project_upgrade "$requested_id" "$allow_shared_primary" >/dev/null
+}
+
 case "$command" in
+  upgrade)
+    (( auto == 1 )) || die 'ERROR: upgrade requires --auto'
+    acquire_state_lock
+    perform_project_upgrade "$id"
+    ;;
+
   start)
     require_id
     require_owner
@@ -573,6 +987,7 @@ case "$command" in
     pmm_validate_scalar scope "$scope" || exit 1
     pmm_validate_scalar verifier "$verifier" || exit 1
     acquire_state_lock
+    ensure_project_runtime '' "$work_item"
     require_unarchived_task_id
 
     if (( work_item == 1 )); then
@@ -659,8 +1074,10 @@ case "$command" in
 
   checkpoint)
     require_id
+    require_owner
     pmm_validate_scalar next_action "$next_action" || exit 1
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     resolve_task_file
     require_task_control "$file"
     begin_task_update "$file"
@@ -679,8 +1096,10 @@ case "$command" in
 
   verify)
     require_id
+    require_owner
     pmm_validate_scalar evidence "$evidence" || exit 1
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     resolve_task_file
     require_task_control "$file"
     verification_head_value="$(pmm_git_head "$project")"
@@ -706,6 +1125,7 @@ case "$command" in
     require_owner
     require_git_context
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     resolve_task_file
     recorded_branch="$(pmm_frontmatter_value "$file" branch)"
     recorded_owner="$(pmm_frontmatter_value "$file" owner)"
@@ -737,7 +1157,9 @@ case "$command" in
 
   close)
     require_id
+    require_owner
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     resolve_task_file
     require_task_control "$file"
     kind="$(pmm_frontmatter_value "$file" task_kind)"
@@ -784,7 +1206,9 @@ case "$command" in
 
   integrate)
     require_id
+    require_owner
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     pmm_has_schema "$active_task" || die 'PRIMARY_TASK_NOT_STRUCTURED'
     [[ "$(pmm_frontmatter_value "$active_task" execution_status)" != 'idle' ]] || die 'PRIMARY_TASK_NOT_ACTIVE'
     require_task_control "$active_task"
@@ -844,6 +1268,7 @@ case "$command" in
     require_owner
     require_delivery_update
     acquire_state_lock
+    ensure_project_runtime "$id" 1
     resolve_task_file
     require_task_control "$file"
     begin_task_update "$file"
@@ -887,7 +1312,15 @@ case "$command" in
       die 'MIGRATION_NOT_NEEDED: active-task.md and task-ledger.md are missing'
     fi
     if [[ "$migration_source" == "$active_task" ]] && pmm_has_schema "$active_task"; then
-      printf 'MIGRATION_NOT_NEEDED schema=pmm.task/v1\n'
+      if (( apply == 1 )); then
+        require_id
+        require_owner
+        require_git_context
+        perform_project_upgrade "$id"
+        printf 'MIGRATION_APPLIED source=active-task.md task_id=%s runtime_version=%s\n' "$id" "$current_runtime_version"
+      else
+        printf 'MIGRATION_NOT_NEEDED schema=pmm.task/v1\n'
+      fi
       exit 0
     fi
     migration_mode='all'
@@ -921,28 +1354,9 @@ case "$command" in
     require_id
     require_owner
     require_git_context
-    require_unarchived_task_id
-    if [[ "$migration_execution" != 'idle' ]]; then
-      require_primary_claim_available
-    fi
-    backup_dir="$project/.project-runtime/pmm/backups"
-    mkdir -p "$backup_dir"
-    backup="$backup_dir/${migration_source_label%.md}.$(date -u '+%Y%m%dT%H%M%SZ').$$.md"
-    cp "$migration_source" "$backup" || die 'MIGRATION_BACKUP_FAILED'
-    if [[ "$migration_execution" == 'idle' ]]; then
-      write_idle_task || die 'MIGRATION_WRITE_FAILED'
-    else
-      pmm_claim_acquire "$project" "$id" "$owner" "$(pmm_git_branch "$project")" none primary || \
-        die "TASK_OWNED_BY_OTHER: $id"
-      pending_claim_id="$id"
-      if ! write_migrated_task "$migration_source" "$migration_source_label" "$migration_execution" "$migration_mode"; then
-        pmm_claim_release "$project" "$id" || true
-        pending_claim_id=""
-        die 'MIGRATION_WRITE_FAILED'
-      fi
-      pending_claim_id=""
-    fi
-    printf 'MIGRATION_APPLIED source=%s task_id=%s backup=%s\n' "$migration_source_label" "$id" "${backup#$project/}"
+    perform_project_upgrade "$id"
+    printf 'MIGRATION_APPLIED source=%s task_id=%s runtime_version=%s\n' \
+      "$migration_source_label" "$id" "$current_runtime_version"
     ;;
 
   *)

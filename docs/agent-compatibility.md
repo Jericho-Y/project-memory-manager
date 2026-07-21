@@ -107,16 +107,26 @@ Verifier map: docs/00-project-memory/verifier-map.md
 
 Store task state in the project folder. Global memory may keep only the pointer and stable conventions.
 
-## Legacy Compatibility
+## Legacy Compatibility And Upgrade
 
-`pmm` v0.1-v0.3 projects may use `task-ledger.md` or unstructured `active-task.md`. v0.5 agents should:
-1. prefer `active-task.md` when present
-2. fall back to `task-ledger.md` when `active-task.md` is absent
-3. keep reading the legacy file without requiring immediate conversion
-4. run `pmm-task.sh migrate --plan`, then `--dry-run`, before an explicit structured-state conversion
-5. count task fields rather than ledger section headings, keep completed history cold, and refuse migration unless exactly one current contract exists with one unambiguous source and status
-6. preserve v0.2/v0.3 multi-section objective, verifier, and next-action fields in the structured hot path
-7. archive completed entries into `task-history.md`; existing marker-less history still reserves its task IDs
+`pmm` v0.1-v0.3 projects may use `task-ledger.md` or unstructured `active-task.md`. Before normal writes, v0.5.1 agents run:
+
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project <PROJECT_ROOT> --auto --owner <AGENT_ID>
+```
+
+The Upgrade Gate:
+1. detects v0.1 ledgers, v0.2/v0.3 sectioned tasks, and unmarked v0.4/v0.5 structured projects
+2. backs up every existing file that it will change
+3. writes the installed version to `docs/00-project-memory/runtime-state.md`
+4. updates only the marker-managed PMM Runtime block in `AGENTS.md` and preserves user-owned content
+5. migrates exactly one unambiguous current contract, or creates an idle slot for a history-only project
+6. preserves v0.2/v0.3 objective, verifier, and next-action fields in the structured hot path
+7. fails closed without project writes on multiple tasks, competing sources, conflicting statuses, or a newer project runtime
+
+After the gate succeeds, current runtime state is authoritative. Compatibility readers remain available only for migration discovery, recovery, rollback, and explicit ambiguity review. Doctor rejects an old project by default with `PROJECT_UPGRADE_REQUIRED`; `--allow-legacy` is an audit mode, not a normal execution mode.
+
+The old `migrate --plan`, `--dry-run`, and `--apply` interface remains supported. `migrate --apply` now also writes the current runtime state and managed `AGENTS.md` block. It still counts task fields rather than ledger section headings, keeps completed history cold, refuses ambiguous input, preserves the source ledger, and reserves task IDs found in marker-less history.
 
 Do not delete legacy ledgers without explicit project-owner approval.
 
@@ -131,7 +141,9 @@ Before claiming cross-agent compatibility:
 - One clone rejects multiple non-idle primary claims, and archived task IDs are never reused.
 - Work items retain ownership through merge and explicit primary-owner integration; child close alone is not project completion.
 - Structured state keeps execution, verification, and delivery independent.
-- Legacy `active-task.md` and `task-ledger.md` remain readable without forced migration.
+- Normal mutations run the Upgrade Gate and converge an unambiguous legacy project to the installed runtime.
+- Legacy `active-task.md` and `task-ledger.md` remain readable only for migration, recovery, rollback, and compatibility audit paths.
+- `migrate --apply` remains backward compatible and also records the current runtime version.
 - Active task templates include Agent Mode without requiring subagent support.
 - Legacy `task-ledger.md` behavior is documented if supported.
 - Claude, Hermes, OpenClaw/OpenCode, and Codex adapter paths are documented.

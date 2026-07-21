@@ -4,13 +4,22 @@ Purpose: Project entrypoint and highest-priority maintenance instructions for th
 Read when: Opening this repository, changing the skill, updating automation, or recovering interrupted work.
 Skip when: Never skip during repository work.
 
+<!-- pmm-runtime:start -->
+## PMM Runtime
+
+- Managed runtime version: `0.5.1`.
+- Before non-trivial task writes, run the installed `pmm-task.sh upgrade --project . --auto --owner <agent-id>` Upgrade Gate.
+- Treat `docs/00-project-memory/runtime-state.md` as project runtime state; compatibility readers are for migration, recovery, rollback, and ambiguity review only.
+- Keep exactly one primary task in `active-task.md`; concurrent writers use isolated branches/worktrees and work-item files.
+<!-- pmm-runtime:end -->
+
 ## Project Role
 
 This repository publishes the `pmm` Agent Skill. Its job is to help agents create low-context project memory, self-evaluating task execution, verification rules, recovery checkpoints, adapter shims, and safety boundaries for commercial-grade software projects.
 
 ## Current Phase
 
-Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.4.x as a low-context, cross-agent project runtime with singleton primary-task state, branch-isolated work items, Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, lightweight runtime checks, and trusted local sync.
+Public repository is initialized and open source. The active objective is to publish and maintain `pmm` v0.5.x as a low-context, cross-agent project runtime with automatic project upgrades, singleton primary-task state, branch-isolated work items, Self-Eval Loop, Subagent Routing Gate, Core Pack templates, adapter templates, lightweight runtime checks, and trusted local sync.
 
 ## Mandatory Reading Order
 

@@ -81,13 +81,16 @@ The checker reports missing Core Pack files, invalid or duplicate task state, sa
 Use the lifecycle helper for structured v0.5 tasks:
 
 ```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project <PROJECT_ROOT> --auto --owner <AGENT_ID>
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh status --project <PROJECT_ROOT>
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh integrate --project <PROJECT_ROOT> --id <WORK_ITEM_ID> --owner <PRIMARY_OWNER>
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project <PROJECT_ROOT> --plan
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project <PROJECT_ROOT> --dry-run
 ```
 
-Legacy projects remain readable without conversion. Run `migrate --plan` to inspect candidates without changing files, then the dry-run before explicit apply. Automatic apply is limited to one unambiguous task/source/status and writes a project-local backup. Split overloaded multi-task files manually because the helper deliberately refuses to guess.
+Run the Upgrade Gate before substantial writes. Normal lifecycle mutations also invoke it automatically. It backs up every changed legacy file, records the installed version in `runtime-state.md`, preserves user-owned `AGENTS.md` content, and converts exactly one unambiguous current task. History-only projects receive an idle slot. Multiple tasks, source/status conflicts, and newer project runtimes fail closed without project writes.
+
+Legacy readers remain available for migration discovery, recovery, rollback, and compatibility audits. Use Doctor `--allow-legacy` only for an explicit audit. The backward-compatible `migrate --plan`, `--dry-run`, and `--apply` commands remain available; apply now also records the current runtime state. Split overloaded multi-task files manually because the helper deliberately refuses to guess.
 
 Maintainers can run the release gate after syncing or building an install:
 

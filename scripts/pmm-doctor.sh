@@ -10,6 +10,7 @@ source "$script_dir/lib/pmm-state.sh"
 
 json=0
 require_structured=0
+allow_legacy=0
 project_root=""
 while (( $# > 0 )); do
   arg="$1"
@@ -17,8 +18,9 @@ while (( $# > 0 )); do
   case "$arg" in
     --json) json=1 ;;
     --require-structured) require_structured=1 ;;
+    --allow-legacy) allow_legacy=1 ;;
     -h | --help)
-      printf 'Usage: pmm-doctor.sh [--json] [--require-structured] [PROJECT_ROOT]\n'
+      printf 'Usage: pmm-doctor.sh [--json] [--require-structured | --allow-legacy] [PROJECT_ROOT]\n'
       exit 0
       ;;
     *)
@@ -30,6 +32,10 @@ while (( $# > 0 )); do
       ;;
   esac
 done
+(( require_structured == 0 || allow_legacy == 0 )) || {
+  printf 'ERROR: --require-structured and --allow-legacy cannot be combined\n' >&2
+  exit 2
+}
 
 if [[ -z "$project_root" ]]; then
   project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -43,6 +49,8 @@ active_task="$memory_dir/active-task.md"
 work_items_dir="$memory_dir/work-items"
 verifier_map="$memory_dir/verifier-map.md"
 change_log="$project_root/docs/07-decisions/change-log.md"
+runtime_state="$memory_dir/runtime-state.md"
+current_runtime_version="$(tr -d '[:space:]' <"$script_dir/../VERSION")"
 legacy_source=""
 legacy_source_ambiguous=0
 if [[ -f "$active_task" ]]; then
@@ -76,6 +84,10 @@ stable_issue_code() {
     'missing '*': '*) printf 'MISSING_CORE_FILE' ;;
     *'multiple task contracts'*) printf 'LEGACY_MULTIPLE_CONTRACTS' ;;
     *'multiple primary task claims'*) printf 'MULTIPLE_PRIMARY_CLAIMS' ;;
+    *'PROJECT_UPGRADE_REQUIRED'*) printf 'PROJECT_UPGRADE_REQUIRED' ;;
+    *'runtime-state.md is missing'*) printf 'PROJECT_UPGRADE_REQUIRED' ;;
+    *'runtime version'*) printf 'PROJECT_RUNTIME_VERSION_MISMATCH' ;;
+    *'managed runtime block'*) printf 'PROJECT_RUNTIME_RULES_MISSING' ;;
     *'legacy compatibility mode'*) printf 'LEGACY_COMPATIBLE' ;;
     *'LEGACY_MIGRATION_AMBIGUOUS'*) printf 'LEGACY_MIGRATION_AMBIGUOUS' ;;
     *'LEGACY_MIGRATION_READY'*) printf 'LEGACY_MIGRATION_READY' ;;
@@ -227,6 +239,52 @@ else
   info 'found AGENTS.md'
 fi
 
+pmm_project_detected=0
+if [[ -n "$legacy_source" || -f "$runtime_state" || -f "$active_task" || -f "$current_state" || \
+  -f "$verifier_map" || -f "$change_log" || -d "$work_items_dir" ]]; then
+  pmm_project_detected=1
+fi
+
+if (( pmm_project_detected == 1 )); then
+  if [[ ! -f "$runtime_state" ]]; then
+    if (( allow_legacy == 1 )); then
+      warn 'PROJECT_UPGRADE_REQUIRED: runtime-state.md is missing; compatibility audit only' PROJECT_UPGRADE_REQUIRED
+    else
+      fail 'PROJECT_UPGRADE_REQUIRED: runtime-state.md is missing; run pmm-task.sh upgrade --auto' PROJECT_UPGRADE_REQUIRED
+    fi
+  elif ! pmm_has_runtime_schema "$runtime_state"; then
+    fail 'runtime-state.md must use pmm.runtime/v1' PROJECT_RUNTIME_STATE_INVALID
+  else
+    runtime_version="$(pmm_frontmatter_value "$runtime_state" runtime_version 2>/dev/null || true)"
+    runtime_status="$(pmm_frontmatter_value "$runtime_state" migration_status 2>/dev/null || true)"
+    runtime_compare="$(pmm_version_compare "$runtime_version" "$current_runtime_version" 2>/dev/null || true)"
+    if [[ -z "$runtime_compare" ]]; then
+      fail "runtime version is invalid: $runtime_version" PROJECT_RUNTIME_VERSION_INVALID
+    elif [[ "$runtime_compare" != '0' ]]; then
+      if (( allow_legacy == 1 )) && [[ "$runtime_compare" == '-1' ]]; then
+        warn "PROJECT_UPGRADE_REQUIRED: project runtime version $runtime_version is older than installed $current_runtime_version" PROJECT_UPGRADE_REQUIRED
+      else
+        fail "project runtime version $runtime_version does not match installed $current_runtime_version" PROJECT_RUNTIME_VERSION_MISMATCH
+      fi
+    fi
+    [[ "$runtime_status" == 'complete' ]] || fail 'runtime-state.md migration_status must be complete' PROJECT_RUNTIME_STATE_INVALID
+    for key in pmm_schema runtime_version migration_status migrated_from source_hash backup_path upgraded_at; do
+      count="$(rg -c "^${key}:" "$runtime_state" || true)"
+      [[ "$count" == '1' ]] || fail "runtime-state.md must contain exactly one $key field" PROJECT_RUNTIME_STATE_INVALID
+    done
+  fi
+  runtime_start_count="$(awk '$0 == "<!-- pmm-runtime:start -->" { count++ } END { print count + 0 }' "$agents" 2>/dev/null || printf '0')"
+  runtime_end_count="$(awk '$0 == "<!-- pmm-runtime:end -->" { count++ } END { print count + 0 }' "$agents" 2>/dev/null || printf '0')"
+  if [[ "$runtime_start_count" != '1' || "$runtime_end_count" != '1' ]] || \
+    ! rg -q --fixed-strings -- "- Managed runtime version: \`$current_runtime_version\`." "$agents" 2>/dev/null; then
+    if (( allow_legacy == 1 )) && [[ ! -f "$runtime_state" ]]; then
+      warn 'PROJECT_UPGRADE_REQUIRED: AGENTS.md managed runtime block is missing or outdated' PROJECT_UPGRADE_REQUIRED
+    else
+      fail 'AGENTS.md managed runtime block is missing or outdated' PROJECT_RUNTIME_RULES_MISSING
+    fi
+  fi
+fi
+
 core_files_present=0
 for file in "$current_state" "$active_task" "$verifier_map" "$change_log"; do
   [[ ! -f "$file" ]] || core_files_present=$((core_files_present + 1))
@@ -255,13 +313,13 @@ fi
 if (( core_files_present == 0 )) && [[ -z "$legacy_source" ]]; then
   warn 'Core Pack files are absent; this is acceptable only for No PMM or very small Pulse work'
 elif [[ -n "$legacy_source" ]]; then
-  if [[ "$require_structured" == '1' ]]; then
+  if [[ "$allow_legacy" != '1' ]]; then
     require_file "$current_state" 'current state'
     require_file "$active_task" 'active task'
     require_file "$verifier_map" 'verifier map'
     require_file "$change_log" 'change log'
     if [[ -f "$active_task" ]] && ! pmm_has_schema "$active_task"; then
-      fail 'active-task.md is legacy; structured pmm.task/v1 state is required' LEGACY_REQUIRES_STRUCTURED
+      fail 'PROJECT_UPGRADE_REQUIRED: active-task.md is legacy; structured pmm.task/v1 state is required' PROJECT_UPGRADE_REQUIRED
     fi
   else
     if (( legacy_source_ambiguous == 1 )); then

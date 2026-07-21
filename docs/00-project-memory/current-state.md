@@ -34,7 +34,7 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 ## Current Facts
 
 - Public releases use `VERSION`, `SKILL.md` frontmatter `version:`, public `CHANGELOG.md`, matching git tags, and GitHub Releases.
-- `v0.5.0` is published from the verified release commit; the maintainer install was synced from public `main` and passed the installed-package contract.
+- `v0.5.0` is the currently published release. `v0.5.1` automatic project upgrade is implemented locally and remains pending final preflight, commit, push, GitHub Release, and post-release installed-package verification.
 - Public release notes are bilingual: Chinese is primary, with English mirror coverage in `CHANGELOG.en.md` and release bodies when publishing.
 - New generated projects should start with Core Pack only and add optional packs only when real facts exist.
 - Product Pack uses project-root `PRD.md` as the default master requirements/product document.
@@ -48,14 +48,16 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - Same-host locks owned by dead processes are recovered safely; task claims still require explicit ownership or takeover.
 - Work-item close retains its claim at `ready-to-integrate`; only the primary owner can integrate after the verified child commit is merged, and primary evidence is then invalidated.
 - Closing preserves execution, verification, and delivery in task history, reserves the task ID against reuse, and queues unfinished delivery before releasing the task slot.
-- `scripts/pmm-doctor.sh` validates structured and legacy contracts but remains a static checker, not enforcement across all agents.
-- Legacy single-task `active-task.md` and `task-ledger.md` remain readable; migration is explicit, backed up, refuses multi-task/source/status ambiguity, maps unverified or unknown work to paused review, and normalizes idle to the empty slot.
+- `scripts/pmm-doctor.sh` requires the current project runtime by default; `--allow-legacy` is an explicit compatibility audit and the checker remains a static validator rather than enforcement across all agents.
+- Before normal writes, the Upgrade Gate converges an unambiguous legacy or older-runtime project to the installed runtime, records `runtime-state.md`, updates only the managed `AGENTS.md` block, fills missing Core Pack files, and preserves project-owned content.
+- Legacy single-task `active-task.md` and `task-ledger.md` remain readable for migration discovery, recovery, rollback, and ambiguity review. Automatic upgrade is backed up and transactional, refuses multi-task/source/status ambiguity, maps unverified or unknown work to paused review, and normalizes history-only or idle projects to the empty slot.
 - Legacy parsing supports bulleted and bare fields, `## Task <id>` ledgers, Markdown code spans, verbose statuses, and empty active-task placeholders without deleting the original ledger.
 - Doctor exposes stable JSON issue codes and compatibility/strict modes; lifecycle CLI exposes help, version, delivery, and read-only migration plans.
 - Single-task migration supports official v0.1 ledger records and formal v0.2/v0.3 multi-section tasks, separates current fields from completed history, preserves objective/verifier/next-action values in the structured hot path, and leaves legacy source unchanged; marker-less history continues to reserve archived task IDs across reachable refs.
 - Recovery merges sibling-worktree primary/work-item claims with project files, so uncommitted tasks remain discoverable by task ID.
 - The runtime contract detects source-checkout and installed-package layouts, and `pmm-preflight.sh` runs both as one release gate so repository-only maintenance assertions do not create false installation failures.
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory after safety checks pass.
+- The v0.5.1 source runtime contract passes all 359 assertions; release and installed-package verification remain pending until the release commit exists.
 - Workflow examples remain under `docs/github-actions-drafts/` until workflow publication is explicitly reviewed and enabled.
 
 ## Remaining Risks

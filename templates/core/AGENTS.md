@@ -4,6 +4,15 @@ Purpose: Canonical project entrypoint and hot-path instructions for future agent
 Read when: Entering the project, starting a task, resuming work, or checking safety boundaries.
 Skip when: Never skip during project work.
 
+<!-- pmm-runtime:start -->
+## PMM Runtime
+
+- Managed runtime version: `0.5.1`.
+- Before non-trivial task writes, run the installed `pmm-task.sh upgrade --project . --auto --owner <agent-id>` Upgrade Gate.
+- Treat `docs/00-project-memory/runtime-state.md` as project runtime state; compatibility readers are for migration, recovery, rollback, and ambiguity review only.
+- Keep exactly one primary task in `active-task.md`; concurrent writers use isolated branches/worktrees and work-item files.
+<!-- pmm-runtime:end -->
+
 ## Project Identity
 
 - Name:

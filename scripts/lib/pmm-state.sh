@@ -54,6 +54,39 @@ pmm_has_schema() {
   [[ "$(pmm_frontmatter_value "$file" pmm_schema 2>/dev/null || true)" == 'pmm.task/v1' ]]
 }
 
+pmm_has_runtime_schema() {
+  local file="$1"
+  [[ "$(pmm_frontmatter_value "$file" pmm_schema 2>/dev/null || true)" == 'pmm.runtime/v1' ]]
+}
+
+pmm_version_compare() {
+  local left="$1"
+  local right="$2"
+  local left_major left_minor left_patch right_major right_minor right_patch
+  [[ "$left" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$right" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
+  IFS=. read -r left_major left_minor left_patch <<EOF
+$left
+EOF
+  IFS=. read -r right_major right_minor right_patch <<EOF
+$right
+EOF
+  if (( 10#$left_major < 10#$right_major )); then
+    printf '%s\n' -1
+  elif (( 10#$left_major > 10#$right_major )); then
+    printf '%s\n' 1
+  elif (( 10#$left_minor < 10#$right_minor )); then
+    printf '%s\n' -1
+  elif (( 10#$left_minor > 10#$right_minor )); then
+    printf '%s\n' 1
+  elif (( 10#$left_patch < 10#$right_patch )); then
+    printf '%s\n' -1
+  elif (( 10#$left_patch > 10#$right_patch )); then
+    printf '%s\n' 1
+  else
+    printf '%s\n' 0
+  fi
+}
+
 pmm_validate_scalar() {
   local label="$1"
   local value="$2"
@@ -289,6 +322,7 @@ pmm_git_branch() {
 pmm_operational_path() {
   case "$1" in
     docs/00-project-memory/active-task.md | \
+      docs/00-project-memory/runtime-state.md | \
       docs/00-project-memory/task-history.md | \
       docs/00-project-memory/task-queue.md | \
       docs/00-project-memory/work-items/* | \
@@ -296,6 +330,29 @@ pmm_operational_path() {
       .project-runtime/* | tmp/*) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+pmm_strip_managed_runtime_block() {
+  awk '
+    $0 == "<!-- pmm-runtime:start -->" { skipping=1; next }
+    skipping && $0 == "<!-- pmm-runtime:end -->" { skipping=0; next }
+    skipping { next }
+    /^[[:space:]]*$/ { blanks++; next }
+    {
+      while (blanks > 0) { print ""; blanks-- }
+      print
+    }
+  '
+}
+
+pmm_agents_unmanaged_matches_head() {
+  local root="$1"
+  local current="$root/AGENTS.md"
+  local current_hash head_hash
+  [[ -f "$current" ]] || return 1
+  current_hash="$(pmm_strip_managed_runtime_block <"$current" | pmm_hash_stream)" || return 1
+  head_hash="$(git -C "$root" show HEAD:AGENTS.md 2>/dev/null | pmm_strip_managed_runtime_block | pmm_hash_stream)" || return 1
+  [[ "$current_hash" == "$head_hash" ]]
 }
 
 pmm_source_hash() {
@@ -312,11 +369,17 @@ pmm_source_hash() {
     {
       cd "$root" || exit 1
       git diff HEAD --no-ext-diff --binary -- . \
+        ':(exclude)AGENTS.md' \
         ':(exclude)docs/00-project-memory/active-task.md' \
+        ':(exclude)docs/00-project-memory/runtime-state.md' \
         ':(exclude)docs/00-project-memory/task-history.md' \
         ':(exclude)docs/00-project-memory/task-queue.md' \
         ':(exclude)docs/00-project-memory/work-items/**' \
         ':(exclude)docs/07-decisions/change-log.md' || exit 1
+      if ! pmm_agents_unmanaged_matches_head "$root"; then
+        printf 'unmanaged-agents:'
+        pmm_strip_managed_runtime_block <AGENTS.md | pmm_hash_stream || exit 1
+      fi
       git ls-files --others --exclude-standard -z |
         while IFS= read -r -d '' file; do
           pmm_operational_path "$file" && continue
@@ -338,11 +401,14 @@ pmm_source_is_clean() {
   local file
   local -a pipeline_status
   git -C "$root" diff --quiet HEAD -- . \
+    ':(exclude)AGENTS.md' \
     ':(exclude)docs/00-project-memory/active-task.md' \
+    ':(exclude)docs/00-project-memory/runtime-state.md' \
     ':(exclude)docs/00-project-memory/task-history.md' \
     ':(exclude)docs/00-project-memory/task-queue.md' \
     ':(exclude)docs/00-project-memory/work-items/**' \
     ':(exclude)docs/07-decisions/change-log.md' || return 1
+  pmm_agents_unmanaged_matches_head "$root" || return 1
   git -C "$root" ls-files --others --exclude-standard -z |
     while IFS= read -r -d '' file; do
       pmm_operational_path "$file" || exit 1

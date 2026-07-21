@@ -54,6 +54,7 @@ Release notes:
 
 Contract checks:
 - `SKILL.md` stays concise and points to `docs/runtime.md`, `docs/agent-compatibility.md`, and template docs
+- lifecycle mutations run the Upgrade Gate; `runtime-state.md`, the managed `AGENTS.md` block, and legacy migration behavior stay covered by the runtime contract
 - Core Pack templates exist and hot-path templates stay compact
 - adapter templates exist for Claude Code, Hermes, OpenClaw/OpenCode, and Codex nested scopes
 - `scripts/recovery-status.sh` supports v0.2 `active-task.md` and legacy `task-ledger.md`

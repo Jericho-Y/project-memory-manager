@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.5.0`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
+当前版本：`v0.5.1`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 协议： [MIT License](LICENSE)。
 
 用途：本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -11,26 +11,39 @@
 
 `pmm` 是一个面向长期软件项目的低上下文、跨 Agent 项目运行时（Agent Skill）。它的目标不是生成更多项目文档，而是让 Agent 在最少必要上下文里持续执行、验证、批判、修复和恢复任务。
 
-`v0.5.0` 的核心输出是：
+`v0.5.1` 的核心输出是：
 
 - `AGENTS.md`：项目事实和协作规则的唯一入口。
 - Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md` 等最小热路径文件。
 - Self-Eval Loop：让任务有明确的 Task、Harness、Verifier、Critic、Repair、Record。
 - Agent adapters：让 Codex、Claude Code、Hermes Agent、OpenClaw/OpenCode 读取同一份项目事实，而不是各自复制一套记忆。
 - Memory promotion rules：只沉淀耐久事实，不把当前任务状态塞进全局记忆。
+- Upgrade Gate：旧项目第一次执行新版 runtime 时自动收敛到当前规则，并以 `runtime-state.md` 记录版本、来源、备份和迁移证据。
 - Task Runtime：`active-task.md` 保持一个主任务；并发写入使用独立 branch/worktree 和 work-item，验证证据绑定当前 Git HEAD 与源码状态。
 
 适用场景：商业级 app、网站、小程序、SaaS、桌面工具、AI 产品、较大的功能链路、长期维护项目，以及需要跨 Agent 接手、断线恢复或严格验证的任务。
 不适用场景：一次性命令、极小改动、临时 demo、无需项目记忆或验证闭环的短任务。
 
-## v0.5.0 兼容升级
+## v0.5.1 自动项目升级
 
-`v0.5.0` 重点保证旧项目能继续执行并安全升级：
+每次重要任务开始前，先执行：
+
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project . --auto --owner <agent-id>
+```
+
+Upgrade Gate 会自动把旧项目升级到已安装的最新 runtime：写入 `docs/00-project-memory/runtime-state.md`，只更新 `AGENTS.md` 中 marker 管理的 PMM 区块，补齐缺失的 Core Pack，并将一个明确的 legacy 当前任务迁移到 `active-task.md`。只有历史记录的项目会得到 idle 主任务槽位。多任务、双来源、状态冲突、更新版本项目会 fail-closed，且不写入项目状态；每个被改写文件都会先备份。
+
+升级成功后，兼容读取只用于迁移发现、恢复、回滚和人工处理歧义，不再是普通执行模式。升级是幂等的，重复执行只返回 `PROJECT_UP_TO_DATE`。
+
+## v0.5.0 兼容基础
+
+`v0.5.0` 提供了旧项目可继续读取和显式迁移的兼容基础：
 
 - `migrate --plan` 先只读列出候选，`--dry-run` 再验证，只有一个明确当前任务且来源/状态无冲突时才允许 `--apply`。
 - 兼容带/不带 bullet 的旧字段、`## Task <id>` ledger、Markdown code span、verbose prose 状态和空 `active-task.md` 占位。
 - Completed history 保持冷路径；未知或冲突状态进入 `paused` 复核，重复冲突 `Status` 不会被自动激活或迁移。
-- Doctor 默认报告 legacy 兼容与升级建议，`--require-structured` 可用于严格门禁；JSON 输出包含稳定 issue code。
+- Doctor 默认报告 `PROJECT_UPGRADE_REQUIRED` 并阻止旧项目按当前规则通过；`--allow-legacy` 仅用于显式兼容审计，JSON 输出包含稳定 issue code。
 - `pmm-task.sh` 增加全局帮助、版本和 delivery 命令；`pmm-preflight.sh` 同时验证源码与已安装包。
 - 升级不会删除旧 `task-ledger.md`；apply 前创建项目本地备份。
 
@@ -126,6 +139,7 @@ Self-Eval Runtime
 AGENTS.md
 docs/00-project-memory/current-state.md
 docs/00-project-memory/active-task.md
+docs/00-project-memory/runtime-state.md  # version/migration metadata, outside the default hot path
 docs/00-project-memory/verifier-map.md
 docs/07-decisions/change-log.md
 ```
@@ -226,8 +240,8 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 
 1. 安装或复制 `pmm` skill 到 `<SKILLS_ROOT>/pmm`。
 2. 在项目根目录创建 `AGENTS.md`，使用 [templates/core/AGENTS.md](templates/core/AGENTS.md)。
-3. 创建 Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md`。
-4. 按任务选择 Runtime Profile。
+3. 创建 Core Pack；重要项目同时保留 `runtime-state.md` 作为版本元数据。
+4. 每次重要任务开始先运行 Upgrade Gate，再按任务选择 Runtime Profile。
 5. 运行 Workspace Gate；`active-task.md` 已有主任务时，不追加第二个任务。
 6. 使用 `scripts/pmm-task.sh start` 启动主任务；并发写任务先创建独立 branch/worktree，再启动 work-item。
 7. 执行、验证、Critic 检查、失败修复，并用 `verify` 记录新鲜证据。

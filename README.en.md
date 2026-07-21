@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.5.0`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.5.1`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -11,26 +11,39 @@ Skip when: You already know the repository and only need a specific implementati
 
 `pmm` is a low-context, cross-agent project runtime packaged as an Agent Skill for long-lived software projects. Its job is not to generate more project documentation; it gives agents a compact runtime contract for executing, verifying, critiquing, repairing, and recovering work with the minimum useful context.
 
-The core v0.5.0 output is:
+The core v0.5.1 output is:
 
 - `AGENTS.md`: the single project entrypoint for durable facts and collaboration rules.
 - Core Pack: compact hot-path files such as `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
 - Self-Eval Loop: Task, Harness, Verifier, Critic, Repair, and Record for substantial work.
 - Agent adapters: Codex, Claude Code, Hermes Agent, and OpenClaw/OpenCode point to the same project facts instead of copying separate memories.
 - Memory promotion rules: promote durable facts only; keep active task state out of global memory.
+- Upgrade Gate: the first current-runtime write upgrades an older project and records version, source, backup, and migration evidence in `runtime-state.md`.
 - Task Runtime: `active-task.md` remains one primary task; concurrent writers use isolated branches/worktrees and work items, while verification evidence is bound to the current Git HEAD and source state.
 
 Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, long-lived maintenance work, and tasks that need cross-agent handoff, recovery, or strict verification.
 Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory or a verification loop.
 
-## Compatibility Upgrade In v0.5.0
+## Automatic Project Upgrade In v0.5.1
 
-`v0.5.0` focuses on keeping legacy projects executable and safely upgradeable:
+Run this before substantial writes:
+
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project . --auto --owner <agent-id>
+```
+
+The Upgrade Gate converges an older project to the installed runtime. It writes `docs/00-project-memory/runtime-state.md`, updates only the marker-managed PMM block in `AGENTS.md`, fills missing Core Pack files, and migrates one unambiguous legacy current task into `active-task.md`. History-only projects receive an idle primary slot. Multiple tasks, source/status conflicts, or a project created by a newer runtime fail closed without project writes; every changed file is backed up first.
+
+After a successful upgrade, compatibility readers are for migration discovery, recovery, rollback, and manual ambiguity review rather than normal execution. The gate is idempotent and reports `PROJECT_UP_TO_DATE` on repeat runs.
+
+## Compatibility Foundation In v0.5.0
+
+`v0.5.0` provides the compatibility foundation for reading and explicitly migrating legacy projects:
 
 - `migrate --plan` lists candidates read-only, `--dry-run` validates them, and `--apply` requires one clear current task with no source or status conflict.
 - Legacy parsing supports bulleted and bare fields, `## Task <id>` ledgers, Markdown code spans, verbose prose statuses, and empty `active-task.md` placeholders.
 - Completed history stays cold; unknown or conflicting state enters paused review, and conflicting repeated `Status` fields are never activated or migrated automatically.
-- Doctor reports legacy compatibility and upgrade guidance by default, while `--require-structured` provides a strict gate and JSON output includes stable issue codes.
+- Doctor reports `PROJECT_UPGRADE_REQUIRED` and blocks legacy projects by default; `--allow-legacy` is an explicit compatibility audit mode and JSON output includes stable issue codes.
 - `pmm-task.sh` adds global help, version, and delivery commands; `pmm-preflight.sh` validates both source and installed packages.
 - Upgrades never delete the legacy `task-ledger.md`, and apply writes a project-local backup first.
 
@@ -126,6 +139,7 @@ New projects start with:
 AGENTS.md
 docs/00-project-memory/current-state.md
 docs/00-project-memory/active-task.md
+docs/00-project-memory/runtime-state.md  # version/migration metadata, outside the default hot path
 docs/00-project-memory/verifier-map.md
 docs/07-decisions/change-log.md
 ```
@@ -226,8 +240,8 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 
 1. Install or copy the `pmm` skill to `<SKILLS_ROOT>/pmm`.
 2. Create project-root `AGENTS.md` from [templates/core/AGENTS.md](templates/core/AGENTS.md).
-3. Create the Core Pack: `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
-4. Pick a Runtime Profile for the task.
+3. Create the Core Pack; substantial projects also keep `runtime-state.md` as version metadata.
+4. Run the Upgrade Gate before choosing a Runtime Profile for each substantial task.
 5. Run the Workspace Gate; do not append a second task when `active-task.md` already owns a primary task.
 6. Use `scripts/pmm-task.sh start` for the primary task; create a separate branch/worktree before starting a concurrent work item.
 7. Execute, verify, critique, repair, and record fresh evidence with `verify`.

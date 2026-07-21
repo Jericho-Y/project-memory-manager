@@ -13,6 +13,7 @@ Always create the Core Pack for substantial projects:
 ```text
 AGENTS.md                                  -> templates/core/AGENTS.md
 docs/00-project-memory/current-state.md   -> templates/core/current-state.md
+docs/00-project-memory/runtime-state.md   -> templates/core/runtime-state.md
 docs/00-project-memory/active-task.md     -> templates/core/active-task.md
 docs/00-project-memory/verifier-map.md    -> templates/core/verifier-map.md
 docs/07-decisions/change-log.md           -> templates/core/change-log.md
@@ -25,7 +26,7 @@ docs/00-project-memory/task-history.md     -> templates/core/task-history.md
 docs/00-project-memory/failure-patterns.md -> templates/core/failure-patterns.md
 ```
 
-Use `active-task.md` for the current task only. Archive completed or blocked tasks to `task-history.md` when they matter later.
+`runtime-state.md` records the installed project runtime version but stays outside the default reading hot path. Use `active-task.md` for the current task only. Archive completed or blocked tasks to `task-history.md` when they matter later.
 
 ## Optional Packs
 
@@ -79,13 +80,14 @@ Task -> Agent Mode -> Harness -> Verifier -> Critic -> Repair -> Record
 
 See `docs/runtime.md`.
 
-## Migration From v0.1.x
+## Upgrade From Older Projects
 
-Existing projects with `task-ledger.md` remain compatible. For lower context use:
+Before substantial writes, run:
 
-1. Move the current task into `active-task.md`.
-2. Move completed summaries into `task-history.md`.
-3. Move repeated lessons into `failure-patterns.md`.
-4. Keep `task-ledger.md` only as a legacy archive or compatibility bridge.
+```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh upgrade --project . --auto --owner <agent-id>
+```
 
-Use `docs/runtime.md` for the full workflow. The migration is light: it creates the v0.2 hot path and keeps old files available for history.
+The Upgrade Gate creates a backup, writes the current `runtime-state.md`, installs the managed `AGENTS.md` runtime block, fills only missing Core Pack files, and converts one unambiguous current legacy task. It creates an idle slot for history-only projects and refuses multiple tasks, source conflicts, or conflicting statuses without changing project state.
+
+Compatibility readers remain available for recovery, rollback, and ambiguity review. They are not the normal execution mode after the Upgrade Gate succeeds.

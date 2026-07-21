@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when a software project or large feature spans multiple sessions, agents, branches, recovery checkpoints, or verification stages and needs durable project-local task state; skip one-off, tiny, single-session work.
-version: 0.5.0
+version: 0.5.1
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -65,7 +65,7 @@ docs/00-project-memory/task-queue.md
 
 Use `task-history.md`, `failure-patterns.md`, product/design/technical docs, and release history only when the active task requires them. Search headings and purpose headers before reading full files.
 
-For existing projects that still use `task-ledger.md`, keep compatibility reading available. If the project wants structured v0.5 behavior, run `migrate --plan` or the migration dry-run in `docs/runtime.md`; migration counts individual task fields, converts exactly one current task, keeps completed history cold, preserves v0.2/v0.3 multi-section objective/verifier/next-action fields, and refuses zero-current, multi-current, conflicting-source, or conflicting-status ledgers without rewriting them.
+Before substantial writes in an existing project, run the Upgrade Gate: `pmm-task.sh upgrade --project . --auto --owner <agent-id>`. It writes `runtime-state.md`, updates only the marker-managed PMM block in `AGENTS.md`, fills missing Core Pack files, and converts exactly one unambiguous legacy current task. History-only projects receive an idle slot. Multi-task, source, or status ambiguity fails closed before any project file changes. Compatibility reading remains available only for migration discovery, recovery, rollback, and manual ambiguity review.
 
 ## Core Pack And Optional Packs
 
@@ -78,6 +78,8 @@ docs/00-project-memory/active-task.md
 docs/00-project-memory/verifier-map.md
 docs/07-decisions/change-log.md
 ```
+
+`docs/00-project-memory/runtime-state.md` is also created for substantial projects, but it is project runtime metadata rather than a default reading hot-path file.
 
 Add optional packs only when the work needs them:
 
@@ -99,7 +101,7 @@ For tiny work, do not force the Core Pack. Use No PMM for one-off low-risk chang
 Every substantial execution task uses this loop:
 
 ```text
-Classify -> Workspace Gate -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
+Classify -> Upgrade Gate -> Workspace Gate -> Subagent Gate -> Load -> Contract -> Execute -> Verify -> Critique -> Repair -> Record -> Promote
 ```
 
 Workspace Gate checks the primary task, owner, branch/worktree, source scope, and active work items before any write. Two active writers never share one branch/worktree; overlapping scopes run sequentially.
@@ -158,7 +160,7 @@ Rules:
 - `AGENTS.md` is the canonical project entrypoint.
 - `CLAUDE.md`, `.hermes.md`, OpenClaw project cards, and handoffs are adapters.
 - Adapters cite paths and startup behavior; they do not copy full docs.
-- Structured state is optional for legacy projects: old single-task `active-task.md` and `task-ledger.md` remain readable. Run `pmm-task.sh migrate --plan` for a read-only candidate list, then `--dry-run` before conversion; ambiguous multi-task/source/status files are never rewritten automatically.
+- Old single-task `active-task.md` and `task-ledger.md` remain readable for recovery and migration discovery. Before normal structured writes, the Upgrade Gate converges one unambiguous project to the installed runtime; `migrate --plan`, `--dry-run`, and `--apply` remain available as backward-compatible APIs. Ambiguous multi-task/source/status files are never rewritten automatically.
 - Subagent routing is best-effort: agents with subagent tools may delegate; agents without them record solo mode or a manual handoff.
 - Root `AGENTS.md` stays short; specialized instructions belong in nested `AGENTS.md` files or task docs.
 - Do not rely on a single agent's hidden or global memory to preserve project state.
@@ -171,13 +173,14 @@ Compatibility details live in `docs/agent-compatibility.md`.
 For any non-trivial task:
 1. Identify the project root and project `AGENTS.md`.
 2. Pick the runtime profile.
-3. Read the hot path for that profile.
-4. Run the Workspace Gate: inspect the primary task, owner, branch/worktree, allowed scope, and active work items.
-5. Start or resume exactly one owned task file. Queue unrelated work; use a separate branch/worktree for a child work item.
-6. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
-7. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
-8. Select specialized skills or subagents only when they add value and ownership is clear.
-9. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
+3. Run the Upgrade Gate with the installed runtime; stop without writes on task/source/status ambiguity or a newer project runtime.
+4. Read the hot path for that profile.
+5. Run the Workspace Gate: inspect the primary task, owner, branch/worktree, allowed scope, and active work items.
+6. Start or resume exactly one owned task file. Queue unrelated work; use a separate branch/worktree for a child work item.
+7. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
+8. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
+9. Select specialized skills or subagents only when they add value and ownership is clear.
+10. Execute directly unless the user asked only for analysis or a high-risk confirmation is needed.
 
 Ask the project owner only for decisions involving cost, production data, destructive changes, credentials, publication, external messaging, legal/business identity, or product direction.
 

@@ -96,6 +96,16 @@ assert_file_exists() {
   fi
 }
 
+assert_file_not_exists() {
+  local file="$1"
+  local label="$2"
+  if [[ ! -e "$file" ]]; then
+    pass "$label"
+  else
+    fail "$label (unexpected $file)"
+  fi
+}
+
 assert_equals() {
   local expected="$1"
   local actual="$2"
@@ -125,6 +135,327 @@ make_project() {
   git -C "$root" add .
   git -C "$root" commit -qm 'fixture baseline'
 }
+
+make_v1_project() {
+  local root="$1"
+  mkdir -p "$root/docs/00-project-memory" "$root/src"
+  printf '# Fixture Project\n\nUser-owned rule.\n' >"$root/AGENTS.md"
+  printf 'initial\n' >"$root/src/app.txt"
+  git -C "$root" init -q
+  git -C "$root" config user.name 'pmm-test'
+  git -C "$root" config user.email 'pmm-test@example.invalid'
+  git -C "$root" add .
+  git -C "$root" commit -qm 'fixture baseline'
+}
+
+runtime_version="$(tr -d '[:space:]' <"$repo_root/VERSION")"
+
+# Upgrade Gate contract: an installed current runtime converges older project
+# layouts before normal lifecycle writes while preserving ambiguous input.
+upgrade_v1_root="$tmp_root/upgrade-v1-ledger"
+make_v1_project "$upgrade_v1_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Active Task' \
+  '' \
+  '- Task ID: upgrade-v1-task' \
+  '- Source Request: converge an official v0.1 project' \
+  '- Status: In progress' \
+  '- Verifier: bash tests/upgrade-v1.sh' \
+  >"$upgrade_v1_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$task_cli" upgrade --project "$upgrade_v1_root" --auto --owner upgrade-agent
+assert_status 0 'Upgrade Gate converts an unambiguous v0.1 project automatically'
+assert_contains 'PROJECT_UPGRADED' 'Upgrade Gate reports the project-level transition'
+assert_file_contains "$upgrade_v1_root/docs/00-project-memory/runtime-state.md" \
+  "runtime_version: $runtime_version" 'Upgrade Gate records the installed runtime version'
+assert_file_contains "$upgrade_v1_root/docs/00-project-memory/runtime-state.md" \
+  'migration_status: complete' 'Upgrade Gate records a completed migration state'
+assert_file_contains "$upgrade_v1_root/docs/00-project-memory/runtime-state.md" \
+  'migrated_from: legacy-task-ledger' 'Upgrade Gate records the legacy source family'
+assert_file_contains "$upgrade_v1_root/docs/00-project-memory/active-task.md" \
+  'task_id: upgrade-v1-task' 'Upgrade Gate keeps a valid legacy task identity'
+assert_file_contains "$upgrade_v1_root/AGENTS.md" '<!-- pmm-runtime:start -->' \
+  'Upgrade Gate installs the managed runtime rule block'
+assert_file_contains "$upgrade_v1_root/AGENTS.md" 'User-owned rule.' \
+  'Upgrade Gate preserves user-owned AGENTS.md content'
+assert_file_exists "$upgrade_v1_root/docs/00-project-memory/current-state.md" \
+  'Upgrade Gate creates a missing current-state Core Pack file'
+assert_file_exists "$upgrade_v1_root/docs/00-project-memory/verifier-map.md" \
+  'Upgrade Gate creates a missing verifier-map Core Pack file'
+assert_file_exists "$upgrade_v1_root/docs/07-decisions/change-log.md" \
+  'Upgrade Gate creates a missing change-log Core Pack file'
+upgrade_v1_backup="$(pmm_frontmatter_value "$upgrade_v1_root/docs/00-project-memory/runtime-state.md" backup_path 2>/dev/null || true)"
+if [[ -n "$upgrade_v1_backup" && "$upgrade_v1_backup" != 'none' ]]; then
+  pass 'Upgrade Gate records a concrete backup path'
+else
+  fail 'Upgrade Gate did not record a concrete backup path'
+fi
+assert_file_exists "$upgrade_v1_root/$upgrade_v1_backup/AGENTS.md" \
+  'Upgrade Gate backs up AGENTS.md before adding the managed block'
+assert_file_exists "$upgrade_v1_root/$upgrade_v1_backup/docs/00-project-memory/task-ledger.md" \
+  'Upgrade Gate backs up its legacy migration source'
+run_capture bash "$doctor" "$upgrade_v1_root"
+assert_status 0 'Doctor accepts the fully upgraded v0.1 project'
+
+upgrade_v1_runtime_hash="$(file_hash "$upgrade_v1_root/docs/00-project-memory/runtime-state.md")"
+upgrade_v1_agents_hash="$(file_hash "$upgrade_v1_root/AGENTS.md")"
+upgrade_v1_task_hash="$(file_hash "$upgrade_v1_root/docs/00-project-memory/active-task.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_v1_root" --auto --owner upgrade-agent
+assert_status 0 'Upgrade Gate is idempotent at the current runtime version'
+assert_contains 'PROJECT_UP_TO_DATE' 'Idempotent upgrade reports a no-op'
+assert_equals "$upgrade_v1_runtime_hash" "$(file_hash "$upgrade_v1_root/docs/00-project-memory/runtime-state.md")" \
+  'Idempotent upgrade does not rewrite runtime-state.md'
+assert_equals "$upgrade_v1_agents_hash" "$(file_hash "$upgrade_v1_root/AGENTS.md")" \
+  'Idempotent upgrade does not rewrite AGENTS.md'
+assert_equals "$upgrade_v1_task_hash" "$(file_hash "$upgrade_v1_root/docs/00-project-memory/active-task.md")" \
+  'Idempotent upgrade does not rewrite active-task.md'
+
+upgrade_history_root="$tmp_root/upgrade-history-only"
+make_v1_project "$upgrade_history_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Completed Tasks' \
+  '' \
+  '- Task ID: already-complete' \
+  '- Status: done' \
+  >"$upgrade_history_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$task_cli" upgrade --project "$upgrade_history_root" --auto --owner history-agent
+assert_status 0 'Upgrade Gate converts a history-only project without inventing active work'
+assert_file_contains "$upgrade_history_root/docs/00-project-memory/active-task.md" \
+  'execution_status: idle' 'History-only upgrade creates the canonical idle slot'
+assert_file_contains "$upgrade_history_root/docs/00-project-memory/runtime-state.md" \
+  'migrated_from: legacy-history-only' 'History-only upgrade records its source state'
+
+upgrade_v03_root="$tmp_root/upgrade-v03-sectioned"
+make_project "$upgrade_v03_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '## Status' \
+  '' \
+  '- Task ID: upgrade-v03-task' \
+  '- Status: active' \
+  '' \
+  '## Task' \
+  '' \
+  '- Objective: preserve a v0.2-v0.3 sectioned task' \
+  '' \
+  '## Verifier' \
+  '' \
+  '- Required Checks: bash tests/upgrade-v03.sh' \
+  >"$upgrade_v03_root/docs/00-project-memory/active-task.md"
+run_capture bash "$task_cli" upgrade --project "$upgrade_v03_root" --auto --owner upgrade-v03-agent
+assert_status 0 'Upgrade Gate converts one v0.2-v0.3 sectioned active task'
+assert_file_contains "$upgrade_v03_root/docs/00-project-memory/active-task.md" \
+  '- Objective: preserve a v0.2-v0.3 sectioned task' 'Sectioned upgrade preserves the objective in the hot path'
+assert_file_contains "$upgrade_v03_root/docs/00-project-memory/runtime-state.md" \
+  'migrated_from: legacy-active-task' 'Sectioned upgrade records its active-task source family'
+
+upgrade_structured_root="$tmp_root/upgrade-structured-unversioned"
+make_project "$upgrade_structured_root"
+cp "$repo_root/templates/core/active-task.md" "$upgrade_structured_root/docs/00-project-memory/active-task.md"
+upgrade_structured_task_before="$(file_hash "$upgrade_structured_root/docs/00-project-memory/active-task.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_structured_root" --auto --owner structured-upgrade-agent
+assert_status 0 'Upgrade Gate adopts an unversioned v0.4-v0.5 structured project'
+assert_file_contains "$upgrade_structured_root/docs/00-project-memory/runtime-state.md" \
+  'migrated_from: unversioned-structured' 'Structured adoption records the previous runtime state'
+assert_equals "$upgrade_structured_task_before" "$(file_hash "$upgrade_structured_root/docs/00-project-memory/active-task.md")" \
+  'Structured adoption does not rewrite a valid task slot'
+
+upgrade_old_runtime_root="$tmp_root/upgrade-old-runtime"
+make_project "$upgrade_old_runtime_root"
+cp "$repo_root/templates/core/active-task.md" "$upgrade_old_runtime_root/docs/00-project-memory/active-task.md"
+printf '%s\n' \
+  '---' \
+  'pmm_schema: pmm.runtime/v1' \
+  'runtime_version: 0.4.1' \
+  'migration_status: complete' \
+  'migrated_from: legacy-active-task' \
+  'source_hash: old' \
+  'backup_path: none' \
+  'upgraded_at: 2026-01-01T00:00:00Z' \
+  '---' \
+  >"$upgrade_old_runtime_root/docs/00-project-memory/runtime-state.md"
+run_capture bash "$task_cli" upgrade --project "$upgrade_old_runtime_root" --auto --owner old-runtime-agent
+assert_status 0 'Upgrade Gate advances a project with an older runtime marker'
+assert_file_contains "$upgrade_old_runtime_root/docs/00-project-memory/runtime-state.md" \
+  "runtime_version: $runtime_version" 'Older runtime state advances to the installed version'
+upgrade_old_backup="$(pmm_frontmatter_value "$upgrade_old_runtime_root/docs/00-project-memory/runtime-state.md" backup_path 2>/dev/null || true)"
+assert_file_exists "$upgrade_old_runtime_root/$upgrade_old_backup/docs/00-project-memory/runtime-state.md" \
+  'Runtime-to-runtime upgrade backs up the previous runtime-state.md'
+
+upgrade_future_root="$tmp_root/upgrade-future-runtime"
+make_project "$upgrade_future_root"
+cp "$repo_root/templates/core/active-task.md" "$upgrade_future_root/docs/00-project-memory/active-task.md"
+printf '%s\n' \
+  '---' \
+  'pmm_schema: pmm.runtime/v1' \
+  'runtime_version: 99.0.0' \
+  'migration_status: complete' \
+  'migrated_from: runtime-0.5.0' \
+  'source_hash: future' \
+  'backup_path: none' \
+  'upgraded_at: 2026-01-01T00:00:00Z' \
+  '---' \
+  >"$upgrade_future_root/docs/00-project-memory/runtime-state.md"
+upgrade_future_before="$(file_hash "$upgrade_future_root/docs/00-project-memory/runtime-state.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_future_root" --auto --owner future-runtime-agent
+assert_nonzero 'Upgrade Gate refuses to downgrade a project created by a newer runtime'
+assert_contains 'PROJECT_RUNTIME_NEWER_THAN_INSTALLED' 'Future runtime refusal has a stable diagnostic'
+assert_equals "$upgrade_future_before" "$(file_hash "$upgrade_future_root/docs/00-project-memory/runtime-state.md")" \
+  'Future runtime refusal leaves project state unchanged'
+
+upgrade_invalid_a="$tmp_root/upgrade-invalid-id-a"
+upgrade_invalid_b="$tmp_root/upgrade-invalid-id-b"
+for invalid_root in "$upgrade_invalid_a" "$upgrade_invalid_b"; do
+  make_project "$invalid_root"
+  printf '%s\n' \
+    '# Active Task' \
+    '' \
+    '## 功能 A / checkout flow' \
+    '' \
+    '- Task: deterministic identity is required.' \
+    '- Status: active' \
+    '- Verifier: bash tests/deterministic.sh' \
+    >"$invalid_root/docs/00-project-memory/active-task.md"
+  run_capture bash "$task_cli" upgrade --project "$invalid_root" --auto --owner deterministic-agent
+  assert_status 0 'Upgrade Gate derives a task ID when the legacy title is invalid'
+done
+invalid_id_a="$(pmm_frontmatter_value "$upgrade_invalid_a/docs/00-project-memory/active-task.md" task_id)"
+invalid_id_b="$(pmm_frontmatter_value "$upgrade_invalid_b/docs/00-project-memory/active-task.md" task_id)"
+assert_equals "$invalid_id_a" "$invalid_id_b" 'Invalid legacy titles produce the same deterministic task ID'
+if pmm_validate_id "$invalid_id_a"; then
+  pass 'Derived legacy task ID satisfies the structured ID contract'
+else
+  fail "Derived legacy task ID is invalid: $invalid_id_a"
+fi
+
+upgrade_ambiguous_root="$tmp_root/upgrade-ambiguous"
+make_project "$upgrade_ambiguous_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '## Feature A' \
+  '- Task: first task' \
+  '- Status: active' \
+  '' \
+  '## Feature B' \
+  '- Task: second task' \
+  '- Status: blocked' \
+  >"$upgrade_ambiguous_root/docs/00-project-memory/active-task.md"
+upgrade_ambiguous_agents_before="$(file_hash "$upgrade_ambiguous_root/AGENTS.md")"
+upgrade_ambiguous_task_before="$(file_hash "$upgrade_ambiguous_root/docs/00-project-memory/active-task.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_ambiguous_root" --auto --owner ambiguous-agent
+assert_nonzero 'Upgrade Gate refuses an ambiguous multi-task legacy source'
+assert_contains 'PROJECT_UPGRADE_AMBIGUOUS' 'Ambiguous upgrade returns a stable fail-closed diagnostic'
+assert_equals "$upgrade_ambiguous_agents_before" "$(file_hash "$upgrade_ambiguous_root/AGENTS.md")" \
+  'Ambiguous upgrade leaves AGENTS.md unchanged'
+assert_equals "$upgrade_ambiguous_task_before" "$(file_hash "$upgrade_ambiguous_root/docs/00-project-memory/active-task.md")" \
+  'Ambiguous upgrade leaves active-task.md unchanged'
+assert_file_not_exists "$upgrade_ambiguous_root/docs/00-project-memory/runtime-state.md" \
+  'Ambiguous upgrade does not claim a completed runtime version'
+
+upgrade_source_conflict_root="$tmp_root/upgrade-source-conflict"
+make_project "$upgrade_source_conflict_root"
+printf '%s\n' '# Active Task' '' '- Task ID: active-source-task' '- Status: active' \
+  >"$upgrade_source_conflict_root/docs/00-project-memory/active-task.md"
+printf '%s\n' '# Task Ledger' '' '- Task ID: ledger-source-task' '- Status: active' \
+  >"$upgrade_source_conflict_root/docs/00-project-memory/task-ledger.md"
+upgrade_source_active_before="$(file_hash "$upgrade_source_conflict_root/docs/00-project-memory/active-task.md")"
+upgrade_source_ledger_before="$(file_hash "$upgrade_source_conflict_root/docs/00-project-memory/task-ledger.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_source_conflict_root" --auto --owner source-conflict-agent
+assert_nonzero 'Upgrade Gate refuses two current legacy sources'
+assert_contains 'PROJECT_UPGRADE_AMBIGUOUS_SOURCES' 'Source conflict has a stable diagnostic'
+assert_equals "$upgrade_source_active_before" "$(file_hash "$upgrade_source_conflict_root/docs/00-project-memory/active-task.md")" \
+  'Source-conflict upgrade leaves active-task.md unchanged'
+assert_equals "$upgrade_source_ledger_before" "$(file_hash "$upgrade_source_conflict_root/docs/00-project-memory/task-ledger.md")" \
+  'Source-conflict upgrade leaves task-ledger.md unchanged'
+assert_file_not_exists "$upgrade_source_conflict_root/docs/00-project-memory/runtime-state.md" \
+  'Source-conflict upgrade leaves no partial runtime state'
+
+upgrade_status_conflict_root="$tmp_root/upgrade-status-conflict"
+make_project "$upgrade_status_conflict_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '- Task ID: conflicting-status-task' \
+  '- Status: active' \
+  '- Status: done' \
+  >"$upgrade_status_conflict_root/docs/00-project-memory/active-task.md"
+upgrade_status_before="$(file_hash "$upgrade_status_conflict_root/docs/00-project-memory/active-task.md")"
+run_capture bash "$task_cli" upgrade --project "$upgrade_status_conflict_root" --auto --owner status-conflict-agent
+assert_nonzero 'Upgrade Gate refuses conflicting legacy Status fields'
+assert_contains 'PROJECT_UPGRADE_AMBIGUOUS_STATUS' 'Status conflict has a stable diagnostic'
+assert_equals "$upgrade_status_before" "$(file_hash "$upgrade_status_conflict_root/docs/00-project-memory/active-task.md")" \
+  'Status-conflict upgrade leaves the source unchanged'
+assert_file_not_exists "$upgrade_status_conflict_root/docs/00-project-memory/runtime-state.md" \
+  'Status-conflict upgrade leaves no partial runtime state'
+
+upgrade_failure_root="$tmp_root/upgrade-transaction-failure"
+make_project "$upgrade_failure_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '- Task ID: upgrade-failure-task' \
+  '- Status: active' \
+  '- Verifier: bash tests/upgrade-failure.sh' \
+  >"$upgrade_failure_root/docs/00-project-memory/active-task.md"
+upgrade_failure_agents_before="$(file_hash "$upgrade_failure_root/AGENTS.md")"
+upgrade_failure_task_before="$(file_hash "$upgrade_failure_root/docs/00-project-memory/active-task.md")"
+upgrade_real_mv="$(command -v mv)"
+upgrade_failure_bin="$tmp_root/upgrade-failure-bin"
+mkdir -p "$upgrade_failure_bin"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'for arg in "$@"; do' \
+  '  if [[ "$arg" == */docs/00-project-memory/runtime-state.md ]]; then' \
+  '    exit 99' \
+  '  fi' \
+  'done' \
+  "exec \"$upgrade_real_mv\" \"\$@\"" \
+  >"$upgrade_failure_bin/mv"
+chmod +x "$upgrade_failure_bin/mv"
+run_capture env PATH="$upgrade_failure_bin:$PATH" bash "$task_cli" upgrade \
+  --project "$upgrade_failure_root" --auto --owner upgrade-failure-agent
+assert_nonzero 'Upgrade transaction reports a late commit failure'
+assert_contains 'PROJECT_UPGRADE_COMMIT_FAILED' 'Upgrade transaction exposes a stable commit-failure diagnostic'
+assert_equals "$upgrade_failure_agents_before" "$(file_hash "$upgrade_failure_root/AGENTS.md")" \
+  'Failed upgrade restores the original AGENTS.md'
+assert_equals "$upgrade_failure_task_before" "$(file_hash "$upgrade_failure_root/docs/00-project-memory/active-task.md")" \
+  'Failed upgrade restores the original active-task.md'
+assert_file_not_exists "$upgrade_failure_root/docs/00-project-memory/runtime-state.md" \
+  'Failed upgrade removes a partially committed runtime-state.md'
+upgrade_failure_claim="$(pmm_claim_primary_task "$upgrade_failure_root" 2>/dev/null || true)"
+assert_equals '' "$upgrade_failure_claim" 'Failed upgrade releases its provisional primary claim'
+upgrade_failure_txn="$(find "$upgrade_failure_root/.project-runtime/pmm/transactions" -mindepth 1 -print -quit 2>/dev/null || true)"
+assert_equals '' "$upgrade_failure_txn" 'Failed upgrade removes its transaction staging files'
+
+upgrade_race_root="$tmp_root/upgrade-race"
+make_project "$upgrade_race_root"
+upgrade_race_results="$tmp_root/upgrade-race-results"
+mkdir -p "$upgrade_race_results"
+(
+  bash "$task_cli" upgrade --project "$upgrade_race_root" --auto --owner upgrade-race-a \
+    >"$upgrade_race_results/a.out" 2>&1
+  printf '%s\n' "$?" >"$upgrade_race_results/a.status"
+) &
+upgrade_race_pid_a=$!
+(
+  bash "$task_cli" upgrade --project "$upgrade_race_root" --auto --owner upgrade-race-b \
+    >"$upgrade_race_results/b.out" 2>&1
+  printf '%s\n' "$?" >"$upgrade_race_results/b.status"
+) &
+upgrade_race_pid_b=$!
+wait "$upgrade_race_pid_a" || true
+wait "$upgrade_race_pid_b" || true
+upgrade_write_count="$(rg -l 'PROJECT_UPGRADED' "$upgrade_race_results"/*.out | wc -l | tr -d '[:space:]')"
+assert_equals '1' "$upgrade_write_count" 'Concurrent Upgrade Gates perform exactly one project write transaction'
+assert_file_contains "$upgrade_race_root/docs/00-project-memory/runtime-state.md" \
+  "runtime_version: $runtime_version" 'Concurrent Upgrade Gates leave one complete current runtime state'
+run_capture bash "$doctor" "$upgrade_race_root"
+assert_status 0 'Doctor accepts the project after concurrent Upgrade Gate contention'
 
 legacy_root="$tmp_root/legacy-overloaded"
 make_project "$legacy_root"
@@ -262,8 +593,8 @@ assert_contains 'ledger-behind-placeholder' 'Recovery discovers the real ledger 
 run_capture bash "$task_cli" migrate --project "$placeholder_root" --plan
 assert_status 0 'Migration plan selects a real ledger behind an empty placeholder'
 assert_contains 'MIGRATION_PLAN source=task-ledger.md' 'Migration plan reports the fallback ledger source'
-run_capture bash "$doctor" "$placeholder_root"
-assert_status 0 'Doctor accepts the legacy ledger behind a complete Core Pack placeholder'
+run_capture bash "$doctor" --allow-legacy "$placeholder_root"
+assert_status 0 'Doctor compatibility audit accepts the legacy ledger behind a complete Core Pack placeholder'
 assert_contains 'LEGACY_COMPATIBLE source=docs/00-project-memory/task-ledger.md' 'Doctor reports compatibility even when all Core Pack filenames exist'
 
 heading_ledger_root="$tmp_root/legacy-heading-ledger"
@@ -303,6 +634,10 @@ assert_contains 'MIGRATION_AMBIGUOUS_STATUS' 'Migration reports the conflicting-
 run_capture bash "$task_cli" migrate --project "$ledger_root" --apply --id ledger-feature --owner ledger-agent
 assert_status 0 'Migration can create structured active-task.md from one legacy ledger task'
 assert_file_contains "$ledger_root/docs/00-project-memory/active-task.md" 'pmm_schema: pmm.task/v1' 'Ledger migration creates the structured primary slot'
+assert_file_contains "$ledger_root/docs/00-project-memory/runtime-state.md" \
+  "runtime_version: $runtime_version" 'Legacy migrate --apply also upgrades the project runtime marker'
+assert_file_contains "$ledger_root/AGENTS.md" '<!-- pmm-runtime:start -->' \
+  'Legacy migrate --apply also installs the managed runtime rules'
 ledger_hash_after="$(file_hash "$ledger_root/docs/00-project-memory/task-ledger.md")"
 assert_equals "$ledger_hash_before" "$ledger_hash_after" 'Ledger migration preserves the original task-ledger.md unchanged'
 run_capture bash "$doctor" "$ledger_root"
@@ -500,14 +835,17 @@ printf '%s\n' \
   '- Verifier: bash tests/legacy-doctor.sh' \
   >"$legacy_doctor_root/docs/00-project-memory/task-ledger.md"
 run_capture bash "$doctor" "$legacy_doctor_root"
-assert_status 0 'Doctor accepts a readable legacy-only project in compatibility mode'
-assert_contains 'LEGACY_COMPATIBLE' 'Doctor identifies the legacy compatibility mode'
-run_capture bash "$doctor" --json "$legacy_doctor_root"
-assert_status 0 'Doctor JSON compatibility mode succeeds'
+assert_nonzero 'Doctor requires an old project to pass the Upgrade Gate by default'
+assert_contains 'PROJECT_UPGRADE_REQUIRED' 'Doctor reports the stable default upgrade requirement'
+run_capture bash "$doctor" --allow-legacy "$legacy_doctor_root"
+assert_status 0 'Doctor explicit compatibility audit accepts a readable legacy-only project'
+assert_contains 'LEGACY_COMPATIBLE' 'Doctor identifies the explicit legacy compatibility mode'
+run_capture bash "$doctor" --json --allow-legacy "$legacy_doctor_root"
+assert_status 0 'Doctor JSON compatibility audit succeeds explicitly'
 assert_contains '"code":"LEGACY_COMPATIBLE"' 'Doctor JSON exposes a stable legacy compatibility issue code'
 run_capture bash "$doctor" --require-structured "$legacy_doctor_root"
 assert_nonzero 'Doctor can enforce structured Core Pack readiness explicitly'
-assert_contains 'missing active task' 'Strict Doctor reports the structured upgrade gap'
+assert_contains 'PROJECT_UPGRADE_REQUIRED' 'Strict Doctor preserves the default project upgrade gate'
 
 sectioned_legacy_root="$tmp_root/sectioned-v03-active-task"
 make_project "$sectioned_legacy_root"
@@ -685,6 +1023,10 @@ assert_contains 'TASK_STARTED task-001' 'Lifecycle start reports the task identi
 assert_file_contains "$structured_root/docs/00-project-memory/active-task.md" 'execution_status: active' 'Structured task records canonical execution state'
 assert_file_contains "$structured_root/docs/00-project-memory/active-task.md" 'verification_status: pending' 'Structured task begins with pending verification'
 assert_file_contains "$structured_root/docs/00-project-memory/active-task.md" 'delivery_status: not-requested' 'Structured task separates delivery state'
+assert_file_contains "$structured_root/docs/00-project-memory/runtime-state.md" \
+  "runtime_version: $runtime_version" 'Normal lifecycle start automatically runs the project Upgrade Gate'
+assert_file_contains "$structured_root/AGENTS.md" '<!-- pmm-runtime:start -->' \
+  'Normal lifecycle start installs current managed runtime rules before task creation'
 
 run_capture bash "$task_cli" status --project "$structured_root" --id '../task-001'
 assert_nonzero 'Lifecycle status rejects an invalid task ID before path lookup'
@@ -1432,6 +1774,7 @@ if [[ -f "$repo_root/README.md" ]]; then
   assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-state.sh' 'PowerShell install includes the shared state library'
   assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-runtime-contract.sh' 'PowerShell install includes the runtime contract test'
   assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'templates/concurrency/work-item.md' 'Public safety requires the work-item template'
+  assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'templates/core/runtime-state.md' 'Public safety requires the runtime-state template'
   assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'tests/pmm-runtime-contract.sh' 'Public safety reviews the runtime contract test'
 else
   assert_file_exists "$repo_root/scripts/pmm-task.sh" 'Installed package includes the v0.5 lifecycle CLI'
@@ -1441,6 +1784,7 @@ else
   assert_file_exists "$repo_root/scripts/install-local-skill.ps1" 'Installed package includes the PowerShell installer'
   assert_file_exists "$repo_root/templates/concurrency/work-item.md" 'Installed package includes the work-item template'
   assert_file_exists "$repo_root/templates/concurrency/task-queue.md" 'Installed package includes the task-queue template'
+  assert_file_exists "$repo_root/templates/core/runtime-state.md" 'Installed package includes the runtime-state template'
   assert_file_exists "$repo_root/scripts/pmm-doctor.sh" 'Installed package includes Doctor'
   assert_file_exists "$repo_root/scripts/recovery-status.sh" 'Installed package includes Recovery'
 fi

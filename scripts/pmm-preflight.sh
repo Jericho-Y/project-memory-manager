@@ -75,6 +75,7 @@ if [[ -n "$installed_root" ]]; then
   }
   for file in \
     SKILL.md VERSION CHANGELOG.md CHANGELOG.en.md \
+    templates/core/runtime-state.md \
     scripts/pmm-task.sh scripts/pmm-doctor.sh scripts/recovery-status.sh \
     scripts/lib/pmm-state.sh tests/pmm-runtime-contract.sh; do
     [[ -f "$installed_root/$file" ]] || {

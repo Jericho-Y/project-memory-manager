@@ -6,6 +6,10 @@ Skip when: You only need current instructions and no historical context.
 
 ## 2026-07-21
 
+- Implemented the `pmm` v0.5.1 Upgrade Gate so old project content is upgraded to the installed runtime before normal writes rather than remaining indefinitely in legacy execution mode.
+- Added project runtime markers, managed `AGENTS.md` blocks, transactional all-file backups and rollback, ambiguity/future-version refusal, history-only idle convergence, deterministic legacy task IDs, and automatic lifecycle gating.
+- Kept compatibility readers and `migrate --apply` for migration discovery, recovery, rollback, and audit while making current runtime state authoritative after a successful upgrade; Doctor now requires that upgrade by default.
+- Expanded the source runtime contract to 359 passing assertions, including automatic upgrade, idempotency, concurrent upgrade, transaction failure, lifecycle upgrade, and child-worktree claim reuse.
 - Released `pmm` v0.5.0, synced the maintainer install from public `main`, and verified the source and real installed-package layouts before closing the primary task.
 - Prepared `pmm` v0.5.0 as a compatibility-first upgrade: added read-only per-contract migration plans, strict source/status ambiguity refusal, stable Doctor JSON codes, delivery CLI, global help/version, and a source-plus-installed release preflight.
 - Expanded legacy parsing and Recovery for real project shapes: bare fields, `## Task <id>` headings, code spans, trailing whitespace, verbose status text, empty active-task placeholders, completed/deferred history, duplicate conflicting status fields, and explicit missing task IDs.
