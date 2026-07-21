@@ -74,6 +74,8 @@ Skip when: The action is a tiny read-only lookup with no durable state.
 ## Record
 
 - Verification Evidence:
+- Delivery Status:
+- Delivery Evidence:
 - Docs Updated:
 - Remaining Risk:
 - Memory Promotion Decision:

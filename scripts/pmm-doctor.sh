@@ -9,12 +9,16 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$script_dir/lib/pmm-state.sh"
 
 json=0
+require_structured=0
 project_root=""
-for arg in "$@"; do
+while (( $# > 0 )); do
+  arg="$1"
+  shift
   case "$arg" in
     --json) json=1 ;;
+    --require-structured) require_structured=1 ;;
     -h | --help)
-      printf 'Usage: pmm-doctor.sh [--json] [PROJECT_ROOT]\n'
+      printf 'Usage: pmm-doctor.sh [--json] [--require-structured] [PROJECT_ROOT]\n'
       exit 0
       ;;
     *)
@@ -39,32 +43,77 @@ active_task="$memory_dir/active-task.md"
 work_items_dir="$memory_dir/work-items"
 verifier_map="$memory_dir/verifier-map.md"
 change_log="$project_root/docs/07-decisions/change-log.md"
+legacy_source=""
+legacy_source_ambiguous=0
+if [[ -f "$active_task" ]]; then
+  if ! pmm_has_schema "$active_task"; then
+    active_legacy_count="$(pmm_legacy_contract_count "$active_task" all 2>/dev/null || printf '0')"
+    ledger_legacy_count=0
+    [[ ! -f "$memory_dir/task-ledger.md" ]] || ledger_legacy_count="$(pmm_legacy_contract_count "$memory_dir/task-ledger.md" current 2>/dev/null || printf '0')"
+    if (( active_legacy_count > 0 && ledger_legacy_count > 0 )); then
+      legacy_source="$active_task"
+      legacy_source_ambiguous=1
+    elif (( active_legacy_count > 0 )); then
+      legacy_source="$active_task"
+    elif (( ledger_legacy_count > 0 )); then
+      legacy_source="$memory_dir/task-ledger.md"
+    else
+      legacy_source="$active_task"
+    fi
+  fi
+elif [[ -f "$memory_dir/task-ledger.md" ]]; then
+  legacy_source="$memory_dir/task-ledger.md"
+fi
 
 failures=0
 warnings=0
 messages=()
 
+stable_issue_code() {
+  local message="$1"
+  case "$message" in
+    'missing canonical entrypoint:'*) printf 'MISSING_CANONICAL_ENTRYPOINT' ;;
+    'missing '*': '*) printf 'MISSING_CORE_FILE' ;;
+    *'multiple task contracts'*) printf 'LEGACY_MULTIPLE_CONTRACTS' ;;
+    *'multiple primary task claims'*) printf 'MULTIPLE_PRIMARY_CLAIMS' ;;
+    *'legacy compatibility mode'*) printf 'LEGACY_COMPATIBLE' ;;
+    *'LEGACY_MIGRATION_AMBIGUOUS'*) printf 'LEGACY_MIGRATION_AMBIGUOUS' ;;
+    *'LEGACY_MIGRATION_READY'*) printf 'LEGACY_MIGRATION_READY' ;;
+    *'LEGACY_HISTORY_ONLY'*) printf 'LEGACY_HISTORY_ONLY' ;;
+    *'does not define verifier evidence'*) printf 'LEGACY_MISSING_VERIFIER' ;;
+    *'done without verification evidence'*) printf 'LEGACY_UNVERIFIED_DONE' ;;
+    *'unknown legacy status'*) printf 'LEGACY_UNKNOWN_STATUS' ;;
+    *'uses legacy status'*) printf 'LEGACY_STATUS_ALIAS' ;;
+    *'require structured'|*'structured upgrade gap'*) printf 'LEGACY_REQUIRES_STRUCTURED' ;;
+    *'verification evidence is stale'*) printf 'STALE_VERIFICATION' ;;
+    *'claim is missing or mismatched'*) printf 'TASK_CLAIM_INVALID' ;;
+    *) printf 'PMM_DOCTOR_CHECK' ;;
+  esac
+}
+
 record() {
   local level="$1"
   local message="$2"
-  messages+=("$level|$message")
+  local code="${3:-}"
+  [[ -n "$code" ]] || code="$(stable_issue_code "$message")"
+  messages+=("$level|$code|$message")
   if (( json == 0 )); then
-    printf '%s: %s\n' "$level" "$message"
+    printf '%s[%s]: %s\n' "$level" "$code" "$message"
   fi
 }
 
 info() {
-  record INFO "$1"
+  record INFO "$1" "${2:-}"
 }
 
 warn() {
   warnings=$((warnings + 1))
-  record WARN "$1"
+  record WARN "$1" "${2:-}"
 }
 
 fail() {
   failures=$((failures + 1))
-  record FAIL "$1"
+  record FAIL "$1" "${2:-}"
 }
 
 require_file() {
@@ -203,8 +252,37 @@ if [[ -d "$work_items_dir" ]]; then
   done
 fi
 
-if (( core_files_present == 0 )); then
+if (( core_files_present == 0 )) && [[ -z "$legacy_source" ]]; then
   warn 'Core Pack files are absent; this is acceptable only for No PMM or very small Pulse work'
+elif [[ -n "$legacy_source" ]]; then
+  if [[ "$require_structured" == '1' ]]; then
+    require_file "$current_state" 'current state'
+    require_file "$active_task" 'active task'
+    require_file "$verifier_map" 'verifier map'
+    require_file "$change_log" 'change log'
+    if [[ -f "$active_task" ]] && ! pmm_has_schema "$active_task"; then
+      fail 'active-task.md is legacy; structured pmm.task/v1 state is required' LEGACY_REQUIRES_STRUCTURED
+    fi
+  else
+    if (( legacy_source_ambiguous == 1 )); then
+      fail 'both active-task.md and task-ledger.md contain current legacy contracts; choose one source before migration' LEGACY_AMBIGUOUS_SOURCES
+    fi
+    legacy_count="$(pmm_legacy_contract_count "$legacy_source" current 2>/dev/null || printf '0')"
+    info "LEGACY_COMPATIBLE source=${legacy_source#$project_root/} task_contracts=$legacy_count; run pmm-task.sh migrate --plan before structured execution" LEGACY_COMPATIBLE
+    if (( legacy_count > 0 )); then
+      legacy_verifier="$(pmm_legacy_contract_field "$legacy_source" current verifier 2>/dev/null || true)"
+      [[ -n "$legacy_verifier" ]] || warn 'selected legacy contract has no explicit verifier; define checks before structured close' LEGACY_MISSING_VERIFIER
+      legacy_selected_status="$(pmm_legacy_contract_field "$legacy_source" current status 2>/dev/null || true)"
+      [[ "$legacy_selected_status" != 'ambiguous' ]] || warn 'selected legacy contract has conflicting Status fields; migration apply will refuse it' LEGACY_STATUS_CONFLICT
+    fi
+    if (( legacy_count > 1 )); then
+      warn "LEGACY_MIGRATION_AMBIGUOUS source=${legacy_source#$project_root/} task_contracts=$legacy_count; split or archive manually before migration" LEGACY_MIGRATION_AMBIGUOUS
+    elif (( legacy_count == 1 )); then
+      info "LEGACY_MIGRATION_READY source=${legacy_source#$project_root/}; one current contract can be reviewed for explicit migration" LEGACY_MIGRATION_READY
+    else
+      info "LEGACY_HISTORY_ONLY source=${legacy_source#$project_root/}; no current contract requires migration" LEGACY_HISTORY_ONLY
+    fi
+  fi
 elif (( core_files_present < 4 )); then
   require_file "$current_state" 'current state'
   if [[ -f "$active_task" ]]; then
@@ -238,7 +316,7 @@ if [[ -f "$active_task" ]]; then
         fail "active-task.md primary claim is missing or mismatched for task $local_primary_id"
       fi
     fi
-  else
+  elif [[ "$legacy_source" == "$active_task" ]]; then
     legacy_contracts="$(pmm_legacy_contract_count "$active_task")"
     if (( legacy_contracts > 1 )); then
       fail "active-task.md contains multiple task contracts ($legacy_contracts); keep one current task and migrate or archive the rest"
@@ -249,8 +327,8 @@ if [[ -f "$active_task" ]]; then
     legacy_status_raw="$(awk -F ': ' '/^- Status:/{print $2; exit}' "$active_task")"
     if [[ -n "$legacy_status_raw" ]]; then
       legacy_status="$(pmm_normalize_legacy_status "$legacy_status_raw")"
-      [[ "$legacy_status" != 'unknown' ]] || warn "active-task.md uses an unknown legacy status: $legacy_status_raw"
-      [[ "$legacy_status_raw" == "$legacy_status" ]] || warn "active-task.md uses legacy status '$legacy_status_raw'; migrate to execution_status: $legacy_status"
+      [[ "$legacy_status" != 'unknown' ]] || warn 'active-task.md uses an unrecognized legacy status; owner review is required before migration' LEGACY_UNKNOWN_STATUS
+      [[ "$legacy_status_raw" == "$legacy_status" ]] || warn "active-task.md uses a legacy status alias; migrate to execution_status: $legacy_status" LEGACY_STATUS_ALIAS
       if [[ "$legacy_status" == 'done' ]]; then
         legacy_evidence="$(awk '/^- Verification Evidence:/{sub(/^- Verification Evidence:[[:space:]]*/, ""); print; exit}' "$active_task")"
         legacy_evidence="${legacy_evidence%.}"
@@ -328,10 +406,15 @@ if (( json == 1 )); then
   first=1
   for entry in "${messages[@]}"; do
     level="${entry%%|*}"
-    message="${entry#*|}"
+    rest="${entry#*|}"
+    code="${rest%%|*}"
+    message="${rest#*|}"
     (( first == 1 )) || printf ','
     first=0
-    printf '{"level":"%s","message":"%s"}' "$(pmm_json_escape "$level")" "$(pmm_json_escape "$message")"
+    printf '{"level":"%s","code":"%s","message":"%s"}' \
+      "$(pmm_json_escape "$level")" \
+      "$(pmm_json_escape "$code")" \
+      "$(pmm_json_escape "$message")"
   done
   printf ']}\n'
 else

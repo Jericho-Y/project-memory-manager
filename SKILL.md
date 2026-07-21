@@ -1,7 +1,7 @@
 ---
 name: pmm
 description: Use when a software project or large feature spans multiple sessions, agents, branches, recovery checkpoints, or verification stages and needs durable project-local task state; skip one-off, tiny, single-session work.
-version: 0.4.1
+version: 0.5.0
 compatibility: Agent Skills SKILL.md format; durable project output is AGENTS.md plus project-local docs, usable by Codex, Claude Code, Hermes Agent, OpenClaw/OpenCode-style agents, and other AGENTS.md-aware coding agents. No runtime dependencies.
 ---
 
@@ -65,7 +65,7 @@ docs/00-project-memory/task-queue.md
 
 Use `task-history.md`, `failure-patterns.md`, product/design/technical docs, and release history only when the active task requires them. Search headings and purpose headers before reading full files.
 
-For existing projects that still use `task-ledger.md`, keep compatibility reading available. If the project wants structured v0.4 behavior, run the migration dry-run in `docs/runtime.md`; migration counts individual task fields, converts exactly one current task, keeps completed history cold, preserves v0.2/v0.3 multi-section objective/verifier/next-action fields, and refuses zero-current or multi-current ledgers without rewriting them.
+For existing projects that still use `task-ledger.md`, keep compatibility reading available. If the project wants structured v0.5 behavior, run `migrate --plan` or the migration dry-run in `docs/runtime.md`; migration counts individual task fields, converts exactly one current task, keeps completed history cold, preserves v0.2/v0.3 multi-section objective/verifier/next-action fields, and refuses zero-current, multi-current, conflicting-source, or conflicting-status ledgers without rewriting them.
 
 ## Core Pack And Optional Packs
 
@@ -123,7 +123,7 @@ Machine state uses `pmm.task/v1` frontmatter with three independent axes:
 - `verification_status`: `pending`, `partial`, `passed`, `stale`, `failed`, `not-required`
 - `delivery_status`: `not-requested`, `waiting-confirmation`, `ready`, `deployed`, `released`
 
-Use `scripts/pmm-task.sh` for lifecycle changes. Every mutation requires the recorded owner and branch; only explicit `resume --takeover` changes ownership. Local lifecycle writes are serialized through the Git common directory and committed as whole-file staged transactions; failures and signals clean temporary state, roll back uncommitted new claims, and restore an interrupted takeover to the claim owner matching the durable task file. One non-idle primary claim is permitted across local worktrees, so paused and blocked primary tasks retain that slot. Doctor requires every non-idle task file to have a complete matching claim. Archived task IDs cannot be reused, including IDs found in marker-less legacy history reachable from local refs. `verify` binds evidence to the current Git HEAD and source hash and fails closed on Git/hash errors; any later source-touching commit makes evidence stale even if another commit reverts it or renames the source into an operational path. A work-item `close` keeps its claim and moves it to `ready-to-integrate`; after the verified commit is merged, the primary owner runs `integrate`, re-verifies the primary task, and only then closes it. Primary close preserves all three state axes in history and queues unfinished delivery follow-up.
+Use `scripts/pmm-task.sh` for lifecycle changes. Global `--help` and `--version` are available, and `delivery` records or reads the delivery axis with evidence. Every mutation requires the recorded owner and branch; only explicit `resume --takeover` changes ownership. Local lifecycle writes are serialized through the Git common directory and committed as whole-file staged transactions; failures and signals clean temporary state, roll back uncommitted new claims, and restore an interrupted takeover to the claim owner matching the durable task file. One non-idle primary claim is permitted across local worktrees, so paused and blocked primary tasks retain that slot. Doctor requires every non-idle task file to have a complete matching claim. Archived task IDs cannot be reused, including IDs found in marker-less legacy history reachable from local refs. `verify` binds evidence to the current Git HEAD and source hash and fails closed on Git/hash errors; any later source-touching commit makes evidence stale even if another commit reverts it or renames the source into an operational path. A work-item `close` keeps its claim and moves it to `ready-to-integrate`; after the verified commit is merged, the primary owner runs `integrate`, re-verifies the primary task, and only then closes it. Primary close preserves all three state axes in history and queues unfinished delivery follow-up.
 
 Verifier first: a task without a verifier and fresh evidence cannot close. Record blocked execution with `execution_status: blocked`; record incomplete or failed verification with `verification_status: pending` or `failed`.
 
@@ -158,7 +158,7 @@ Rules:
 - `AGENTS.md` is the canonical project entrypoint.
 - `CLAUDE.md`, `.hermes.md`, OpenClaw project cards, and handoffs are adapters.
 - Adapters cite paths and startup behavior; they do not copy full docs.
-- Structured state is optional for legacy projects: old single-task `active-task.md` and `task-ledger.md` remain readable. Run `pmm-task.sh migrate --dry-run` before conversion; ambiguous multi-task files are never rewritten automatically.
+- Structured state is optional for legacy projects: old single-task `active-task.md` and `task-ledger.md` remain readable. Run `pmm-task.sh migrate --plan` for a read-only candidate list, then `--dry-run` before conversion; ambiguous multi-task/source/status files are never rewritten automatically.
 - Subagent routing is best-effort: agents with subagent tools may delegate; agents without them record solo mode or a manual handoff.
 - Root `AGENTS.md` stays short; specialized instructions belong in nested `AGENTS.md` files or task docs.
 - Do not rely on a single agent's hidden or global memory to preserve project state.

@@ -10,7 +10,7 @@ The public repository is initialized and published as a generic Agent Skill repo
 
 ## Active Objective
 
-Publish and maintain `pmm` v0.4.1 as a backward-compatible, concurrency-aware task runtime that preserves one primary task, isolates concurrent work, verifies evidence freshness, recovers legacy projects deterministically, and passes the same contract in source and installed-package layouts.
+Publish and maintain `pmm` v0.5.0 as a compatibility-first, concurrency-aware task runtime that preserves one primary task, upgrades legacy project state without forced rewrites, isolates concurrent work, verifies evidence freshness, and passes the same contract in source and installed-package layouts.
 
 ## Current Source Of Truth
 
@@ -28,6 +28,7 @@ Publish and maintain `pmm` v0.4.1 as a backward-compatible, concurrency-aware ta
 - Lightweight project checker: `scripts/pmm-doctor.sh`.
 - Recovery status helper: `scripts/recovery-status.sh`.
 - Structured task lifecycle: `scripts/pmm-task.sh`; shared state helpers: `scripts/lib/pmm-state.sh`.
+- Release gate: `scripts/pmm-preflight.sh`.
 - Runtime contract verification: `tests/pmm-runtime-contract.sh`.
 
 ## Current Facts
@@ -47,10 +48,12 @@ Publish and maintain `pmm` v0.4.1 as a backward-compatible, concurrency-aware ta
 - Work-item close retains its claim at `ready-to-integrate`; only the primary owner can integrate after the verified child commit is merged, and primary evidence is then invalidated.
 - Closing preserves execution, verification, and delivery in task history, reserves the task ID against reuse, and queues unfinished delivery before releasing the task slot.
 - `scripts/pmm-doctor.sh` validates structured and legacy contracts but remains a static checker, not enforcement across all agents.
-- Legacy single-task `active-task.md` and `task-ledger.md` remain readable; migration is explicit, backed up, refuses multi-task ambiguity, maps unverified done to paused, and normalizes idle to the empty slot.
+- Legacy single-task `active-task.md` and `task-ledger.md` remain readable; migration is explicit, backed up, refuses multi-task/source/status ambiguity, maps unverified or unknown work to paused review, and normalizes idle to the empty slot.
+- Legacy parsing supports bulleted and bare fields, `## Task <id>` ledgers, Markdown code spans, verbose statuses, and empty active-task placeholders without deleting the original ledger.
+- Doctor exposes stable JSON issue codes and compatibility/strict modes; lifecycle CLI exposes help, version, delivery, and read-only migration plans.
 - Single-task migration supports official v0.1 ledger records and formal v0.2/v0.3 multi-section tasks, separates current fields from completed history, preserves objective/verifier/next-action values in the structured hot path, and leaves legacy source unchanged; marker-less history continues to reserve archived task IDs across reachable refs.
 - Recovery merges sibling-worktree primary/work-item claims with project files, so uncommitted tasks remain discoverable by task ID.
-- The runtime contract detects source-checkout and installed-package layouts so repository-only maintenance assertions do not create false installation failures.
+- The runtime contract detects source-checkout and installed-package layouts, and `pmm-preflight.sh` runs both as one release gate so repository-only maintenance assertions do not create false installation failures.
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory after safety checks pass.
 - Workflow examples remain under `docs/github-actions-drafts/` until workflow publication is explicitly reviewed and enabled.
 

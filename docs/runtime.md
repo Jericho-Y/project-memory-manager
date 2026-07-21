@@ -105,6 +105,11 @@ bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh verify --project . --id feature-a --o
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh status --project . --id feature-a
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh resume --project . --id feature-a --owner agent-a
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh close --project . --id feature-a --owner agent-a
+
+# Record or inspect delivery state before close.
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh delivery --project . --id feature-a \
+  --owner agent-a --status ready --evidence "package prepared"
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh delivery --project . --id feature-a
 ```
 
 Finish and integrate a child work item:
@@ -201,20 +206,22 @@ bash <SKILLS_ROOT>/pmm/scripts/recovery-status.sh .
 
 Recovery merges project files with primary and work-item claims from sibling worktrees, so an uncommitted task can still be located from the clone's shared Git state. If it returns `AMBIGUOUS_ACTIVE_TASKS`, inspect the candidates and rerun with `--task-id ID`. Never guess. Structured paused, blocked, queued, and ready-to-integrate tasks return explicit `RECOVERY_PAUSED`, `RECOVERY_BLOCKED`, `RECOVERY_QUEUED`, or `PENDING_INTEGRATION` markers instead of being mistaken for an empty slot. Before resuming, check ownership, branch/worktree, partial edits, running commands, external side effects, next action, and evidence freshness.
 
-Legacy aliases such as `In progress` and `failed-retryable` remain recoverable. New files use the structured enum.
+Legacy aliases such as `In progress` and `failed-retryable` remain recoverable. New files use the structured enum. A missing or conflicting legacy status is treated as `paused` review, never as permission to resume automatically. If an explicit `--task-id` does not match a candidate, Recovery returns `TASK_ID_NOT_FOUND` and fails closed.
 
 ## Legacy Migration
 
 Legacy `active-task.md` and `task-ledger.md` remain readable. Migration is optional and explicit:
 
 ```bash
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project . --plan
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project . --dry-run
 ```
 
-- When `active-task.md` is absent, migration deterministically falls back to `task-ledger.md`.
+- When `active-task.md` is absent or is only an empty legacy placeholder, migration deterministically falls back to `task-ledger.md`; if both files contain current contracts, it stops with a source ambiguity instead of choosing one.
 - One unambiguous legacy task may be converted with `--apply --id ID --owner OWNER` into a complete structured contract. Official v0.1 ledgers are counted per task field: completed history stays cold, an `Active Task` that is code-complete becomes `paused` for revalidation, and zero or multiple current contracts refuse migration.
 - Formal v0.2/v0.3 section headings belong to one task contract; migration carries their objective, required checks, and next concrete action into the new structured hot path before appending the preserved legacy source.
-- Legacy `done` without fresh v0.4 evidence becomes `paused` for revalidation; legacy `idle` becomes the canonical empty primary slot. `paused` and `blocked` remain recoverable.
+- Legacy `done` without fresh v0.5 evidence becomes `paused` for revalidation; unknown or conflicting status becomes `paused` review; legacy `idle` becomes the canonical empty primary slot. `paused` and `blocked` remain recoverable.
+- `migrate --plan` is read-only and prints one `MIGRATION_CANDIDATE` per current contract. `--dry-run` keeps the validation gate and refuses zero or multiple candidates; `--apply` creates a project-local backup and rejects conflicting `Status` fields.
 - The migration source is backed up under `.project-runtime/pmm/backups/`; a legacy ledger remains unchanged.
 - Multiple feature contracts return `MIGRATION_AMBIGUOUS` and remain unchanged.
 - Never delete a legacy `task-ledger.md` without project-owner approval.

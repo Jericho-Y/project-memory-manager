@@ -84,6 +84,7 @@ fi
 [[ -f scripts/recovery-status.sh ]] || fail "recovery status helper missing after clone"
 [[ -f scripts/pmm-doctor.sh ]] || fail "pmm doctor helper missing after clone"
 [[ -f scripts/pmm-task.sh ]] || fail "pmm task lifecycle helper missing after clone"
+[[ -f scripts/pmm-preflight.sh ]] || fail "pmm release preflight helper missing after clone"
 [[ -f scripts/lib/pmm-state.sh ]] || fail "pmm shared state library missing after clone"
 [[ -f scripts/install-local-skill.ps1 ]] || fail "PowerShell install helper missing after clone"
 [[ -f templates/concurrency/work-item.md ]] || fail "work-item template missing after clone"
@@ -96,6 +97,7 @@ if find . -type f \( -name '*.sh' -o -name '*.ps1' -o -name '*.py' -o -name '*.j
   -not -path './scripts/recovery-status.sh' \
   -not -path './scripts/pmm-doctor.sh' \
   -not -path './scripts/pmm-task.sh' \
+  -not -path './scripts/pmm-preflight.sh' \
   -not -path './scripts/lib/pmm-state.sh' \
   -not -path './scripts/install-local-skill.ps1' \
   -not -path './tests/pmm-runtime-contract.sh' \
@@ -109,6 +111,7 @@ if find . -type f -perm -111 \
   -not -path './scripts/recovery-status.sh' \
   -not -path './scripts/pmm-doctor.sh' \
   -not -path './scripts/pmm-task.sh' \
+  -not -path './scripts/pmm-preflight.sh' \
   -not -path './scripts/lib/pmm-state.sh' \
   -not -path './scripts/install-local-skill.ps1' \
   -not -path './tests/pmm-runtime-contract.sh' \
@@ -141,6 +144,7 @@ rsync -a --delete \
   --include='scripts/recovery-status.sh' \
   --include='scripts/pmm-doctor.sh' \
   --include='scripts/pmm-task.sh' \
+  --include='scripts/pmm-preflight.sh' \
   --include='scripts/install-local-skill.ps1' \
   --include='tests/' \
   --include='tests/pmm-runtime-contract.sh' \
@@ -167,6 +171,7 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/scripts/recovery-status.sh" ]] || fail "local sync did not produce recovery helper"
 [[ -f "$LOCAL_SKILL_DIR/scripts/pmm-doctor.sh" ]] || fail "local sync did not produce pmm doctor helper"
 [[ -f "$LOCAL_SKILL_DIR/scripts/pmm-task.sh" ]] || fail "local sync did not produce pmm task lifecycle helper"
+[[ -f "$LOCAL_SKILL_DIR/scripts/pmm-preflight.sh" ]] || fail "local sync did not produce pmm preflight helper"
 [[ -f "$LOCAL_SKILL_DIR/scripts/lib/pmm-state.sh" ]] || fail "local sync did not produce pmm shared state library"
 [[ -f "$LOCAL_SKILL_DIR/scripts/install-local-skill.ps1" ]] || fail "local sync did not produce PowerShell install helper"
 [[ -f "$LOCAL_SKILL_DIR/tests/pmm-runtime-contract.sh" ]] || fail "local sync did not produce runtime contract test"

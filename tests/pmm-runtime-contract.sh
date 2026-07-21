@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purpose: Verify pmm v0.4 task-state, recovery, migration, and evidence-freshness contracts.
+# Purpose: Verify pmm v0.5 task-state, compatibility, recovery, migration, delivery, and evidence-freshness contracts.
 # Read when: Changing task runtime scripts, active-task templates, or backward compatibility.
 # Skip when: The task does not change pmm runtime behavior.
 set -u
@@ -151,9 +151,12 @@ assert_nonzero 'Doctor rejects an overloaded legacy active-task file'
 assert_contains 'multiple task contracts' 'Doctor reports the semantic multiplicity failure'
 
 run_capture bash "$recovery" "$legacy_root"
-assert_status 0 'Recovery inspection remains a read-only successful command'
-assert_contains 'RECOVERY_NEEDED' 'Recovery maps legacy In progress to a recoverable task'
-assert_contains 'Feature A' 'Recovery identifies the recoverable legacy task'
+assert_nonzero 'Recovery refuses to guess across multiple legacy task contracts'
+assert_contains 'AMBIGUOUS_ACTIVE_TASKS count=2' 'Recovery reports the legacy ambiguity instead of selecting a task'
+run_capture bash "$recovery" "$legacy_root" --task-id 'Feature A'
+assert_status 0 'Recovery can inspect one explicitly selected legacy task'
+assert_contains 'RECOVERY_NEEDED' 'Recovery maps the selected legacy In progress task to a recoverable state'
+assert_contains 'Feature A' 'Recovery identifies the explicitly selected legacy task'
 
 legacy_upper_root="$tmp_root/legacy-upper-status"
 make_project "$legacy_upper_root"
@@ -191,6 +194,112 @@ ledger_hash_before="$(file_hash "$ledger_root/docs/00-project-memory/task-ledger
 run_capture bash "$task_cli" migrate --project "$ledger_root" --dry-run
 assert_status 0 'Migration dry-run supports a single unambiguous task-ledger fallback'
 assert_contains 'source=task-ledger.md' 'Ledger migration reports its compatibility source'
+ledger_plan_hash_before="$(file_hash "$ledger_root/docs/00-project-memory/task-ledger.md")"
+run_capture bash "$task_cli" migrate --project "$ledger_root" --plan
+assert_status 0 'Migration plan is a read-only successful command'
+assert_contains 'MIGRATION_PLAN source=task-ledger.md mode=current' 'Migration plan reports its source and mode'
+assert_contains 'MIGRATION_CANDIDATE index=1 label=ledger-feature' 'Migration plan identifies the selected legacy contract'
+assert_contains 'MIGRATION_PLAN_RESULT candidates=1' 'Migration plan reports the candidate count'
+ledger_plan_hash_after="$(file_hash "$ledger_root/docs/00-project-memory/task-ledger.md")"
+assert_equals "$ledger_plan_hash_before" "$ledger_plan_hash_after" 'Migration plan leaves the legacy source unchanged'
+
+id_plus_title_root="$tmp_root/legacy-id-plus-title"
+make_project "$id_plus_title_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Active Task' \
+  '' \
+  '- Task ID: id-plus-title' \
+  '- Task: Human-readable title for one contract' \
+  '- Status: active' \
+  '- Verifier: bash tests/id-plus-title.sh' \
+  >"$id_plus_title_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$task_cli" migrate --plan --project "$id_plus_title_root"
+assert_status 0 'Migration treats Task ID plus Task title as one legacy contract'
+assert_contains 'MIGRATION_PLAN_RESULT candidates=1' 'Legacy ID/title parsing does not duplicate a task'
+
+code_span_root="$tmp_root/legacy-code-span"
+make_project "$code_span_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '- Task ID: `code-span-task`' \
+  '- Status: `active`.' \
+  '- Verifier: bash tests/code-span.sh' \
+  >"$code_span_root/docs/00-project-memory/active-task.md"
+run_capture bash "$recovery" "$code_span_root" --task-id code-span-task
+assert_status 0 'Recovery accepts Markdown code-span legacy fields'
+assert_contains 'Task: code-span-task' 'Recovery strips code spans from legacy task IDs'
+
+run_capture bash "$recovery" "$code_span_root" --task-id missing-task
+assert_nonzero 'Recovery rejects an explicitly requested missing legacy task ID'
+assert_contains 'TASK_ID_NOT_FOUND task_id=missing-task' 'Recovery reports a stable missing-task diagnostic'
+printf '%s\n' '# Task History' '' '- Task ID: `archived-code-span`' \
+  >"$code_span_root/docs/00-project-memory/task-history.md"
+if pmm_history_has_task_id archived-code-span "$code_span_root/docs/00-project-memory/task-history.md"; then
+  pass 'Archived legacy task IDs remain reserved when wrapped in Markdown code spans'
+else
+  fail 'Archived legacy code-span task ID was not recognized'
+fi
+
+placeholder_root="$tmp_root/legacy-placeholder-active"
+make_project "$placeholder_root"
+printf '%s\n' '# Active Task' '' '## Status' '' '- No active primary task.' \
+  >"$placeholder_root/docs/00-project-memory/active-task.md"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Active Task' \
+  '' \
+  '- Task ID: ledger-behind-placeholder' \
+  '- Status: active' \
+  '- Verifier: bash tests/placeholder-ledger.sh' \
+  >"$placeholder_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$recovery" "$placeholder_root"
+assert_status 0 'Recovery falls back past an empty placeholder active-task.md'
+assert_contains 'ledger-behind-placeholder' 'Recovery discovers the real ledger task behind the placeholder'
+run_capture bash "$task_cli" migrate --project "$placeholder_root" --plan
+assert_status 0 'Migration plan selects a real ledger behind an empty placeholder'
+assert_contains 'MIGRATION_PLAN source=task-ledger.md' 'Migration plan reports the fallback ledger source'
+run_capture bash "$doctor" "$placeholder_root"
+assert_status 0 'Doctor accepts the legacy ledger behind a complete Core Pack placeholder'
+assert_contains 'LEGACY_COMPATIBLE source=docs/00-project-memory/task-ledger.md' 'Doctor reports compatibility even when all Core Pack filenames exist'
+
+heading_ledger_root="$tmp_root/legacy-heading-ledger"
+make_project "$heading_ledger_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Task 2026-05-17-001' \
+  '' \
+  'Source request: completed historical work' \
+  '' \
+  'Status: done' \
+  '' \
+  '## Task 2026-05-17-002  ' \
+  '' \
+  'Source request: continue the real current work' \
+  '' \
+  'Status: active' \
+  '' \
+  'Next concrete action: resume from the durable checkpoint' \
+  '' \
+  'Status: done' \
+  >"$heading_ledger_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$recovery" "$heading_ledger_root" --task-id 2026-05-17-002
+assert_status 0 'Recovery supports bare legacy fields and Task ID headings'
+assert_contains 'RECOVERY_PAUSED' 'Conflicting bare-field heading ledger fails closed to paused recovery'
+run_capture bash "$task_cli" migrate --project "$heading_ledger_root" --plan
+assert_status 0 'Migration plan supports bare-field heading ledgers'
+assert_contains 'MIGRATION_PLAN_RESULT candidates=1' 'Heading ledger keeps completed history cold'
+assert_contains 'label=2026-05-17-002' 'Heading ledger selects the real current task ID'
+assert_contains 'status=ambiguous target_execution=paused' 'Conflicting legacy status fields fail closed to paused review'
+run_capture bash "$task_cli" migrate --project "$heading_ledger_root" --apply \
+  --id heading-ledger-task --owner heading-ledger-agent
+assert_nonzero 'Migration refuses to apply a legacy contract with conflicting status fields'
+assert_contains 'MIGRATION_AMBIGUOUS_STATUS' 'Migration reports the conflicting-status diagnostic'
+
 run_capture bash "$task_cli" migrate --project "$ledger_root" --apply --id ledger-feature --owner ledger-agent
 assert_status 0 'Migration can create structured active-task.md from one legacy ledger task'
 assert_file_contains "$ledger_root/docs/00-project-memory/active-task.md" 'pmm_schema: pmm.task/v1' 'Ledger migration creates the structured primary slot'
@@ -299,6 +408,106 @@ run_capture bash "$task_cli" migrate --project "$mixed_ledger_root" --apply \
 assert_status 0 'Migration selects the current task after completed ledger history'
 assert_file_contains "$mixed_ledger_root/docs/00-project-memory/active-task.md" '- Title: live-ledger-task' 'Migration preserves the selected live ledger identity'
 assert_file_contains "$mixed_ledger_root/docs/00-project-memory/active-task.md" '- Objective: migrate the live task only' 'Migration preserves the selected live ledger objective'
+
+mac_shape_ledger_root="$tmp_root/mac-shaped-legacy-ledger"
+make_project "$mac_shape_ledger_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Active Task' \
+  '' \
+  '- Task ID: mac-active-task' \
+  '- Status: audit done; recovery implementation ready' \
+  '- Next Concrete Action: execute the recovery manifest task' \
+  '' \
+  '## Deferred Follow-Up' \
+  '' \
+  '- Task ID: mac-dependency-follow-up' \
+  '- Status: blocked' \
+  '' \
+  '## Completed Tasks' \
+  '' \
+  '- Task ID: mac-completed-task' \
+  '- Status: done on production server' \
+  >"$mac_shape_ledger_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$recovery" "$mac_shape_ledger_root"
+assert_nonzero 'Recovery refuses to guess across active and deferred Mac-shaped legacy tasks'
+assert_contains 'AMBIGUOUS_ACTIVE_TASKS count=2' 'Recovery keeps completed Mac-shaped history cold'
+run_capture bash "$task_cli" migrate --project "$mac_shape_ledger_root" --dry-run
+assert_nonzero 'Migration refuses ambiguous Mac-shaped current legacy tasks'
+assert_contains 'task_contracts=2' 'Migration excludes verbose completed history from Mac-shaped current count'
+
+overloaded_legacy_root="$tmp_root/overloaded-verbose-active-task"
+make_project "$overloaded_legacy_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '## Profile Login Contract' \
+  '' \
+  '- Task: Code and coordinated production API/admin contract complete; real-device evidence remains unverified.' \
+  '- Status: Code and coordinated production API/admin contract complete on 2026-07-20 CST.' \
+  '- Next Concrete Action: verify the real device flow.' \
+  '' \
+  '## Search Discovery Contract' \
+  '' \
+  '- Task: Search API and client contract complete; upload remains pending.' \
+  '- Status: Code complete and production contract active.' \
+  '- Next Concrete Action: verify authenticated personalization.' \
+  >"$overloaded_legacy_root/docs/00-project-memory/active-task.md"
+run_capture bash "$recovery" "$overloaded_legacy_root"
+assert_nonzero 'Recovery rejects an overloaded verbose legacy active-task file'
+assert_contains 'AMBIGUOUS_ACTIVE_TASKS count=2' 'Recovery reports all overloaded verbose legacy candidates'
+
+active_with_history_root="$tmp_root/legacy-active-with-completed-history"
+make_project "$active_with_history_root"
+printf '%s\n' \
+  '# Active Task' \
+  '' \
+  '## Completed Tasks' \
+  '' \
+  '- Task ID: completed-active-history' \
+  '- Status: done' \
+  '- Objective: completed history must remain cold' \
+  '' \
+  '## Current Compatibility Task' \
+  '' \
+  '- Task ID: current-active-contract' \
+  '- Status: active' \
+  '- Objective: preserve the current active contract' \
+  '- Verifier: bash tests/current-active.sh' \
+  >"$active_with_history_root/docs/00-project-memory/active-task.md"
+run_capture bash "$task_cli" migrate --project "$active_with_history_root" --plan
+assert_status 0 'Migration plan accepts active-task.md with completed history and one current contract'
+assert_contains 'MIGRATION_PLAN_RESULT candidates=1' 'Active-task migration plan keeps completed history cold'
+assert_contains 'label=current-active-contract' 'Active-task migration plan selects the current contract'
+assert_not_contains 'label=completed-active-history' 'Active-task migration plan excludes completed history'
+run_capture bash "$task_cli" migrate --project "$active_with_history_root" --apply \
+  --id current-active-contract --owner current-active-agent
+assert_status 0 'Migration applies the current active-task contract without selecting completed history'
+assert_file_contains "$active_with_history_root/docs/00-project-memory/active-task.md" \
+  '- Objective: preserve the current active contract' \
+  'Active-task migration preserves the selected current objective'
+
+legacy_doctor_root="$tmp_root/legacy-compatible-doctor"
+make_project "$legacy_doctor_root"
+printf '%s\n' \
+  '# Task Ledger' \
+  '' \
+  '## Active Task' \
+  '' \
+  '- Task ID: legacy-doctor-task' \
+  '- Status: In progress' \
+  '- Verifier: bash tests/legacy-doctor.sh' \
+  >"$legacy_doctor_root/docs/00-project-memory/task-ledger.md"
+run_capture bash "$doctor" "$legacy_doctor_root"
+assert_status 0 'Doctor accepts a readable legacy-only project in compatibility mode'
+assert_contains 'LEGACY_COMPATIBLE' 'Doctor identifies the legacy compatibility mode'
+run_capture bash "$doctor" --json "$legacy_doctor_root"
+assert_status 0 'Doctor JSON compatibility mode succeeds'
+assert_contains '"code":"LEGACY_COMPATIBLE"' 'Doctor JSON exposes a stable legacy compatibility issue code'
+run_capture bash "$doctor" --require-structured "$legacy_doctor_root"
+assert_nonzero 'Doctor can enforce structured Core Pack readiness explicitly'
+assert_contains 'missing active task' 'Strict Doctor reports the structured upgrade gap'
 
 sectioned_legacy_root="$tmp_root/sectioned-v03-active-task"
 make_project "$sectioned_legacy_root"
@@ -457,6 +666,13 @@ assert_status 0 'Doctor accepts a migrated single-task active-task contract'
 structured_root="$tmp_root/structured"
 make_project "$structured_root"
 
+run_capture bash "$task_cli" --help
+assert_status 0 'Lifecycle CLI exposes global help'
+assert_contains 'Usage:' 'Global help describes the lifecycle commands'
+run_capture bash "$task_cli" --version
+assert_status 0 'Lifecycle CLI exposes its installed version'
+assert_contains "pmm $(tr -d '[:space:]' <"$repo_root/VERSION")" 'Global version output matches VERSION'
+
 run_capture bash "$task_cli" start \
   --project "$structured_root" \
   --id task-001 \
@@ -588,12 +804,18 @@ assert_file_contains "$structured_root/docs/00-project-memory/active-task.md" 'v
 
 run_capture bash "$task_cli" verify --project "$structured_root" --id task-001 --owner fixture-agent --evidence 'fixture re-verification'
 assert_status 0 'Task can be reverified after source changes'
+run_capture bash "$task_cli" delivery --project "$structured_root" --id task-001 --owner fixture-agent \
+  --status ready --evidence 'release package is prepared'
+assert_status 0 'Delivery CLI records a release-ready state'
+assert_contains 'DELIVERY_UPDATED task-001 status=ready' 'Delivery CLI reports the updated task'
+run_capture bash "$task_cli" delivery --project "$structured_root" --id task-001
+assert_status 0 'Delivery CLI can read the current delivery state'
+assert_contains 'DELIVERY_STATUS id=task-001 status=ready' 'Delivery read output reports the canonical state'
 git -C "$structured_root" add docs/00-project-memory/active-task.md
 git -C "$structured_root" commit -qm 'record primary verification checkpoint'
 run_capture bash "$doctor" "$structured_root"
 assert_status 0 'Primary verification stays fresh after an operational-only checkpoint commit'
 
-pmm_set_frontmatter "$structured_root/docs/00-project-memory/active-task.md" delivery_status ready
 run_capture bash "$task_cli" close --project "$structured_root" --id task-001 --owner fixture-agent
 assert_status 0 'Verified task closes and archives explicitly'
 assert_contains 'TASK_CLOSED task-001' 'Close reports the archived task identity'
@@ -1201,16 +1423,19 @@ assert_file_contains "$interleave_root/docs/00-project-memory/active-task.md" 'e
 git -C "$interleave_root" worktree remove --force "$interleave_worktree"
 
 if [[ -f "$repo_root/README.md" ]]; then
-  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-task.sh' 'Maintainer sync includes the v0.4 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-task.sh' 'Maintainer sync includes the v0.5 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-preflight.sh' 'Maintainer sync includes the release preflight helper'
   assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/lib/pmm-state.sh' 'Maintainer sync includes the shared state library'
   assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'tests/pmm-runtime-contract.sh' 'Maintainer sync includes the runtime contract test'
-  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-task.sh' 'PowerShell install includes the v0.4 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-task.sh' 'PowerShell install includes the v0.5 lifecycle CLI'
+  assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-preflight.sh' 'PowerShell install includes the release preflight helper'
   assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-state.sh' 'PowerShell install includes the shared state library'
   assert_file_contains "$repo_root/scripts/install-local-skill.ps1" 'pmm-runtime-contract.sh' 'PowerShell install includes the runtime contract test'
   assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'templates/concurrency/work-item.md' 'Public safety requires the work-item template'
   assert_file_contains "$repo_root/scripts/public-safety-rules.conf" 'tests/pmm-runtime-contract.sh' 'Public safety reviews the runtime contract test'
 else
-  assert_file_exists "$repo_root/scripts/pmm-task.sh" 'Installed package includes the v0.4 lifecycle CLI'
+  assert_file_exists "$repo_root/scripts/pmm-task.sh" 'Installed package includes the v0.5 lifecycle CLI'
+  assert_file_exists "$repo_root/scripts/pmm-preflight.sh" 'Installed package includes the release preflight helper'
   assert_file_exists "$repo_root/scripts/lib/pmm-state.sh" 'Installed package includes the shared state library'
   assert_file_exists "$repo_root/tests/pmm-runtime-contract.sh" 'Installed package includes the runtime contract test'
   assert_file_exists "$repo_root/scripts/install-local-skill.ps1" 'Installed package includes the PowerShell installer'

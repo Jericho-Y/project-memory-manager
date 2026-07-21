@@ -96,30 +96,31 @@ inspect_structured() {
 
 inspect_legacy() {
   local file="$1"
-  local row label raw normalized line
-  while IFS='|' read -r label raw line; do
+  local label heading raw normalized section line candidate_status
+  while IFS=$'\t' read -r label heading raw normalized section line; do
     [[ -n "$label" ]] || label="legacy-line-$line"
-    normalized="$(pmm_normalize_legacy_status "$raw")"
+    [[ "$section" != 'history' ]] || continue
     case "$normalized" in
-      active | paused | blocked) ;;
-      *) continue ;;
+      active | paused | blocked)
+        candidate_status="$normalized"
+        ;;
+      done)
+        # A deferred item that is already done is historical for recovery;
+        # only an active/current done contract needs revalidation.
+        [[ "$section" == 'pending' || "$section" == 'ledger-task' ]] && continue
+        candidate_status='paused'
+        ;;
+      ambiguous | unknown)
+        # A non-history legacy contract with prose status still needs review;
+        # never discard it as if no task existed.
+        candidate_status='paused'
+        ;;
+      *)
+        continue
+        ;;
     esac
-    add_candidate "$label" "$file" "$normalized" legacy unknown
-  done < <(
-    awk '
-      /^## / { heading=substr($0, 4); task_id="" }
-      /^- Task ID:/ {
-        task_id=$0
-        sub(/^- Task ID:[[:space:]]*/, "", task_id)
-      }
-      /^- Status:/ {
-        raw=$0
-        sub(/^- Status:[[:space:]]*/, "", raw)
-        label=(task_id != "" ? task_id : heading)
-        print label "|" raw "|" NR
-      }
-    ' "$file"
-  )
+    add_candidate "$label" "$file" "$candidate_status" legacy unknown
+  done < <(pmm_legacy_contract_records "$file")
 }
 
 if [[ -f "$active_task" ]]; then
@@ -127,7 +128,17 @@ if [[ -f "$active_task" ]]; then
   if pmm_has_schema "$active_task"; then
     inspect_structured "$active_task"
   else
-    inspect_legacy "$active_task"
+    active_legacy_count="$(pmm_legacy_contract_count "$active_task" all 2>/dev/null || printf '0')"
+    ledger_legacy_count=0
+    [[ ! -f "$legacy_ledger" ]] || ledger_legacy_count="$(pmm_legacy_contract_count "$legacy_ledger" current 2>/dev/null || printf '0')"
+    if (( active_legacy_count > 0 && ledger_legacy_count > 0 )); then
+      printf 'AMBIGUOUS_LEGACY_SOURCES sources=active-task.md,task-ledger.md action=choose-one-source\n' >&2
+      exit 2
+    elif (( active_legacy_count > 0 )); then
+      inspect_legacy "$active_task"
+    elif (( ledger_legacy_count > 0 )); then
+      inspect_legacy "$legacy_ledger"
+    fi
   fi
 elif [[ -f "$legacy_ledger" ]]; then
   runtime_state_present=1
@@ -173,15 +184,15 @@ done < <(pmm_claim_work_items "$repo_root")
 
 candidate_count="${#candidate_ids[@]}"
 if (( candidate_count == 0 )); then
+  if [[ -n "$requested_id" ]]; then
+    printf 'TASK_ID_NOT_FOUND task_id=%s\n' "$requested_id" >&2
+    exit 2
+  fi
   if (( runtime_state_present == 0 && shared_claim_present == 0 )); then
     printf 'ERROR: missing docs/00-project-memory/active-task.md, legacy task-ledger.md, work-item state, or shared claims\n' >&2
     exit 1
   fi
-  if [[ -n "$requested_id" ]]; then
-    printf 'NO_ACTIVE_RECOVERABLE_TASK task_id=%s\n' "$requested_id"
-  else
-    printf 'NO_ACTIVE_RECOVERABLE_TASK\n'
-  fi
+  printf 'NO_ACTIVE_RECOVERABLE_TASK\n'
   exit 0
 fi
 

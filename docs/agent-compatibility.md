@@ -109,12 +109,12 @@ Store task state in the project folder. Global memory may keep only the pointer 
 
 ## Legacy Compatibility
 
-`pmm` v0.1-v0.3 projects may use `task-ledger.md` or unstructured `active-task.md`. v0.4 agents should:
+`pmm` v0.1-v0.3 projects may use `task-ledger.md` or unstructured `active-task.md`. v0.5 agents should:
 1. prefer `active-task.md` when present
 2. fall back to `task-ledger.md` when `active-task.md` is absent
 3. keep reading the legacy file without requiring immediate conversion
-4. run `pmm-task.sh migrate --dry-run` before an explicit structured-state conversion
-5. count task fields rather than ledger section headings, keep completed history cold, and refuse migration unless exactly one current contract exists
+4. run `pmm-task.sh migrate --plan`, then `--dry-run`, before an explicit structured-state conversion
+5. count task fields rather than ledger section headings, keep completed history cold, and refuse migration unless exactly one current contract exists with one unambiguous source and status
 6. preserve v0.2/v0.3 multi-section objective, verifier, and next-action fields in the structured hot path
 7. archive completed entries into `task-history.md`; existing marker-less history still reserves its task IDs
 
@@ -139,4 +139,5 @@ Before claiming cross-agent compatibility:
 - Agent-global memory is not used for active task state.
 - Installed docs and templates are included in local sync.
 - Installed helpers include `pmm-task.sh`, `pmm-state.sh`, Doctor, Recovery, and the runtime contract test.
+- Installed helpers include `pmm-preflight.sh`; maintainers can run it with `--installed <SKILLS_ROOT>/pmm` to prove source and package contracts together.
 - `bash scripts/check-public-safety.sh` passes.

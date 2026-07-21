@@ -2,7 +2,7 @@
 
 语言：简体中文 | [English](README.en.md)
 
-当前版本：`v0.4.1`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
+当前版本：`v0.5.0`，详见 [CHANGELOG.md](CHANGELOG.md)；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 协议： [MIT License](LICENSE)。
 
 用途：本仓库的公开说明、安装指南、运行模型、兼容策略和安全模型。
@@ -11,7 +11,7 @@
 
 `pmm` 是一个面向长期软件项目的低上下文、跨 Agent 项目运行时（Agent Skill）。它的目标不是生成更多项目文档，而是让 Agent 在最少必要上下文里持续执行、验证、批判、修复和恢复任务。
 
-`v0.4.0` 的核心输出是：
+`v0.5.0` 的核心输出是：
 
 - `AGENTS.md`：项目事实和协作规则的唯一入口。
 - Core Pack：`current-state.md`、`active-task.md`、`verifier-map.md`、`change-log.md` 等最小热路径文件。
@@ -22,6 +22,17 @@
 
 适用场景：商业级 app、网站、小程序、SaaS、桌面工具、AI 产品、较大的功能链路、长期维护项目，以及需要跨 Agent 接手、断线恢复或严格验证的任务。
 不适用场景：一次性命令、极小改动、临时 demo、无需项目记忆或验证闭环的短任务。
+
+## v0.5.0 兼容升级
+
+`v0.5.0` 重点保证旧项目能继续执行并安全升级：
+
+- `migrate --plan` 先只读列出候选，`--dry-run` 再验证，只有一个明确当前任务且来源/状态无冲突时才允许 `--apply`。
+- 兼容带/不带 bullet 的旧字段、`## Task <id>` ledger、Markdown code span、verbose prose 状态和空 `active-task.md` 占位。
+- Completed history 保持冷路径；未知或冲突状态进入 `paused` 复核，重复冲突 `Status` 不会被自动激活或迁移。
+- Doctor 默认报告 legacy 兼容与升级建议，`--require-structured` 可用于严格门禁；JSON 输出包含稳定 issue code。
+- `pmm-task.sh` 增加全局帮助、版本和 delivery 命令；`pmm-preflight.sh` 同时验证源码与已安装包。
+- 升级不会删除旧 `task-ledger.md`；apply 前创建项目本地备份。
 
 ## v0.4.0 关键变化
 
@@ -184,6 +195,7 @@ Record: 最终状态、文档变更、是否沉淀记忆
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
   scripts/pmm-task.sh
+  scripts/pmm-preflight.sh
   scripts/lib/pmm-state.sh
   tests/pmm-runtime-contract.sh
 ```

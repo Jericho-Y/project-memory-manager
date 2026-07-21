@@ -91,16 +91,140 @@ pmm_delivery_status_valid() {
 
 pmm_normalize_legacy_status() {
   local value
-  value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  value="$(printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:].]*$//' -e 's/^`//' -e 's/`$//' | tr '[:upper:]' '[:lower:]')"
+  value="$(printf '%s' "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:].]*$//' -e 's/^`//' -e 's/`$//')"
   value="${value%.}"
   case "$value" in
+    ambiguous | conflict) printf 'ambiguous\n' ;;
     active | 'in progress' | in-progress | working | failed-retryable) printf 'active\n' ;;
     paused | on-hold | 'on hold') printf 'paused\n' ;;
     blocked | failed-blocked) printf 'blocked\n' ;;
     done | complete | completed | 'code-complete locally' | 'complete locally') printf 'done\n' ;;
     idle | none) printf 'idle\n' ;;
+    *blocked* | *'blocked by'* | *'waiting on'* | *'waiting for'*) printf 'blocked\n' ;;
+    *paused* | *'on hold'* | *deferred*) printf 'paused\n' ;;
+    *'code-complete'* | *'code complete'* | *'complete locally'* | *'done locally'* | \
+      *'done on '* | *'complete on '* | *'completed on '* | *released*) printf 'done\n' ;;
+    *'in progress'* | *'under implementation'* | *'in development'* | *'currently working'*) printf 'active\n' ;;
     *) printf 'unknown\n' ;;
   esac
+}
+
+pmm_legacy_contract_records() {
+  local file="$1"
+  awk '
+    function clean(value) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      if (value ~ /^`.*`$/) value=substr(value, 2, length(value) - 2)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      return value
+    }
+    function trim(value) {
+      return clean(value)
+    }
+    function normalize(value, normalized) {
+      normalized=tolower(trim(value))
+      sub(/[.]+$/, "", normalized)
+      if (normalized ~ /^`.*`$/) normalized=substr(normalized, 2, length(normalized) - 2)
+      sub(/[.]+$/, "", normalized)
+      if (normalized ~ /^(done|completed|complete|closed|code-complete locally|complete locally)$/) return "done"
+      if (normalized ~ /blocked|blocked by|waiting on|waiting for/) return "blocked"
+      if (normalized ~ /paused|on hold|deferred/) return "paused"
+      if (normalized ~ /code[- ]complete|complete locally|done locally|done on |complete on |completed on |released/) return "done"
+      if (normalized ~ /in progress|under implementation|in development|currently working/) return "active"
+      if (normalized ~ /^(active|in-progress|working|failed-retryable)$/) return "active"
+      if (normalized ~ /^(blocked|failed-blocked)$/) return "blocked"
+      if (normalized ~ /^(paused|on-hold)$/) return "paused"
+      if (normalized ~ /^(idle|none)$/) return "idle"
+      return "unknown"
+    }
+    function is_contract_section(value) {
+      return value ~ /^(Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/
+    }
+    function section_kind(value) {
+      if (value == "Active Task") return "active"
+      if (value == "Completed Tasks") return "history"
+      if (value == "Blocked Tasks" || value == "Deferred Follow-Up") return "pending"
+      if (value ~ /^Task[[:space:]]+/) return "ledger-task"
+      return "current"
+    }
+    function reset_contract() {
+      has_task=0
+      has_id=0
+      has_task_field=0
+      task_id=""
+      task=""
+      status=""
+      status_seen=0
+      status_normalized=""
+      status_conflict=0
+    }
+    function flush_contract(value, label, kind) {
+      if (!has_task) return
+      label=(task_id != "" ? task_id : (heading == "Active Task" && task != "" ? task : (heading != "" ? heading : task)))
+      kind=section_kind(heading)
+      normalized_status=(status_conflict ? "ambiguous" : normalize(status))
+      print label "\t" (heading != "" ? heading : "-") "\t" (status != "" ? status : "-") "\t" normalized_status "\t" kind "\t" start_line
+      reset_contract()
+    }
+    /^## / {
+      next_heading=substr($0, 4)
+      next_heading=clean(next_heading)
+      if (!is_contract_section(next_heading)) {
+        flush_contract()
+        heading=next_heading
+        if (next_heading ~ /^Task[[:space:]]+/) {
+          task_id=substr(next_heading, 6)
+          task_id=clean(task_id)
+          has_task=1
+          has_id=1
+          start_line=NR
+        }
+      } else if (next_heading == "Active Task") {
+        flush_contract()
+        heading=next_heading
+        has_task=1
+        start_line=NR
+      }
+      next
+    }
+    /^[[:space:]]*-?[[:space:]]*Task ID:/ {
+      if (has_task && (has_id || has_task_field)) flush_contract()
+      task_id=$0
+      sub(/^[[:space:]]*-?[[:space:]]*Task ID:[[:space:]]*/, "", task_id)
+      task_id=clean(task_id)
+      if (task_id != "") { has_task=1; start_line=NR }
+      has_id=1
+      next
+    }
+    /^[[:space:]]*-?[[:space:]]*Task:/ {
+      value=$0
+      sub(/^[[:space:]]*-?[[:space:]]*Task:[[:space:]]*/, "", value)
+      value=clean(value)
+      if (value == "") next
+      if (has_task && has_task_field) flush_contract()
+      task=value
+      has_task=1
+      has_task_field=1
+      start_line=NR
+      next
+    }
+    /^[[:space:]]*-?[[:space:]]*Status:/ {
+      if (!has_task) { has_task=1; start_line=NR }
+      status=$0
+      sub(/^[[:space:]]*-?[[:space:]]*Status:[[:space:]]*/, "", status)
+      status=clean(status)
+      current_status_normalized=normalize(status)
+      if (status_seen == 0) {
+        status_normalized=current_status_normalized
+      } else if (current_status_normalized != status_normalized) {
+        status_conflict=1
+      }
+      status_seen++
+      next
+    }
+    END { flush_contract() }
+  ' "$file"
 }
 
 pmm_set_frontmatter() {
@@ -284,60 +408,17 @@ pmm_ready_evidence_is_fresh_on_branch() {
 pmm_legacy_contract_count() {
   local file="$1"
   local mode="${2:-all}"
-  awk -v mode="$mode" '
-    function normalize(value, normalized) {
-      normalized=tolower(value)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", normalized)
-      gsub(/[.]+$/, "", normalized)
-      if (normalized ~ /^(done|completed|complete|closed|code-complete locally|complete locally)$/) return "done"
-      return normalized
-    }
-    function is_contract_section(value) {
-      return value ~ /^(Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/
-    }
-    function reset_contract() {
-      has_task=0
-      has_id=0
-      has_task_field=0
-      status=""
-    }
-    function flush_contract() {
-      if (has_task && (mode != "current" || normalize(status) != "done" || heading == "Active Task")) count++
-      reset_contract()
-    }
-    /^## / {
-      next_heading=substr($0, 4)
-      if (!is_contract_section(next_heading)) {
-        flush_contract()
-        heading=next_heading
-      }
-      next
-    }
-    /^- Task ID:/ {
-      flush_contract()
-      value=$0
-      sub(/^- Task ID:[[:space:]]*/, "", value)
-      if (value != "") {
-        has_task=1
-        has_id=1
-      }
-      next
-    }
-    /^- Task:/ {
-      value=$0
-      sub(/^- Task:[[:space:]]*/, "", value)
-      if (value == "") next
-      if (has_task && (!has_id || has_task_field)) flush_contract()
-      has_task=1
-      has_task_field=1
-      next
-    }
-    /^- Status:/ && has_task {
-      status=$0
-      sub(/^- Status:[[:space:]]*/, "", status)
-    }
-    END { flush_contract(); print count + 0 }
-  ' "$file"
+  local id heading raw normalized section line count=0
+  while IFS=$'\t' read -r id heading raw normalized section line; do
+    [[ -n "$id" ]] || continue
+    [[ "$section" != 'history' ]] || continue
+    if [[ "$mode" != 'current' || ("$normalized" == 'ambiguous' && "$section" != 'history') || "$section" == 'active' || \
+      ("$section" == 'ledger-task' && "$raw" != '-' && "$normalized" != 'done') || \
+      ("$section" != 'history' && "$section" != 'ledger-task' && "$normalized" != 'done') ]]; then
+      count=$((count + 1))
+    fi
+  done < <(pmm_legacy_contract_records "$file")
+  printf '%s\n' "$count"
 }
 
 pmm_legacy_contract_field() {
@@ -345,11 +426,23 @@ pmm_legacy_contract_field() {
   local mode="${2:-all}"
   local wanted="$3"
   awk -v mode="$mode" -v wanted="$wanted" '
+    function clean(value) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      if (value ~ /^`.*`$/) value=substr(value, 2, length(value) - 2)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      return value
+    }
     function normalize(value, normalized) {
-      normalized=tolower(value)
+      normalized=tolower(clean(value))
+      gsub(/[.]+$/, "", normalized)
+      if (normalized ~ /^`.*`$/) normalized=substr(normalized, 2, length(normalized) - 2)
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", normalized)
       gsub(/[.]+$/, "", normalized)
       if (normalized ~ /^(done|completed|complete|closed|code-complete locally|complete locally)$/) return "done"
+      if (normalized ~ /blocked|blocked by|waiting on|waiting for/) return "blocked"
+      if (normalized ~ /paused|on hold|deferred/) return "paused"
+      if (normalized ~ /code[- ]complete|complete locally|done locally|done on |complete on |completed on |released/) return "done"
+      if (normalized ~ /in progress|under implementation|in development|currently working/) return "active"
       return normalized
     }
     function is_contract_section(value) {
@@ -366,14 +459,17 @@ pmm_legacy_contract_field() {
       source_request=""
       verifier=""
       next_action=""
+      status_seen=0
+      status_normalized=""
+      status_conflict=0
     }
     function title_value() {
       if (task_id != "") return task_id
-      if (heading != "" && heading !~ /^(Active Task|Completed Tasks|Blocked Tasks|Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/) return heading
+      if (heading != "" && heading !~ /^(Active Task|Completed Tasks|Blocked Tasks|Deferred Follow-Up|Status|Task|Harness|Verifier|Critic|Repair|Record|Agent Mode|Required Evidence|Next Action)$/) return heading
       return task
     }
     function selected() {
-      return has_task && (mode != "current" || normalize(status) != "done" || heading == "Active Task")
+      return has_task && heading != "Completed Tasks" && (status_conflict || mode != "current" || normalize(status) != "done" || heading == "Active Task")
     }
     function flush_contract(value) {
       if (found || !selected()) {
@@ -382,7 +478,7 @@ pmm_legacy_contract_field() {
       }
       if (wanted == "title") value=title_value()
       else if (wanted == "objective") value=(objective != "" ? objective : (source_request != "" ? source_request : (task != "" ? task : title_value())))
-      else if (wanted == "status") value=status
+      else if (wanted == "status") value=(status_conflict ? "ambiguous" : status)
       else if (wanted == "verifier") value=verifier
       else if (wanted == "next") value=next_action
       print value
@@ -391,37 +487,49 @@ pmm_legacy_contract_field() {
     }
     /^## / {
       next_heading=substr($0, 4)
+      next_heading=clean(next_heading)
       if (!is_contract_section(next_heading)) {
         flush_contract()
         heading=next_heading
+        if (next_heading ~ /^Task[[:space:]]+/) {
+          task_id=clean(substr(next_heading, 6))
+          has_task=1
+          has_id=1
+        }
+      } else if (next_heading == "Active Task") {
+        flush_contract()
+        heading=next_heading
+        has_task=1
       }
       next
     }
-    /^- Task ID:/ {
-      flush_contract()
+    /^[[:space:]]*-?[[:space:]]*Task ID:/ {
+      if (has_task && (has_id || has_task_field)) flush_contract()
       task_id=$0
-      sub(/^- Task ID:[[:space:]]*/, "", task_id)
+      sub(/^[[:space:]]*-?[[:space:]]*Task ID:[[:space:]]*/, "", task_id)
+      task_id=clean(task_id)
       if (task_id != "") {
         has_task=1
         has_id=1
       }
       next
     }
-    /^- Task:/ {
+    /^[[:space:]]*-?[[:space:]]*Task:/ {
       value=$0
-      sub(/^- Task:[[:space:]]*/, "", value)
+      sub(/^[[:space:]]*-?[[:space:]]*Task:[[:space:]]*/, "", value)
+      value=clean(value)
       if (value == "") next
-      if (has_task && (!has_id || has_task_field)) flush_contract()
+      if (has_task && has_task_field) flush_contract()
       task=value
       has_task=1
       has_task_field=1
       next
     }
-    /^- Status:/ && has_task { status=$0; sub(/^- Status:[[:space:]]*/, "", status); next }
-    /^- Objective:/ && has_task { objective=$0; sub(/^- Objective:[[:space:]]*/, "", objective); next }
-    /^- Source Request:/ && has_task { source_request=$0; sub(/^- Source Request:[[:space:]]*/, "", source_request); next }
-    /^- (Verifier|Required Checks):/ && has_task { verifier=$0; sub(/^- (Verifier|Required Checks):[[:space:]]*/, "", verifier); next }
-    /^- (Next Concrete Action|Next Action):/ && has_task { next_action=$0; sub(/^- (Next Concrete Action|Next Action):[[:space:]]*/, "", next_action); next }
+    /^[[:space:]]*-?[[:space:]]*Status:/ { if (!has_task) has_task=1; status=$0; sub(/^[[:space:]]*-?[[:space:]]*Status:[[:space:]]*/, "", status); status=clean(status); current_status_normalized=normalize(status); if (status_seen == 0) status_normalized=current_status_normalized; else if (current_status_normalized != status_normalized) status_conflict=1; status_seen++; next }
+    /^[[:space:]]*-?[[:space:]]*Objective:/ && has_task { objective=$0; sub(/^[[:space:]]*-?[[:space:]]*Objective:[[:space:]]*/, "", objective); objective=clean(objective); next }
+    /^[[:space:]]*-?[[:space:]]*[Ss]ource [Rr]equest:/ && has_task { source_request=$0; sub(/^[[:space:]]*-?[[:space:]]*[Ss]ource [Rr]equest:[[:space:]]*/, "", source_request); source_request=clean(source_request); next }
+    /^[[:space:]]*-?[[:space:]]*(Verifier|Required Checks):/ && has_task { verifier=$0; sub(/^[[:space:]]*-?[[:space:]]*(Verifier|Required Checks):[[:space:]]*/, "", verifier); verifier=clean(verifier); next }
+    /^[[:space:]]*-?[[:space:]]*(Next Concrete Action|Next Action):/ && has_task { next_action=$0; sub(/^[[:space:]]*-?[[:space:]]*(Next Concrete Action|Next Action):[[:space:]]*/, "", next_action); next }
     END { if (!found) flush_contract() }
   ' "$file"
 }
@@ -468,6 +576,7 @@ pmm_history_has_task_id() {
       value=$0
       sub(/^- Task ID:[[:space:]]*/, "", value)
       sub(/[[:space:]]+$/, "", value)
+      if (value ~ /^`.*`$/) value=substr(value, 2, length(value) - 2)
       if (value == id) found=1
     }
     ($1 == "##" || $1 == "###") &&

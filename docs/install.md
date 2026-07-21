@@ -32,6 +32,7 @@ Minimum useful install:
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
   scripts/pmm-task.sh
+  scripts/pmm-preflight.sh
   scripts/lib/pmm-state.sh
   tests/pmm-runtime-contract.sh
 ```
@@ -46,7 +47,7 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 
 Pass the skills root, not the `pmm` directory itself; the helper creates `<SKILLS_ROOT>/pmm`. If `<SKILLS_ROOT>/pmm` already exists, the helper stops unless `-Force` is passed. `-Force` replaces managed `pmm` docs, templates, metadata, helper files, and runtime tests; use it only when you intentionally want to refresh that install.
 
-The PowerShell helper installs the complete package, but the v0.4 runtime helpers are Bash scripts. Running `pmm-task.sh`, `pmm-doctor.sh`, `recovery-status.sh`, or the contract test on Windows requires a Bash environment with Git and `rg`; source hashing also requires `shasum` or `sha256sum`. Projects may still follow the Markdown contract manually when those tools are unavailable.
+The PowerShell helper installs the complete package, but the v0.5 runtime helpers are Bash scripts. Running `pmm-task.sh`, `pmm-doctor.sh`, `recovery-status.sh`, `pmm-preflight.sh`, or the contract test on Windows requires a Bash environment with Git and `rg`; source hashing also requires `shasum` or `sha256sum`. Projects may still follow the Markdown contract manually when those tools are unavailable.
 
 ## Maintainer Sync
 
@@ -77,12 +78,19 @@ bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh --json <PROJECT_ROOT>
 
 The checker reports missing Core Pack files, invalid or duplicate task state, same-branch concurrency, stale verifier evidence, overgrown hot-path files, and adapters that appear to copy task state. It is a validation aid, not a database, MCP service, indexer, or mandatory runtime dependency.
 
-Use the lifecycle helper for structured v0.4 tasks:
+Use the lifecycle helper for structured v0.5 tasks:
 
 ```bash
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh status --project <PROJECT_ROOT>
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh integrate --project <PROJECT_ROOT> --id <WORK_ITEM_ID> --owner <PRIMARY_OWNER>
+bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project <PROJECT_ROOT> --plan
 bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh migrate --project <PROJECT_ROOT> --dry-run
 ```
 
-Legacy projects remain readable without conversion. Run migration only when a project wants structured lifecycle state; automatic apply is limited to one unambiguous task and writes a project-local backup. Split overloaded multi-task files manually because the helper deliberately refuses to guess.
+Legacy projects remain readable without conversion. Run `migrate --plan` to inspect candidates without changing files, then the dry-run before explicit apply. Automatic apply is limited to one unambiguous task/source/status and writes a project-local backup. Split overloaded multi-task files manually because the helper deliberately refuses to guess.
+
+Maintainers can run the release gate after syncing or building an install:
+
+```bash
+bash scripts/pmm-preflight.sh --installed "$HOME/.codex/skills/pmm"
+```

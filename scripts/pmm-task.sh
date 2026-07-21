@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purpose: Manage pmm v0.4 structured task lifecycle, local claims, verification evidence, and migration.
+# Purpose: Manage pmm v0.5 structured task lifecycle, local claims, verification evidence, delivery, and migration.
 # Read when: Starting, checkpointing, verifying, resuming, closing, or migrating project tasks.
 # Skip when: Performing a read-only lookup with no durable task state.
 set -euo pipefail
@@ -11,6 +11,7 @@ source "$script_dir/lib/pmm-state.sh"
 usage() {
   cat <<'EOF'
 Usage:
+  pmm-task.sh --help | --version
   pmm-task.sh start --project PATH --id ID --title TEXT --owner ID --scope TEXT --verifier TEXT
                     [--parent ID --work-item]
   pmm-task.sh status --project PATH [--id ID]
@@ -19,6 +20,9 @@ Usage:
   pmm-task.sh resume --project PATH --id ID --owner ID [--takeover]
   pmm-task.sh close --project PATH --id ID --owner ID
   pmm-task.sh integrate --project PATH --id WORK_ITEM_ID --owner PRIMARY_OWNER
+  pmm-task.sh delivery --project PATH --id ID --owner ID --status STATUS --evidence TEXT
+  pmm-task.sh delivery --project PATH --id ID
+  pmm-task.sh migrate --project PATH --plan
   pmm-task.sh migrate --project PATH --dry-run
   pmm-task.sh migrate --project PATH --apply --id ID --owner ID
 EOF
@@ -30,6 +34,14 @@ die() {
 }
 
 command="${1:-help}"
+if [[ "$command" == '--help' || "$command" == '-h' ]]; then
+  usage
+  exit 0
+fi
+if [[ "$command" == '--version' || "$command" == '-V' ]]; then
+  printf 'pmm %s\n' "$(tr -d '[:space:]' <"$script_dir/../VERSION")"
+  exit 0
+fi
 [[ $# -gt 0 ]] && shift
 
 project=""
@@ -44,7 +56,9 @@ evidence=""
 work_item=0
 dry_run=0
 apply=0
+plan=0
 takeover=0
+delivery_status=""
 
 while (( $# > 0 )); do
   case "$1" in
@@ -57,8 +71,10 @@ while (( $# > 0 )); do
     --parent) parent="${2:-}"; shift 2 ;;
     --next) next_action="${2:-}"; shift 2 ;;
     --evidence) evidence="${2:-}"; shift 2 ;;
+    --status) delivery_status="${2:-}"; shift 2 ;;
     --work-item) work_item=1; shift ;;
     --dry-run) dry_run=1; shift ;;
+    --plan) plan=1; shift ;;
     --apply) apply=1; shift ;;
     --takeover) takeover=1; shift ;;
     -h | --help) usage; exit 0 ;;
@@ -341,6 +357,8 @@ write_task_file() {
     printf -- '- Next Concrete Action: execute the first unverified acceptance step.\n\n'
     printf '## Record\n\n'
     printf -- '- Verification Evidence: pending\n'
+    printf -- '- Delivery Status: not-requested\n'
+    printf -- '- Delivery Evidence: pending\n'
     printf -- '- Docs Updated: pending\n'
     printf -- '- Remaining Risk: pending verification.\n'
     printf -- '- Memory Promotion Decision: pending\n'
@@ -502,12 +520,48 @@ write_migrated_task() {
     printf '## Verifier\n\n- Required Checks: %s\n- Evidence Needed: fresh evidence bound to HEAD and source hash.\n\n' "$verifier_value"
     printf '## Critic\n\n- Pass/Fail: pending\n- Missing Evidence: migrated legacy evidence must be revalidated.\n\n'
     printf '## Repair\n\n- Last Failure: none recorded during migration.\n- Next Concrete Action: %s\n\n' "$next_value"
-    printf '## Record\n\n- Verification Evidence: pending after migration.\n- Remaining Risk: legacy fields require owner review.\n\n'
+    printf '## Record\n\n- Verification Evidence: pending after migration.\n- Delivery Status: not-requested\n- Delivery Evidence: pending\n- Remaining Risk: legacy fields require owner review.\n\n'
     printf '## Legacy Source\n\n'
     sed -n '1,$p' "$source_file"
   } >"$tmp" || return 1
   mv "$tmp" "$active_task" || return 1
   pending_temp_file=""
+}
+
+require_delivery_update() {
+  pmm_validate_scalar delivery_status "$delivery_status" || exit 1
+  case "$delivery_status" in
+    waiting-confirmation | ready | deployed | released) ;;
+    not-requested) die 'DELIVERY_STATUS_NOT_ACTIONABLE: use waiting-confirmation, ready, deployed, or released' ;;
+    *) die "INVALID_DELIVERY_STATUS: $delivery_status" ;;
+  esac
+  pmm_validate_scalar evidence "$evidence" || exit 1
+}
+
+print_migration_plan() {
+  local source_file="$1"
+  local source_label="$2"
+  local mode="$3"
+  local index=0 id heading raw normalized section line target
+  printf 'MIGRATION_PLAN source=%s mode=%s\n' "$source_label" "$mode"
+  while IFS=$'\t' read -r id heading raw normalized section line; do
+    [[ -n "$id" ]] || continue
+    [[ "$section" != 'history' ]] || continue
+    if [[ "$mode" == 'current' ]]; then
+      case "$section" in
+        ledger-task) [[ "$normalized" != 'done' && "$raw" != '-' ]] || continue ;;
+        pending) [[ "$normalized" != 'done' ]] || continue ;;
+        current) [[ "$normalized" != 'done' ]] || continue ;;
+      esac
+    fi
+    index=$((index + 1))
+    target="$normalized"
+    [[ "$target" != 'done' ]] || target='paused'
+    [[ "$target" != 'unknown' && "$target" != 'ambiguous' ]] || target='paused'
+    printf 'MIGRATION_CANDIDATE index=%s label=%s section=%s status=%s target_execution=%s line=%s\n' \
+      "$index" "$id" "$section" "$normalized" "$target" "$line"
+  done < <(pmm_legacy_contract_records "$source_file")
+  printf 'MIGRATION_PLAN_RESULT candidates=%s\n' "$index"
 }
 
 case "$command" in
@@ -775,12 +829,57 @@ case "$command" in
     printf 'TASK_INTEGRATED %s parent=%s\n' "$id" "$primary_id"
     ;;
 
+  delivery)
+    require_id
+    if [[ -z "$delivery_status" && -z "$evidence" ]]; then
+      file="$(pmm_task_file "$project" "$id" 2>/dev/null || true)"
+      [[ -n "$file" ]] || die "TASK_NOT_FOUND: $id"
+      printf 'DELIVERY_STATUS id=%s status=%s execution=%s verification=%s\n' \
+        "$id" \
+        "$(pmm_frontmatter_value "$file" delivery_status)" \
+        "$(pmm_frontmatter_value "$file" execution_status)" \
+        "$(pmm_frontmatter_value "$file" verification_status)"
+      exit 0
+    fi
+    require_owner
+    require_delivery_update
+    acquire_state_lock
+    resolve_task_file
+    require_task_control "$file"
+    begin_task_update "$file"
+    revision="$(task_revision "$staged_task_file")"
+    pmm_set_frontmatter "$staged_task_file" delivery_status "$delivery_status"
+    pmm_set_frontmatter "$staged_task_file" updated_at "$(pmm_now)"
+    pmm_set_frontmatter "$staged_task_file" revision "$((revision + 1))"
+    pmm_replace_bullet "$staged_task_file" 'Delivery Status' "$delivery_status"
+    pmm_replace_bullet "$staged_task_file" 'Delivery Evidence' "$evidence"
+    commit_task_update "$file"
+    printf 'DELIVERY_UPDATED %s status=%s\n' "$id" "$delivery_status"
+    ;;
+
   migrate)
     acquire_state_lock
+    (( apply == 0 )) || (( plan == 0 )) || die 'ERROR: migrate --plan cannot be combined with --apply'
     legacy_ledger="$memory_dir/task-ledger.md"
-    if [[ -f "$active_task" ]]; then
+    if [[ -f "$active_task" ]] && pmm_has_schema "$active_task"; then
       migration_source="$active_task"
       migration_source_label='active-task.md'
+    elif [[ -f "$active_task" ]]; then
+      active_legacy_count="$(pmm_legacy_contract_count "$active_task" all 2>/dev/null || printf '0')"
+      ledger_legacy_count=0
+      [[ ! -f "$legacy_ledger" ]] || ledger_legacy_count="$(pmm_legacy_contract_count "$legacy_ledger" current 2>/dev/null || printf '0')"
+      if (( active_legacy_count > 0 && ledger_legacy_count > 0 )); then
+        die 'MIGRATION_AMBIGUOUS_SOURCES: both active-task.md and task-ledger.md contain current legacy contracts'
+      elif (( active_legacy_count > 0 )); then
+        migration_source="$active_task"
+        migration_source_label='active-task.md'
+      elif (( ledger_legacy_count > 0 )); then
+        migration_source="$legacy_ledger"
+        migration_source_label='task-ledger.md'
+      else
+        migration_source="$active_task"
+        migration_source_label='active-task.md'
+      fi
     elif [[ -f "$legacy_ledger" ]]; then
       migration_source="$legacy_ledger"
       migration_source_label='task-ledger.md'
@@ -794,6 +893,10 @@ case "$command" in
     migration_mode='all'
     [[ "$migration_source" != "$legacy_ledger" ]] || migration_mode='current'
     count="$(pmm_legacy_contract_count "$migration_source" "$migration_mode")"
+    if (( plan == 1 )); then
+      print_migration_plan "$migration_source" "$migration_source_label" "$migration_mode"
+      exit 0
+    fi
     if (( count == 0 )); then
       printf 'MIGRATION_NO_CURRENT_TASK source=%s task_contracts=0 action=leave-legacy-history\n' "$migration_source_label" >&2
       exit 2
@@ -803,11 +906,13 @@ case "$command" in
       exit 2
     fi
     legacy_status_raw="$(pmm_legacy_contract_field "$migration_source" "$migration_mode" status)"
+    [[ "$legacy_status_raw" != 'ambiguous' ]] || die 'MIGRATION_AMBIGUOUS_STATUS: legacy contract contains conflicting Status fields; review it manually before apply'
     legacy_status="$(pmm_normalize_legacy_status "$legacy_status_raw")"
-    [[ "$legacy_status" != 'unknown' ]] || legacy_status='active'
+    [[ "$legacy_status" != 'unknown' ]] || legacy_status='paused'
     migration_execution="$legacy_status"
     [[ "$migration_execution" != 'done' ]] || migration_execution='paused'
     if (( dry_run == 1 )); then
+      print_migration_plan "$migration_source" "$migration_source_label" "$migration_mode"
       printf 'MIGRATION_READY source=%s task_contracts=%s legacy_status=%s target_execution=%s\n' \
         "$migration_source_label" "$count" "$legacy_status" "$migration_execution"
       exit 0

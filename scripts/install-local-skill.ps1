@@ -71,7 +71,7 @@ foreach ($dir in @("docs", "templates")) {
   Copy-Item -Recurse -Force -Path $sourceDir -Destination $destDir
 }
 
-foreach ($script in @("recovery-status.sh", "pmm-doctor.sh", "pmm-task.sh")) {
+foreach ($script in @("recovery-status.sh", "pmm-doctor.sh", "pmm-task.sh", "pmm-preflight.sh")) {
   $sourceScript = Join-Path (Join-Path $source "scripts") $script
   $destScript = Join-Path (Join-Path $destination "scripts") $script
   Copy-Item -Force -Path $sourceScript -Destination $destScript

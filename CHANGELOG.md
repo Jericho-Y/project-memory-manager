@@ -6,6 +6,27 @@
 
 本项目遵循语义化版本。中文是主更新日志；英文镜像见 [CHANGELOG.en.md](CHANGELOG.en.md)。
 
+## v0.5.0 - 2026-07-21
+
+### 新增
+
+- 新增 `migrate --plan` 只读逐合同迁移计划；`--dry-run` 继续作为严格校验门禁，`--apply` 仍只接受一个明确的当前任务。
+- 新增 `pmm-task.sh --help`、`--version` 与 `delivery` 状态读写命令，交付证据不再依赖手工修改 frontmatter。
+- 新增 `scripts/pmm-preflight.sh`，一次运行源码合同、安装包合同、shell syntax、Doctor、public safety 和版本一致性检查。
+- Doctor JSON 消息新增稳定 `code` 字段，并支持默认 legacy 兼容模式与 `--require-structured` 严格模式。
+
+### 修复
+
+- 修复 `Task ID` 加 `Task` 标题被重复计数、Markdown code span/尾空格状态无法解析、空 `active-task.md` 遮蔽真实 `task-ledger.md`、以及无 bullet 字段和 `## Task <id>` ledger 无法恢复的问题。
+- 修复 Completed history、Deferred done、冲突重复 `Status` 和 verbose prose 状态在 Recovery、Doctor 与 Migration 之间判定不一致的问题；未知或冲突状态统一进入 `paused` 人工复核，冲突状态拒绝自动 apply。
+- 修复指定不存在的 Recovery `--task-id` 返回成功、旧 history code-span task ID 可被复用、以及 legacy TSV 空字段错位的问题。
+
+### 兼容与升级
+
+- 旧项目仍可原样读取，不强制改写；迁移前先运行 `migrate --plan` 和 `--dry-run`，原 `task-ledger.md` 保留不删除，apply 前写入项目本地备份。
+- 当 legacy `active-task.md` 只是空占位时自动使用 ledger；两个来源都有当前合同时 fail-closed，不猜测来源。
+- 本地同步和 PowerShell 安装均包含新 preflight；发布前同时验证源码 checkout 与最小安装包布局。
+
 ## v0.4.1 - 2026-07-18
 
 ### 修复

@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) | English
 
-Current version: `v0.4.1`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
+Current version: `v0.5.0`. See [CHANGELOG.en.md](CHANGELOG.en.md). The Chinese primary changelog is [CHANGELOG.md](CHANGELOG.md).
 License: [MIT License](LICENSE).
 
 Purpose: Public overview, installation guide, runtime model, compatibility strategy, and safety model for this skill repository.
@@ -11,7 +11,7 @@ Skip when: You already know the repository and only need a specific implementati
 
 `pmm` is a low-context, cross-agent project runtime packaged as an Agent Skill for long-lived software projects. Its job is not to generate more project documentation; it gives agents a compact runtime contract for executing, verifying, critiquing, repairing, and recovering work with the minimum useful context.
 
-The core v0.4.0 output is:
+The core v0.5.0 output is:
 
 - `AGENTS.md`: the single project entrypoint for durable facts and collaboration rules.
 - Core Pack: compact hot-path files such as `current-state.md`, `active-task.md`, `verifier-map.md`, and `change-log.md`.
@@ -22,6 +22,17 @@ The core v0.4.0 output is:
 
 Use it for commercial apps, websites, mini programs, SaaS products, desktop tools, AI products, large features, long-lived maintenance work, and tasks that need cross-agent handoff, recovery, or strict verification.
 Skip it for one-off commands, tiny edits, throwaway demos, or tasks that do not need durable project memory or a verification loop.
+
+## Compatibility Upgrade In v0.5.0
+
+`v0.5.0` focuses on keeping legacy projects executable and safely upgradeable:
+
+- `migrate --plan` lists candidates read-only, `--dry-run` validates them, and `--apply` requires one clear current task with no source or status conflict.
+- Legacy parsing supports bulleted and bare fields, `## Task <id>` ledgers, Markdown code spans, verbose prose statuses, and empty `active-task.md` placeholders.
+- Completed history stays cold; unknown or conflicting state enters paused review, and conflicting repeated `Status` fields are never activated or migrated automatically.
+- Doctor reports legacy compatibility and upgrade guidance by default, while `--require-structured` provides a strict gate and JSON output includes stable issue codes.
+- `pmm-task.sh` adds global help, version, and delivery commands; `pmm-preflight.sh` validates both source and installed packages.
+- Upgrades never delete the legacy `task-ledger.md`, and apply writes a project-local backup first.
 
 ## What's New In v0.4.0
 
@@ -184,6 +195,7 @@ Minimum install layout:
   scripts/recovery-status.sh
   scripts/pmm-doctor.sh
   scripts/pmm-task.sh
+  scripts/pmm-preflight.sh
   scripts/lib/pmm-state.sh
   tests/pmm-runtime-contract.sh
 ```

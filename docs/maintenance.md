@@ -18,6 +18,7 @@ For script changes, also run:
 
 ```bash
 bash -n scripts/*.sh
+bash scripts/pmm-preflight.sh
 ```
 
 Required controls:
@@ -39,6 +40,7 @@ Before a public release:
 - push to a branch and let CI run before merge
 - tag with a matching semantic version, for example `v0.3.0`
 - publish a GitHub Release from the tag only when the version is intended as formal public release
+- run `bash scripts/pmm-preflight.sh --installed <SKILLS_ROOT>/pmm` after local sync so source and installed-package contracts both pass
 
 Release notes:
 - GitHub Release titles use the full display name, for example `Project Memory Manager v0.3.0`

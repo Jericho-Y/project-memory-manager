@@ -6,6 +6,27 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## v0.5.0 - 2026-07-21
+
+### Added
+
+- Added read-only per-contract `migrate --plan`; `--dry-run` remains the strict validation gate and `--apply` still accepts only one clear current task.
+- Added global `pmm-task.sh --help`, `--version`, and evidence-backed `delivery` read/write commands.
+- Added `scripts/pmm-preflight.sh` to run source and installed-package contracts, shell syntax, Doctor, public safety, and version consistency as one release gate.
+- Doctor JSON messages now expose stable `code` values, with default legacy compatibility mode and explicit `--require-structured` enforcement.
+
+### Fixed
+
+- Fixed duplicate counting of `Task ID` plus `Task`, Markdown code-span and trailing-space parsing, empty `active-task.md` placeholders hiding real ledgers, and bare-field `## Task <id>` ledgers being missed.
+- Aligned Recovery, Doctor, and Migration for completed history, completed deferred work, conflicting repeated `Status` fields, and verbose prose statuses. Unknown or conflicting state now enters paused review, and conflicting state refuses automatic apply.
+- Fixed explicit missing Recovery task IDs returning success, code-span task IDs in legacy history being reusable, and empty legacy record columns shifting parser fields.
+
+### Compatibility And Upgrade
+
+- Legacy projects remain readable without forced rewrites. Run `migrate --plan` and `--dry-run` first; the legacy ledger is retained and apply creates a project-local backup.
+- An empty legacy `active-task.md` placeholder now falls back to the ledger, while two current legacy sources fail closed instead of being guessed.
+- Bash sync and PowerShell install include the new preflight helper, and release validation covers both source-checkout and minimal installed-package layouts.
+
 ## v0.4.1 - 2026-07-18
 
 ### Fixed
