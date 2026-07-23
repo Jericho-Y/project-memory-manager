@@ -59,6 +59,10 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - Local skill sync removes unmanaged files inside the dedicated local `pmm` skill directory after safety checks pass.
 - The v0.5.1 source runtime contract passes all 359 assertions and the installed-package contract passes 358 assertions; public safety, Doctor, shell syntax, release preflight, tag, and GitHub Release verification are complete.
 - Workflow examples remain under `docs/github-actions-drafts/` until workflow publication is explicitly reviewed and enabled.
+- The default I/O Gate reuses unchanged content already present in the current context, keeps its read set ephemeral, uses bounded range reads for text over 200 lines or 32 KiB, and does not create standalone plan/evidence files that duplicate the owned task and source.
+- The always-loaded `SKILL.md` has a 14 KiB runtime-contract budget; detailed lifecycle behavior stays in `docs/runtime.md`.
+- Maintainer sync retains the newest three timestamped local-skill install backups by default and never prunes upgrade, migration, or unrelated runtime anchors.
+- The unreleased low-I/O source contract passes 371 assertions, including fail-before-write checks for invalid retention values and symlinked backup storage.
 
 ## Remaining Risks
 

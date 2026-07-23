@@ -1765,6 +1765,91 @@ assert_file_contains "$interleave_root/docs/00-project-memory/active-task.md" 'e
 git -C "$interleave_root" worktree remove --force "$interleave_worktree"
 
 if [[ -f "$repo_root/README.md" ]]; then
+  skill_bytes="$(wc -c <"$repo_root/SKILL.md" | tr -d '[:space:]')"
+  if (( skill_bytes <= 14336 )); then
+    pass 'SKILL.md stays within the 14 KiB always-loaded context budget'
+  else
+    fail "SKILL.md uses $skill_bytes bytes; keep the always-loaded entrypoint at or below 14336 bytes"
+  fi
+  assert_file_contains "$repo_root/SKILL.md" \
+    'Keep an in-session read set; do not reopen unchanged content already present in the current context.' \
+    'Skill contract prevents duplicate reads within one session'
+  assert_file_contains "$repo_root/SKILL.md" \
+    'Do not create a separate plan, spec, handoff, or evidence file when the owned task file and target source already hold the needed facts.' \
+    'Skill contract prevents redundant planning and evidence files'
+  assert_file_contains "$repo_root/docs/runtime.md" \
+    'Before opening a text file over 200 lines or 32 KiB, inspect its size and headings, then read only the relevant ranges.' \
+    'Runtime contract requires bounded reads for large text files'
+  assert_file_contains "$repo_root/templates/core/AGENTS.md" \
+    'Reuse content already present in the current context; do not reopen an unchanged file unless a required section was not loaded.' \
+    'Generated projects inherit the no-duplicate-read rule'
+
+  sync_fixture_repo="$tmp_root/sync-retention-source"
+  sync_fixture_files="$tmp_root/sync-retention-files.txt"
+  sync_runtime_root="$tmp_root/sync-retention-runtime"
+  sync_local_skill="$tmp_root/sync-retention-skills/pmm"
+  mkdir -p "$sync_fixture_repo" "$sync_runtime_root/backups" "$sync_local_skill"
+  git -C "$repo_root" ls-files >"$sync_fixture_files"
+  rsync -a --files-from="$sync_fixture_files" "$repo_root/" "$sync_fixture_repo/"
+  git -C "$sync_fixture_repo" init -q
+  git -C "$sync_fixture_repo" checkout -qb main
+  git -C "$sync_fixture_repo" config user.name 'pmm-test'
+  git -C "$sync_fixture_repo" config user.email 'pmm-test@example.invalid'
+  git -C "$sync_fixture_repo" add .
+  git -C "$sync_fixture_repo" commit -qm 'sync retention fixture'
+
+  invalid_sync_runtime="$tmp_root/sync-invalid-retention-runtime"
+  invalid_sync_local_skill="$tmp_root/sync-invalid-retention-skills/pmm"
+  mkdir -p "$invalid_sync_runtime" "$invalid_sync_local_skill"
+  printf 'preserve invalid-setting install\n' >"$invalid_sync_local_skill/OLD"
+  run_capture env \
+    REPO_URL="$sync_fixture_repo" \
+    PROJECT_RUNTIME_DIR="$invalid_sync_runtime" \
+    LOCAL_SKILL_DIR="$invalid_sync_local_skill" \
+    PMM_SYNC_BACKUP_KEEP=0 \
+    bash "$repo_root/scripts/sync-local-skill.sh"
+  assert_nonzero 'Maintainer sync rejects an invalid backup-retention setting'
+  assert_file_exists "$invalid_sync_local_skill/OLD" \
+    'Invalid retention is rejected before the local skill is modified'
+
+  symlink_sync_runtime="$tmp_root/sync-symlink-runtime"
+  symlink_sync_target="$tmp_root/sync-symlink-target"
+  symlink_sync_local_skill="$tmp_root/sync-symlink-skills/pmm"
+  mkdir -p "$symlink_sync_runtime" "$symlink_sync_target" "$symlink_sync_local_skill"
+  ln -s "$symlink_sync_target" "$symlink_sync_runtime/backups"
+  printf 'preserve symlink-setting install\n' >"$symlink_sync_local_skill/OLD"
+  run_capture env \
+    REPO_URL="$sync_fixture_repo" \
+    PROJECT_RUNTIME_DIR="$symlink_sync_runtime" \
+    LOCAL_SKILL_DIR="$symlink_sync_local_skill" \
+    PMM_SYNC_BACKUP_KEEP=2 \
+    bash "$repo_root/scripts/sync-local-skill.sh"
+  assert_nonzero 'Maintainer sync rejects a symlinked backup directory'
+  assert_file_exists "$symlink_sync_local_skill/OLD" \
+    'Symlinked backup storage is rejected before the local skill is modified'
+
+  printf 'old install\n' >"$sync_local_skill/OLD"
+  mkdir -p \
+    "$sync_runtime_root/backups/pmm-20260101-000001" \
+    "$sync_runtime_root/backups/pmm-20260102-000001" \
+    "$sync_runtime_root/backups/pmm-20260103-000001" \
+    "$sync_runtime_root/backups/pmm-20260104-000001" \
+    "$sync_runtime_root/backups/upgrade-preserve"
+  run_capture env \
+    REPO_URL="$sync_fixture_repo" \
+    PROJECT_RUNTIME_DIR="$sync_runtime_root" \
+    LOCAL_SKILL_DIR="$sync_local_skill" \
+    PMM_SYNC_BACKUP_KEEP=2 \
+    bash "$repo_root/scripts/sync-local-skill.sh"
+  assert_status 0 'Maintainer sync succeeds with a bounded backup-retention setting'
+  sync_backup_count="$(find "$sync_runtime_root/backups" -mindepth 1 -maxdepth 1 -type d -name 'pmm-[0-9]*' | wc -l | tr -d '[:space:]')"
+  assert_equals '2' "$sync_backup_count" 'Maintainer sync keeps only the configured number of local-skill backups'
+  if [[ -d "$sync_runtime_root/backups/upgrade-preserve" ]]; then
+    pass 'Backup retention preserves unrelated project-upgrade anchors'
+  else
+    fail 'Backup retention removed an unrelated project-upgrade anchor'
+  fi
+
   assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-task.sh' 'Maintainer sync includes the v0.5 lifecycle CLI'
   assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/pmm-preflight.sh' 'Maintainer sync includes the release preflight helper'
   assert_file_contains "$repo_root/scripts/sync-local-skill.sh" 'scripts/lib/pmm-state.sh' 'Maintainer sync includes the shared state library'

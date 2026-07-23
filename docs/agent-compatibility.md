@@ -14,6 +14,8 @@ Skip when: Maintaining only repository automation or public safety scripts.
 
 Project memory is the source of truth. Adapters route agents to that source; they do not copy it.
 
+The Core Pack is a routing surface, not a mandatory full-file startup import. Agents reuse content already supplied in their current context, keep an ephemeral read set, and load only the relevant task/state/verifier sections. Adapters must not force repeated full Core Pack reads or standalone plan files that duplicate `active-task.md`.
+
 Subagent Routing Gate is portable as a decision record, not as a guaranteed runtime feature. If the agent supports subagents, it may delegate within the recorded boundaries. If it does not, it records `solo` mode or uses the field as a manual handoff plan.
 
 Workspace Gate is portable as a safety contract. Every agent must treat `active-task.md` as one primary-task slot. A concurrent writer either queues or uses a separate branch/worktree plus `docs/00-project-memory/work-items/<task-id>.md`; agents that cannot establish that isolation must run tasks sequentially.

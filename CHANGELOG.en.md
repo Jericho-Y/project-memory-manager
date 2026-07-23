@@ -6,6 +6,15 @@ Skip when: The Chinese primary changelog is sufficient.
 
 This project follows semantic versioning for public skill releases.
 
+## Unreleased
+
+### Changed
+
+- Added a low-I/O Gate that reuses current context and an ephemeral in-session read set, and inspects headings and size before reading relevant ranges from text over 200 lines or 32 KiB.
+- Stopped creating duplicate plan, handoff, or evidence files by default when `active-task.md` and target source already hold the needed facts; raw logs are retained only for audit or recovery.
+- Reduced the always-loaded `SKILL.md` from 16.6 KB / 280 lines to a contract-enforced maximum of 14 KiB.
+- Maintainer sync now keeps the newest three `pmm-YYYYMMDD-HHMMSS` install backups by default without touching upgrade, migration, or unrelated runtime directories.
+
 ## v0.5.1 - 2026-07-21
 
 ### Added

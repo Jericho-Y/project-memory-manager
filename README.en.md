@@ -11,6 +11,8 @@ Skip when: You already know the repository and only need a specific implementati
 
 `pmm` is a low-context, cross-agent project runtime packaged as an Agent Skill for long-lived software projects. Its job is not to generate more project documentation; it gives agents a compact runtime contract for executing, verifying, critiquing, repairing, and recovering work with the minimum useful context.
 
+Low-I/O defaults: reuse file content already present in the current context; keep the in-session read set ephemeral; inspect size and headings before opening text over 200 lines or 32 KiB, then load only relevant ranges; do not create plan, handoff, or evidence files that duplicate `active-task.md`; retain temporary logs or evidence only when audit or recovery requires them.
+
 The core v0.5.1 output is:
 
 - `AGENTS.md`: the single project entrypoint for durable facts and collaboration rules.
@@ -126,7 +128,7 @@ The project folder is the source of truth. Agent-native memory should store only
 | Profile | Use for | Load by default |
 | --- | --- | --- |
 | Pulse | Small edits, lookups, known-file fixes | `AGENTS.md` plus target files |
-| Sprint | Normal features, bug fixes, UI/API changes | Core Pack plus task source docs |
+| Sprint | Normal features, bug fixes, UI/API changes | `AGENTS.md`, owned task, relevant state/verifier sections, task source |
 | Project | New projects, unclear requirements, long-lived product setup | Core Pack plus selected Optional Packs |
 | Recovery | Interrupted work, retryable failures, compact disconnect recovery | hot path plus recovery/change docs |
 | Audit | Security, release, production, payment, permissions, public compatibility | exact source artifacts plus risk/verifier docs |

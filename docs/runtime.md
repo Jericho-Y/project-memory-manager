@@ -11,7 +11,7 @@ Use the smallest profile that can finish safely.
 | Profile | Use when | Load by default | Write by default | Loop budget |
 | --- | --- | --- | --- | --- |
 | Pulse | Tiny edit, lookup, known-file correction | `AGENTS.md`, target files | Nothing unless facts change | 1 attempt |
-| Sprint | Normal feature, bugfix, UI/API/docs change | Hot path plus task source docs | Owned task file and changed source docs | 2-3 attempts |
+| Sprint | Normal feature, bugfix, UI/API/docs change | `AGENTS.md`, owned task, relevant state/verifier sections, task source | Owned task file and changed source docs | 2-3 attempts |
 | Project | New project, major feature, unclear requirements | Core Pack plus needed optional packs | Core Pack, selected packs, decisions | staged attempts |
 | Recovery | Interrupted, retryable, compact-disconnected work | Owned task, recovery rules, change log | Owned task file | resume from checkpoint |
 | Audit | Security, release, production, payment, public compatibility | Exact artifacts, risk docs, verifier docs | Risk, decision, and change records | no blind retries |
@@ -40,7 +40,7 @@ An upgrade writes `runtime-state.md`, the marker-managed PMM block in `AGENTS.md
 Run this before Subagent Gate or any write:
 
 1. Read the primary `active-task.md` and its `task_id`, owner, branch, status, and allowed scope.
-2. Inspect the current Git branch/worktree, dirty files, and existing work items.
+2. Inspect the current Git branch/worktree, dirty file names, and work-item names/claims; open another work item only when ownership or overlap is relevant.
 3. Decide whether the request continues the primary task, queues new work, or needs a branch-isolated child work item.
 4. Refuse two active writers in one branch/worktree.
 5. Run overlapping source scopes sequentially even if different conversations or Agents are available.
@@ -148,19 +148,28 @@ For a work item, `close` requires committed source plus fresh passed evidence an
 
 Use `resume --takeover` only after confirming the previous writer stopped. It is an explicit task-ownership change; automatic dead-PID recovery applies only to the short-lived mutation lock, never to a task claim.
 
-## Context Budget
+## I/O And Context Budget
 
-Spend context on the current decision.
+Spend reads, writes, disk, and model context on the current decision.
 
 | Layer | Load by default | Purpose |
 | --- | --- | --- |
 | Entry | `AGENTS.md` | project identity, safety, reading map |
-| State | `current-state.md`, owned task file | stable facts and current contract |
-| Verifier | `verifier-map.md` | checks and false-pass guards |
+| State | owned task; relevant `current-state.md` sections | current contract and needed stable facts |
+| Verifier | relevant `verifier-map.md` section when the task lacks complete checks | checks and false-pass guards |
 | Task source | only docs/source required now | current implementation facts |
 | Cold path | queue, history, failures, old logs | selection, audit, repeated failure, migration |
 
-Search before opening long files. Record selected docs once in the owned task file. Do not load every work item or completed task to resume one task.
+Apply this I/O Gate:
+
+1. Reuse content already present in the current context and keep an ephemeral in-session read set. Do not persist that cache or reopen unchanged content.
+2. Use `rg`, file metadata, purpose headers, and headings before broad reads. Before opening a text file over 200 lines or 32 KiB, inspect its size and headings, then read only the relevant ranges.
+3. Batch independent metadata/search checks and cap command output. Keep raw logs only when audit or recovery requires them; otherwise retain a short result summary.
+4. Do not create a separate plan, spec, handoff, or evidence artifact when the owned task file and target source already contain the needed facts. A specialized skill may add one only when the user or project explicitly requires a durable standalone artifact.
+5. Update the owned task in place at meaningful state transitions. Do not append commentary transcripts, repeated file lists, or unchanged checkpoints.
+6. Put necessary temporary logs and generated evidence under ignored `.project-runtime/<task-id>/` or `tmp/<task-id>/`; remove disposable task output after verification and preserve only required rollback or audit anchors.
+
+The hot path is a routing set, not an instruction to load every file fully. Do not load every work item, completed task, historical log, or release note to resume one task.
 
 ## Self-Eval Loop
 

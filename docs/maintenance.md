@@ -90,7 +90,7 @@ GitHub Actions cannot safely update a local machine. Maintainers use:
 REPO_URL=https://github.com/<owner>/project-memory-manager.git bash scripts/sync-local-skill.sh
 ```
 
-The sync script clones checked public `main`, runs safety checks, rejects symlinks and unexpected scripts, backs up the existing install, and syncs only into a dedicated `<SKILLS_ROOT>/pmm` directory. It must never overwrite unrelated projects, global config, credentials, memories, production files, or symlink targets.
+The sync script clones checked public `main`, runs safety checks, rejects symlinks and unexpected scripts, backs up the existing install, and syncs only into a dedicated `<SKILLS_ROOT>/pmm` directory. After a successful sync it keeps the newest three `pmm-YYYYMMDD-HHMMSS` install backups by default; set `PMM_SYNC_BACKUP_KEEP` to another positive integer when a different rollback window is required. Retention never touches upgrade/migration backups or unrelated runtime directories. The script must never overwrite unrelated projects, global config, credentials, memories, production files, or symlink targets.
 
 Ordinary users should use the install guidance in `docs/install.md` instead of maintainer sync.
 

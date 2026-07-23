@@ -35,10 +35,12 @@ Use:
 ## Mandatory Reading Order
 
 1. `AGENTS.md`
-2. `docs/00-project-memory/current-state.md`
-3. `docs/00-project-memory/active-task.md`
-4. `docs/00-project-memory/verifier-map.md`
+2. `docs/00-project-memory/active-task.md` for non-trivial task start/resume
+3. Relevant sections of `current-state.md` only when project facts are needed
+4. Relevant sections of `verifier-map.md` only when the task lacks complete checks
 5. Task-specific source docs only when needed
+
+Reuse content already present in the current context; do not reopen an unchanged file unless a required section was not loaded.
 
 ## Task Reading Map
 
@@ -56,6 +58,10 @@ Use:
 ## Execution Rules
 
 - Keep project state in project docs, not in agent-global memory.
+- Keep an ephemeral in-session read set; do not write it into project memory.
+- Inspect size and headings before reading text files over 200 lines or 32 KiB, then load only relevant ranges.
+- Do not create standalone plan, handoff, or evidence files that duplicate the owned task and target source.
+- Batch durable task/doc updates at real state transitions; do not persist commentary or raw command transcripts.
 - Run the Workspace Gate before the Subagent Gate: inspect the primary task, branch/worktree, owner, allowed scope, and existing work items.
 - Keep exactly one primary task in `active-task.md`; never append a second task contract.
 - Use `docs/00-project-memory/work-items/<task-id>.md` only for branch/worktree-isolated child work.

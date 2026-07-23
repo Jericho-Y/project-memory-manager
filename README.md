@@ -11,6 +11,8 @@
 
 `pmm` 是一个面向长期软件项目的低上下文、跨 Agent 项目运行时（Agent Skill）。它的目标不是生成更多项目文档，而是让 Agent 在最少必要上下文里持续执行、验证、批判、修复和恢复任务。
 
+默认低 I/O 行为：复用当前上下文已经提供的文件内容；会话内记录已读集合但不落盘；超过 200 行或 32 KiB 的文本先查大小和标题，再只读相关区段；`active-task.md` 已能承载任务合同时，不另建重复的计划、交接或证据文档；临时日志和证据只在审计/恢复需要时保留。
+
 `v0.5.1` 的核心输出是：
 
 - `AGENTS.md`：项目事实和协作规则的唯一入口。
@@ -126,7 +128,7 @@ Self-Eval Runtime
 | Profile | 适合任务 | 默认读取 |
 | --- | --- | --- |
 | Pulse | 小改动、查找、已知文件修正 | `AGENTS.md` + 目标文件 |
-| Sprint | 普通功能、Bug 修复、UI/API 改动 | Core Pack + 任务源文档 |
+| Sprint | 普通功能、Bug 修复、UI/API 改动 | `AGENTS.md`、当前任务、相关状态/验证区段和任务源 |
 | Project | 新项目、需求不清、长期产品搭建 | Core Pack + 选定 Optional Packs |
 | Recovery | 中断恢复、失败重试、compact 断线续跑 | hot path + recovery/change docs |
 | Audit | 安全、发布、生产、支付、权限、公开兼容性 | 精确源材料 + 风险/验证文档 |

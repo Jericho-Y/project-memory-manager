@@ -12,10 +12,40 @@ TMP_ROOT="$PROJECT_RUNTIME_DIR/sync"
 WORKDIR="$TMP_ROOT/repo"
 BACKUP_ROOT="$PROJECT_RUNTIME_DIR/backups"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+PMM_SYNC_BACKUP_KEEP="${PMM_SYNC_BACKUP_KEEP:-3}"
 
 fail() {
   printf 'ERROR: %s\n' "$1" >&2
   exit 1
+}
+
+prune_sync_backups() {
+  local backup_root="$1"
+  local keep="$2"
+  local backup remove_count index
+  local -a backups=()
+
+  [[ "$keep" =~ ^[1-9][0-9]*$ ]] || fail "PMM_SYNC_BACKUP_KEEP must be a positive integer"
+  while IFS= read -r backup; do
+    backups+=("$backup")
+  done < <(find "$backup_root" -mindepth 1 -maxdepth 1 -type d \
+    -name 'pmm-[0-9]*' -print | LC_ALL=C sort)
+
+  remove_count=$((${#backups[@]} - keep))
+  (( remove_count > 0 )) || return 0
+
+  for ((index = 0; index < remove_count; index++)); do
+    backup="${backups[$index]}"
+    case "$backup" in
+      "$backup_root"/pmm-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9])
+        ;;
+      *)
+        fail "refusing to prune unexpected backup path: $backup"
+        ;;
+    esac
+    [[ -d "$backup" && ! -L "$backup" ]] || fail "refusing to prune a missing or symlinked backup: $backup"
+    rm -rf -- "$backup"
+  done
 }
 
 require_absolute_dir_value() {
@@ -34,6 +64,7 @@ require_absolute_dir_value() {
 
 require_absolute_dir_value "PROJECT_RUNTIME_DIR" "$PROJECT_RUNTIME_DIR"
 require_absolute_dir_value "LOCAL_SKILL_DIR" "$LOCAL_SKILL_DIR"
+[[ "$PMM_SYNC_BACKUP_KEEP" =~ ^[1-9][0-9]*$ ]] || fail "PMM_SYNC_BACKUP_KEEP must be a positive integer"
 
 case "$LOCAL_SKILL_DIR" in
   */pmm)
@@ -51,7 +82,7 @@ case "$WORKDIR" in
     ;;
 esac
 
-if [[ -L "$LOCAL_SKILL_DIR" || -L "$PROJECT_RUNTIME_DIR" ]]; then
+if [[ -L "$LOCAL_SKILL_DIR" || -L "$PROJECT_RUNTIME_DIR" || -L "$BACKUP_ROOT" ]]; then
   fail "sync paths must not be symlinks"
 fi
 
@@ -177,5 +208,7 @@ rsync -a --delete \
 [[ -f "$LOCAL_SKILL_DIR/scripts/lib/pmm-state.sh" ]] || fail "local sync did not produce pmm shared state library"
 [[ -f "$LOCAL_SKILL_DIR/scripts/install-local-skill.ps1" ]] || fail "local sync did not produce PowerShell install helper"
 [[ -f "$LOCAL_SKILL_DIR/tests/pmm-runtime-contract.sh" ]] || fail "local sync did not produce runtime contract test"
+
+prune_sync_backups "$BACKUP_ROOT" "$PMM_SYNC_BACKUP_KEEP"
 
 printf 'Synced pmm to %s\n' "$LOCAL_SKILL_DIR"

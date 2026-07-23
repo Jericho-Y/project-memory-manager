@@ -4,6 +4,13 @@ Purpose: Chronological record of durable repository behavior and maintenance cha
 Read when: You need recent change history or must update the record after state-changing work.
 Skip when: You only need current instructions and no historical context.
 
+## 2026-07-23
+
+- Added an enforceable low-I/O runtime contract: reuse current context, keep the session read set ephemeral, inspect headings before bounded large-file reads, and avoid standalone plan/evidence artifacts that duplicate task state and source.
+- Reduced `SKILL.md` from 16,598 bytes / 280 lines to 12,314 bytes / 192 lines before final wording updates, with a 14 KiB contract limit to prevent regression.
+- Bounded maintainer-sync backups to the newest three timestamped `pmm-*` install snapshots by default while preserving unrelated upgrade and migration anchors.
+- Expanded the source runtime contract to 371 passing assertions and verified invalid retention values plus symlinked backup storage fail before modifying the installed skill.
+
 ## 2026-07-21
 
 - Implemented the `pmm` v0.5.1 Upgrade Gate so old project content is upgraded to the installed runtime before normal writes rather than remaining indefinitely in legacy execution mode.
