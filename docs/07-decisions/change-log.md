@@ -12,6 +12,7 @@ Skip when: You only need current instructions and no historical context.
 - Expanded the source runtime contract to 371 passing assertions and verified invalid retention values plus symlinked backup storage fail before modifying the installed skill.
 - Changed default `start` routing so a second unclaimed, checked-out worktree joins an active primary as a work item instead of failing on the singleton claim; a current branch with a matching claim is resumed in place without another worktree.
 - Added a bounded five-second retry for simultaneous starts while preserving one-primary, same-worktree refusal, paused/blocked reservation, migration refusal, and fail-closed claim checks.
+- Verified 377/377 source and 362/362 installed-package assertions, synced the checked public `main` into the active local Skill, and retained exactly three local install backups.
 
 ## 2026-07-21
 

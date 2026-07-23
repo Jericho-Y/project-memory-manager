@@ -62,7 +62,7 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - The default I/O Gate reuses unchanged content already present in the current context, keeps its read set ephemeral, uses bounded range reads for text over 200 lines or 32 KiB, and does not create standalone plan/evidence files that duplicate the owned task and source.
 - The always-loaded `SKILL.md` has a 14 KiB runtime-contract budget; detailed lifecycle behavior stays in `docs/runtime.md`.
 - Maintainer sync retains the newest three timestamped local-skill install backups by default and never prunes upgrade, migration, or unrelated runtime anchors.
-- The unreleased source contract covers 377 assertions, including low-I/O/retention bounds and isolated-worktree automatic routing; final source and installed-package verification is required after each change.
+- The unreleased source contract passes all 377 assertions and the installed-package contract passes all 362 assertions, including low-I/O/retention bounds and isolated-worktree automatic routing; source and installed preflight passed on 2026-07-23.
 
 ## Remaining Risks
 
