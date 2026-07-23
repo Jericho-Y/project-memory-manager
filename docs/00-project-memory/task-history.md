@@ -66,3 +66,16 @@ Purpose: Append-only compact summaries of closed tasks.
 - Delivery State: not-requested
 - Verification Evidence: tests/pmm-runtime-contract.sh: 371 tests, 0 failures; public safety passed; Doctor 0 failures/0 warnings; shell syntax and git diff checks passed; SKILL.md 12314 bytes/192 lines
 - Closed At: 2026-07-23T15:31:26Z
+
+## 2026-07-23 pmm-worktree-auto-route
+
+<!-- pmm-task-id: pmm-worktree-auto-route -->
+
+- Status: done
+- Parent Task: none
+- Title: 修复多任务对话同时使用 PMM 的阻塞
+- Execution State: done
+- Verification State: passed
+- Delivery State: not-requested
+- Verification Evidence: HEAD 97b89f0: source runtime contract 377/377, public safety, Doctor, shell syntax, and diff check passed; synchronized installed package contract 362/362 and preflight passed.
+- Closed At: 2026-07-23T15:59:05Z
