@@ -53,3 +53,16 @@ Purpose: Append-only compact summaries of closed tasks.
 - Delivery State: released
 - Verification Evidence: v0.5.1 release verification: source PMM_PREFLIGHT_PASS version=0.5.1; source contract tests=359 failures=0; installed package contract tests=358 failures=0; public safety passed; Doctor failures=0 warnings=0; shell syntax and git diff checks passed; tag v0.5.1 and GitHub Release published from commit 53c3c46.
 - Closed At: 2026-07-21T08:55:59Z
+
+## 2026-07-23 pmm-low-io-budget
+
+<!-- pmm-task-id: pmm-low-io-budget -->
+
+- Status: done
+- Parent Task: none
+- Title: 降低 PMM 文件读写与上下文额度成本
+- Execution State: done
+- Verification State: passed
+- Delivery State: not-requested
+- Verification Evidence: tests/pmm-runtime-contract.sh: 371 tests, 0 failures; public safety passed; Doctor 0 failures/0 warnings; shell syntax and git diff checks passed; SKILL.md 12314 bytes/192 lines
+- Closed At: 2026-07-23T15:31:26Z
