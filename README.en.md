@@ -179,7 +179,7 @@ Record: final status, docs changed, memory promotion decision
 
 A task without a verifier and fresh evidence cannot close. Use `execution_status: blocked` for blocked execution, and `verification_status: pending` or `failed` for incomplete or failed verification.
 
-`active-task.md` always holds one primary task. A second writing conversation must queue, or switch to a separate branch/worktree and use [templates/concurrency/work-item.md](templates/concurrency/work-item.md). A verified work item still requires merge, primary-owner `integrate`, and fresh primary verification. See [docs/runtime.md](docs/runtime.md) for lifecycle and migration commands.
+`active-task.md` always holds one primary task. A second writing conversation must queue or use [templates/concurrency/work-item.md](templates/concurrency/work-item.md) in a separate branch/worktree. If the current branch already has a matching claim, continue or resume it without creating another worktree. If the primary is active in another checked-out worktree, a default `start` from the current unclaimed worktree auto-routes to a work item. A verified work item still requires merge, primary-owner `integrate`, and fresh primary verification. See [docs/runtime.md](docs/runtime.md) for lifecycle and migration commands.
 
 ## Installation
 
@@ -245,7 +245,7 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 3. Create the Core Pack; substantial projects also keep `runtime-state.md` as version metadata.
 4. Run the Upgrade Gate before choosing a Runtime Profile for each substantial task.
 5. Run the Workspace Gate; do not append a second task when `active-task.md` already owns a primary task.
-6. Use `scripts/pmm-task.sh start` for the primary task; create a separate branch/worktree before starting a concurrent work item.
+6. Use `scripts/pmm-task.sh start` for a task; continue/resume an existing matching branch claim, while an already isolated unclaimed worktree auto-starts a work item when another active primary exists.
 7. Execute, verify, critique, repair, and record fresh evidence with `verify`.
 8. Run `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` to validate state, branch ownership, and verifier evidence.
 9. Use work-item `close` to enter pending integration; after merge, let the primary owner run `integrate` and reverify, then use primary `close` to archive.

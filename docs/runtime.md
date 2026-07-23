@@ -45,6 +45,8 @@ Run this before Subagent Gate or any write:
 4. Refuse two active writers in one branch/worktree.
 5. Run overlapping source scopes sequentially even if different conversations or Agents are available.
 
+A matching current-branch claim means the workspace is already isolated: continue or resume that task instead of creating or switching worktrees. A default `start` in another active, checked-out worktree auto-routes to a work item under the active primary. It does not auto-route on the primary branch, from an already claimed child branch, or when the primary is paused, blocked, missing, stale, or not checked out.
+
 Use this model:
 
 ```text
@@ -62,12 +64,13 @@ task-history.md                          closed compact summaries
 - The parent/integration context owns `active-task.md`.
 - A subagent that only researches or reviews returns results and does not edit task state.
 - A writing child context uses a separate branch/worktree and its own work-item file.
+- A context already on its claimed branch continues there; PMM activation alone is not a reason to invoke another worktree-routing skill.
 - One branch/worktree owns at most one active work item, even when task IDs differ.
 - The primary task cannot close while a child work-item claim remains active.
 - A new conversation resumes only after it identifies the exact task ID and ownership.
 - Scheduled automation receives a task ID and stops on ambiguity, ownership conflict, blocked state, or confirmation boundary.
 
-Local claims and a short-lived mutation lock are stored in the Git common directory. The lock serializes lifecycle writes across local worktrees; each task-file mutation is staged as a complete file and atomically replaced, while failure or a signal cleans temporary files, rolls back an uncommitted new claim, and restores an interrupted takeover to the owner matching the durable task file. Task and branch metadata preserve ownership after the command exits, and Doctor fails a non-idle task whose owner/branch/parent/kind claim is missing or mismatched. Exactly one non-idle primary claim may exist in one clone, including a migrated `paused` or `blocked` task; a second primary `start` or non-idle migration fails closed. Closed and integrated task IDs are recorded in append-only history plus a same-clone archive marker and cannot be reused; compatibility checks also inspect structured and marker-less legacy history reachable from local heads, remotes, and tags, de-duplicate identical blobs, and fail closed if ref inspection cannot complete. A later command safely recovers a same-host lock whose recorded PID is no longer alive, and Doctor reports that condition. Neither mechanism is a distributed lock. Across devices, use one remote branch per work item, push checkpoints intentionally, and never assume local ownership state exists elsewhere.
+Local claims and a short-lived mutation lock are stored in the Git common directory. The lock serializes lifecycle writes across local worktrees; simultaneous `start` commands use a bounded five-second retry so the later isolated starter can observe and join the primary as a work item, while other mutations keep immediate busy failure. Each task-file mutation is staged as a complete file and atomically replaced, while failure or a signal cleans temporary files, rolls back an uncommitted new claim, and restores an interrupted takeover to the owner matching the durable task file. Task and branch metadata preserve ownership after the command exits, and Doctor fails a non-idle task whose owner/branch/parent/kind claim is missing or mismatched. Exactly one non-idle primary claim may exist in one clone, including a migrated `paused` or `blocked` task; a same-worktree second primary, non-idle migration, or unsafe auto-route fails closed. Closed and integrated task IDs are recorded in append-only history plus a same-clone archive marker and cannot be reused; compatibility checks also inspect structured and marker-less legacy history reachable from local heads, remotes, and tags, de-duplicate identical blobs, and fail closed if ref inspection cannot complete. A later command safely recovers a same-host lock whose recorded PID is no longer alive, and Doctor reports that condition. Neither mechanism is a distributed lock. Across devices, use one remote branch per work item, push checkpoints intentionally, and never assume local ownership state exists elsewhere.
 
 ## Structured Task State
 
@@ -103,6 +106,8 @@ bash <SKILLS_ROOT>/pmm/scripts/pmm-task.sh start \
   --project . --id feature-a --title "Feature A" --owner agent-a \
   --scope "src/feature-a" --verifier "run focused tests"
 ```
+
+If an active primary already owns another checked-out worktree, the same default `start` command in the current unclaimed, checked-out worktree creates `work-items/<id>.md`, records the active primary as `parent_task_id`, and emits `TASK_AUTO_ROUTED`. This convenience does not create, switch, or delete worktrees. If the current branch already has a matching claim, use `status`, `checkpoint`, or `resume` for that task instead of calling `start` again.
 
 Start a branch-isolated child work item after creating/switching to its branch/worktree. The parent claim is shared through the Git common directory, so the parent task file does not need an extra commit before a local worktree is created:
 

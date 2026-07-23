@@ -1416,9 +1416,15 @@ run_capture bash "$task_cli" start --project "$cross_root" --id cross-primary \
 assert_status 0 'Cross-worktree fixture starts the first primary task'
 run_capture bash "$task_cli" start --project "$cross_worktree" --id cross-secondary \
   --title 'Cross Secondary' --owner cross-agent-two --scope 'src/app.txt' --verifier 'bash tests/cross-two.sh'
-assert_nonzero 'Lifecycle rejects a second primary task from a sibling worktree'
-assert_contains 'PRIMARY_TASK_ALREADY_CLAIMED' 'Cross-worktree primary collision identifies the shared claim'
-pmm_claim_release "$cross_worktree" cross-secondary || true
+assert_status 0 'Lifecycle auto-routes a second task from an isolated sibling worktree'
+assert_contains 'TASK_AUTO_ROUTED id=cross-secondary parent=cross-primary' \
+  'Auto-routed task reports its integration parent'
+assert_file_contains "$cross_worktree/docs/00-project-memory/work-items/cross-secondary.md" \
+  'task_kind: work-item' 'Auto-routed sibling task uses a work-item file'
+assert_file_contains "$cross_worktree/docs/00-project-memory/work-items/cross-secondary.md" \
+  'parent_task_id: cross-primary' 'Auto-routed sibling task records the active primary parent'
+pmm_claim_release "$cross_worktree" cross-secondary
+rm -f "$cross_worktree/docs/00-project-memory/work-items/cross-secondary.md"
 rm -f "$cross_worktree/docs/00-project-memory/active-task.md"
 printf '%s\n' \
   '# Active Task' \
@@ -1483,7 +1489,15 @@ wait "$parallel_pid_b" || true
 parallel_successes=0
 [[ "$(sed -n '1p' "$parallel_results/a.status")" == '0' ]] && parallel_successes=$((parallel_successes + 1))
 [[ "$(sed -n '1p' "$parallel_results/b.status")" == '0' ]] && parallel_successes=$((parallel_successes + 1))
-assert_equals '1' "$parallel_successes" 'Exactly one simultaneous cross-worktree primary start acquires the project slot'
+assert_equals '2' "$parallel_successes" 'Simultaneous isolated worktrees both start without a PMM dead end'
+parallel_primary_id="$(pmm_claim_primary_task "$parallel_root" 2>/dev/null || true)"
+parallel_work_item_count="$(pmm_claim_work_items "$parallel_root" | wc -l | tr -d '[:space:]')"
+assert_equals '1' "$parallel_work_item_count" \
+  'Simultaneous isolated starts keep one primary and auto-route one work item'
+parallel_auto_route_count="$(rg -l 'TASK_AUTO_ROUTED' "$parallel_results"/*.out | wc -l | tr -d '[:space:]')"
+assert_equals '1' "$parallel_auto_route_count" \
+  'Exactly one simultaneous isolated task reports automatic work-item routing'
+[[ -n "$parallel_primary_id" ]] || fail 'Simultaneous isolated starts did not preserve a primary integration task'
 pmm_claim_release "$parallel_root" parallel-primary-a || true
 pmm_claim_release "$parallel_root" parallel-primary-b || true
 git -C "$parallel_root" worktree remove --force "$parallel_worktree_a"
@@ -1783,6 +1797,12 @@ if [[ -f "$repo_root/README.md" ]]; then
   assert_file_contains "$repo_root/templates/core/AGENTS.md" \
     'Reuse content already present in the current context; do not reopen an unchanged file unless a required section was not loaded.' \
     'Generated projects inherit the no-duplicate-read rule'
+  assert_file_contains "$repo_root/SKILL.md" \
+    'If the current branch already has a matching PMM claim, continue or resume it; do not create or switch worktrees.' \
+    'Skill contract reuses an already isolated PMM-owned branch'
+  assert_file_contains "$repo_root/docs/runtime.md" \
+    'A default `start` in another active, checked-out worktree auto-routes to a work item under the active primary.' \
+    'Runtime contract documents automatic isolated-worktree routing'
 
   sync_fixture_repo="$tmp_root/sync-retention-source"
   sync_fixture_files="$tmp_root/sync-retention-files.txt"

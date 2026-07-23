@@ -63,6 +63,7 @@ Reuse content already present in the current context; do not reopen an unchanged
 - Do not create standalone plan, handoff, or evidence files that duplicate the owned task and target source.
 - Batch durable task/doc updates at real state transitions; do not persist commentary or raw command transcripts.
 - Run the Workspace Gate before the Subagent Gate: inspect the primary task, branch/worktree, owner, allowed scope, and existing work items.
+- Reuse a matching current-branch PMM claim; continue or resume it instead of creating or switching worktrees. A default `start` from another active, checked-out worktree may auto-route to a child work item.
 - Keep exactly one primary task in `active-task.md`; never append a second task contract.
 - Use `docs/00-project-memory/work-items/<task-id>.md` only for branch/worktree-isolated child work.
 - Put queued, paused, confirmation-gated, deployment, and release work in an optional task queue instead of the active hot path.

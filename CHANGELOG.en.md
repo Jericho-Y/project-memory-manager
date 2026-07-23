@@ -14,6 +14,8 @@ This project follows semantic versioning for public skill releases.
 - Stopped creating duplicate plan, handoff, or evidence files by default when `active-task.md` and target source already hold the needed facts; raw logs are retained only for audit or recovery.
 - Reduced the always-loaded `SKILL.md` from 16.6 KB / 280 lines to a contract-enforced maximum of 14 KiB.
 - Maintainer sync now keeps the newest three `pmm-YYYYMMDD-HHMMSS` install backups by default without touching upgrade, migration, or unrelated runtime directories.
+- Fixed concurrent PMM task starts: when another active primary is in a checked-out worktree, a default `start` from the current unclaimed worktree auto-routes to its work item; a matching current-branch claim is continued or resumed without creating another worktree.
+- Simultaneous `start` calls now use a bounded five-second lock retry; same-worktree starts, paused/blocked primaries, mismatched claims, and non-checked-out primary branches still fail closed.
 
 ## v0.5.1 - 2026-07-21
 

@@ -41,10 +41,10 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - Optional packs now prefer one concise domain document before splitting into larger trees.
 - Generated project memory must remain agent-neutral: `AGENTS.md` plus Core Pack is the source of truth, and adapters stay pointer-only.
 - Subagent support is optional across runtimes; Agent Mode remains a recorded decision, not a mandatory capability.
-- `active-task.md` is one primary-task slot; concurrent writers use separate branches/worktrees and work-item files, or remain queued.
+- `active-task.md` is one primary-task slot; concurrent writers use separate branches/worktrees and work-item files, or remain queued. A matching current-branch claim is continued/resumed in place, while a default start from another unclaimed, checked-out worktree auto-routes under the active primary.
 - Structured state separates execution, verification, and delivery; successful code execution does not imply fresh verification or public release.
 - Verification evidence is fresh only when the recorded source state matches and every later commit is operational-only; a source commit followed by a revert still requires re-verification.
-- Same-machine lifecycle writes are serialized through a Git common-dir mutation lock and atomically committed as whole-file staged transactions; failure/signal cleanup removes temporary state, rolls back new claims, and restores interrupted takeover ownership. One clone permits one non-idle primary claim, including paused/blocked migration states, and Doctor/mutating commands require matching owner, branch, parent, and kind claim metadata.
+- Same-machine lifecycle writes are serialized through a Git common-dir mutation lock and atomically committed as whole-file staged transactions; simultaneous starts use a bounded five-second retry, while failure/signal cleanup removes temporary state, rolls back new claims, and restores interrupted takeover ownership. One clone permits one non-idle primary claim, including paused/blocked migration states, and Doctor/mutating commands require matching owner, branch, parent, and kind claim metadata.
 - Same-host locks owned by dead processes are recovered safely; task claims still require explicit ownership or takeover.
 - Work-item close retains its claim at `ready-to-integrate`; only the primary owner can integrate after the verified child commit is merged, and primary evidence is then invalidated.
 - Closing preserves execution, verification, and delivery in task history, reserves the task ID against reuse, and queues unfinished delivery before releasing the task slot.
@@ -62,7 +62,7 @@ Maintain `pmm` v0.5.x as a compatibility-first, concurrency-aware task runtime t
 - The default I/O Gate reuses unchanged content already present in the current context, keeps its read set ephemeral, uses bounded range reads for text over 200 lines or 32 KiB, and does not create standalone plan/evidence files that duplicate the owned task and source.
 - The always-loaded `SKILL.md` has a 14 KiB runtime-contract budget; detailed lifecycle behavior stays in `docs/runtime.md`.
 - Maintainer sync retains the newest three timestamped local-skill install backups by default and never prunes upgrade, migration, or unrelated runtime anchors.
-- The unreleased low-I/O source contract passes 371 assertions, including fail-before-write checks for invalid retention values and symlinked backup storage.
+- The unreleased source contract covers 377 assertions, including low-I/O/retention bounds and isolated-worktree automatic routing; final source and installed-package verification is required after each change.
 
 ## Remaining Risks
 

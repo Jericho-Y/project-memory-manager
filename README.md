@@ -179,7 +179,7 @@ Record: 最终状态、文档变更、是否沉淀记忆
 
 没有 verifier 或新鲜证据的任务不能关闭。执行受阻时使用 `execution_status: blocked`；验证未完成或失败时使用 `verification_status: pending` 或 `failed`。
 
-`active-task.md` 始终只保留一个主任务。第二个写入对话应排队，或切到独立 branch/worktree 后使用 [templates/concurrency/work-item.md](templates/concurrency/work-item.md)。work-item 验证后仍需合并、由主任务 owner 执行 `integrate`，并重新验证主任务；生命周期命令和迁移方式见 [docs/runtime.md](docs/runtime.md)。
+`active-task.md` 始终只保留一个主任务。第二个写入对话应排队，或在独立 branch/worktree 中使用 [templates/concurrency/work-item.md](templates/concurrency/work-item.md)。如果当前分支已有匹配 claim，就直接继续或恢复，不再创建 worktree；如果主任务位于另一个 active 且已检出的 worktree，当前未占用 worktree 的默认 `start` 会自动路由为 work-item。work-item 验证后仍需合并、由主任务 owner 执行 `integrate`，并重新验证主任务；生命周期命令和迁移方式见 [docs/runtime.md](docs/runtime.md)。
 
 ## 安装
 
@@ -245,7 +245,7 @@ powershell -ExecutionPolicy Bypass -File scripts/install-local-skill.ps1 -Skills
 3. 创建 Core Pack；重要项目同时保留 `runtime-state.md` 作为版本元数据。
 4. 每次重要任务开始先运行 Upgrade Gate，再按任务选择 Runtime Profile。
 5. 运行 Workspace Gate；`active-task.md` 已有主任务时，不追加第二个任务。
-6. 使用 `scripts/pmm-task.sh start` 启动主任务；并发写任务先创建独立 branch/worktree，再启动 work-item。
+6. 使用 `scripts/pmm-task.sh start` 启动任务；已有匹配分支 claim 时直接继续/恢复，已隔离的未占用 worktree 会在检测到另一 active 主任务时自动启动 work-item。
 7. 执行、验证、Critic 检查、失败修复，并用 `verify` 记录新鲜证据。
 8. 运行 `bash <SKILLS_ROOT>/pmm/scripts/pmm-doctor.sh <PROJECT_ROOT>` 检查状态、分支和 verifier。
 9. work-item 使用 `close` 进入待集成，合并后由主任务 owner 执行 `integrate` 并重验；主任务最后使用 `close` 归档。

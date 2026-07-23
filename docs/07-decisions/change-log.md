@@ -10,6 +10,8 @@ Skip when: You only need current instructions and no historical context.
 - Reduced `SKILL.md` from 16,598 bytes / 280 lines to 12,314 bytes / 192 lines before final wording updates, with a 14 KiB contract limit to prevent regression.
 - Bounded maintainer-sync backups to the newest three timestamped `pmm-*` install snapshots by default while preserving unrelated upgrade and migration anchors.
 - Expanded the source runtime contract to 371 passing assertions and verified invalid retention values plus symlinked backup storage fail before modifying the installed skill.
+- Changed default `start` routing so a second unclaimed, checked-out worktree joins an active primary as a work item instead of failing on the singleton claim; a current branch with a matching claim is resumed in place without another worktree.
+- Added a bounded five-second retry for simultaneous starts while preserving one-primary, same-worktree refusal, paused/blocked reservation, migration refusal, and fail-closed claim checks.
 
 ## 2026-07-21
 

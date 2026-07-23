@@ -44,6 +44,8 @@ docs/00-project-memory/verifier-map.md
 
 `active-task.md` is one primary task slot, not a task list. When a second conversation or Agent needs independent write access, run the Workspace Gate in `docs/runtime.md`: use a separate branch/worktree and `docs/00-project-memory/work-items/<task-id>.md`, or queue the work. Never append another task contract to `active-task.md`.
 
+If the current branch already has a matching PMM claim, continue or resume it; do not create or switch worktrees. When another active primary owns a different checked-out worktree, a default lifecycle `start` from the already isolated current worktree auto-routes to a child work item. Do not invoke a worktree-routing skill only because PMM is active.
+
 Load these only when concurrency or scheduling exists:
 
 ```text
@@ -114,8 +116,8 @@ For any non-trivial task:
 2. Pick the runtime profile.
 3. Run the Upgrade Gate with the installed runtime; stop without writes on task/source/status ambiguity or a newer project runtime.
 4. Load only the profile-specific hot-path sections not already present in the current context.
-5. Run the Workspace Gate: inspect the primary task, owner, branch/worktree, allowed scope, and active work items.
-6. Start or resume exactly one owned task file. Queue unrelated work; use a separate branch/worktree for a child work item.
+5. Run the Workspace Gate: inspect the current branch claim, primary task, owner, branch/worktree, allowed scope, and active work items.
+6. Continue or resume a matching current-branch task. Otherwise start exactly one owned task file; queue unrelated work, or use an already isolated branch/worktree for an auto-routed child work item.
 7. Choose Agent Mode: `solo`, `assisted`, `parallel`, or `review-only`.
 8. Define Task, Agent Mode, Harness, Verifier, Loop Budget, Stop Condition, and risk level.
 9. Select specialized skills or subagents only when they add value and ownership is clear.

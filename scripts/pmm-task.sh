@@ -61,6 +61,7 @@ plan=0
 takeover=0
 auto=0
 delivery_status=""
+auto_routed=0
 
 while (( $# > 0 )); do
   case "$1" in
@@ -181,8 +182,19 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 acquire_state_lock() {
-  pmm_mutation_lock_acquire "$project" "$lock_id" || die 'PMM_STATE_BUSY: another pmm lifecycle mutation is in progress'
-  lock_held=1
+  local attempt=1
+  local max_attempts=1
+  [[ "$command" != 'start' ]] || max_attempts=100
+  while (( attempt <= max_attempts )); do
+    if pmm_mutation_lock_acquire "$project" "$lock_id"; then
+      lock_held=1
+      return 0
+    fi
+    (( attempt == max_attempts )) && break
+    sleep 0.05
+    attempt=$((attempt + 1))
+  done
+  die 'PMM_STATE_BUSY: another pmm lifecycle mutation is in progress'
 }
 
 begin_task_update() {
@@ -224,6 +236,47 @@ require_primary_claim_available() {
     2) die 'MULTIPLE_PRIMARY_TASK_CLAIMS: repair the Git common-directory claims before continuing' ;;
     *) die 'PRIMARY_TASK_CLAIM_CHECK_FAILED' ;;
   esac
+}
+
+auto_route_isolated_start() {
+  local claimed_primary claim_status current_branch branch_owner primary_branch primary_owner
+  local primary_worktree primary_task primary_status
+  (( work_item == 0 )) || return 0
+
+  current_branch="$(pmm_git_branch "$project")"
+  branch_owner="$(pmm_claim_task_for_branch "$project" "$current_branch" 2>/dev/null || true)"
+  [[ -z "$branch_owner" ]] || return 0
+
+  if claimed_primary="$(pmm_claim_primary_task "$project" 2>/dev/null)"; then
+    :
+  else
+    claim_status=$?
+    case "$claim_status" in
+      1) return 0 ;;
+      2) die 'MULTIPLE_PRIMARY_TASK_CLAIMS: repair the Git common-directory claims before continuing' ;;
+      *) die 'PRIMARY_TASK_CLAIM_CHECK_FAILED' ;;
+    esac
+  fi
+
+  primary_branch="$(pmm_claim_value "$project" "$claimed_primary" branch 2>/dev/null || true)"
+  primary_owner="$(pmm_claim_value "$project" "$claimed_primary" owner 2>/dev/null || true)"
+  [[ -n "$primary_branch" && "$current_branch" != "$primary_branch" ]] || return 0
+  pmm_claim_matches "$project" "$claimed_primary" "$primary_owner" "$primary_branch" none primary || \
+    die "PARENT_CLAIM_MISSING_OR_MISMATCH: $claimed_primary"
+
+  primary_worktree="$(pmm_git_worktree_for_branch "$project" "$primary_branch" 2>/dev/null || true)"
+  [[ -n "$primary_worktree" && -d "$primary_worktree" ]] || return 0
+  primary_task="$primary_worktree/docs/00-project-memory/active-task.md"
+  [[ -f "$primary_task" ]] || return 0
+  pmm_has_schema "$primary_task" || return 0
+  [[ "$(pmm_frontmatter_value "$primary_task" task_id 2>/dev/null || true)" == "$claimed_primary" ]] || return 0
+  [[ "$(pmm_frontmatter_value "$primary_task" branch 2>/dev/null || true)" == "$primary_branch" ]] || return 0
+  primary_status="$(pmm_frontmatter_value "$primary_task" execution_status 2>/dev/null || true)"
+  [[ "$primary_status" == 'active' ]] || return 0
+
+  work_item=1
+  parent="$claimed_primary"
+  auto_routed=1
 }
 
 require_id() {
@@ -987,6 +1040,7 @@ case "$command" in
     pmm_validate_scalar scope "$scope" || exit 1
     pmm_validate_scalar verifier "$verifier" || exit 1
     acquire_state_lock
+    auto_route_isolated_start
     ensure_project_runtime '' "$work_item"
     require_unarchived_task_id
 
@@ -1036,6 +1090,10 @@ case "$command" in
       die "TASK_WRITE_FAILED: $id"
     fi
     pending_claim_id=""
+    if (( auto_routed == 1 )); then
+      printf 'TASK_AUTO_ROUTED id=%s parent=%s branch=%s\n' \
+        "$id" "$parent" "$(pmm_git_branch "$project")"
+    fi
     printf 'TASK_STARTED %s file=%s\n' "$id" "${target#$project/}"
     ;;
 

@@ -319,6 +319,21 @@ pmm_git_branch() {
   fi
 }
 
+pmm_git_worktree_for_branch() {
+  local root="$1"
+  local branch="$2"
+  git -C "$root" worktree list --porcelain 2>/dev/null | awk -v target="refs/heads/$branch" '
+    index($0, "worktree ") == 1 {
+      path=substr($0, length("worktree ") + 1)
+      next
+    }
+    $1 == "branch" && $2 == target {
+      print path
+      exit
+    }
+  '
+}
+
 pmm_operational_path() {
   case "$1" in
     docs/00-project-memory/active-task.md | \
